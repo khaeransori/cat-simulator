@@ -12,6 +12,8 @@ export interface Look {
 
 export interface Settings {
   lang: 'id' | 'en';
+  /** true once the player picked a language in Settings; until then the game stays in Indonesian */
+  langChosen: boolean;
   music: number; // 0..1
   sfx: number; // 0..1
   quality: 'low' | 'high';
@@ -50,7 +52,7 @@ export function defaultSave(): SaveData {
     quest: { idx: 0, stage: 'offer', prog: {} },
     day: 1,
     unlocked: { pasar: false, atap: false },
-    settings: { lang: 'id', music: 0.6, sfx: 0.9, quality: 'high', dayLen: 300, arrow: true },
+    settings: { lang: 'id', langChosen: false, music: 0.6, sfx: 0.9, quality: 'high', dayLen: 300, arrow: true },
     stats: { perfectDays: 0, caught: 0, onTime: 0, fishTotal: 0 },
     firstRun: true,
     metLisa: false,
@@ -76,14 +78,16 @@ export function loadSave(): SaveData {
   const d = defaultSave();
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return merge(d, JSON.parse(raw));
+    if (raw) {
+      const s = merge(d, JSON.parse(raw));
+      // Indonesian by default: older saves may hold 'en' picked from the device language, not by the player
+      if (!s.settings.langChosen) s.settings.lang = 'id';
+      return s;
+    }
   } catch (e) {
     /* storage blocked: play without saving */
   }
-  // First run: pick language from the device
-  try {
-    if (!(navigator.language || 'id').toLowerCase().startsWith('id')) d.settings.lang = 'en';
-  } catch (e) {}
+  // First run: always Indonesian (English stays available in Settings)
   return d;
 }
 

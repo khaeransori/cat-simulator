@@ -600,6 +600,7 @@ export class UI {
         );
       segBind('sLang', (v) => {
         s.lang = v as any;
+        s.langChosen = true;
         this.labels();
         document.documentElement.lang = v;
       });
@@ -635,8 +636,10 @@ export class UI {
         this.confirm(tr('resetConfirm'), tr('yes'), tr('no'), () => {
           clearSave();
           const keepLang = s.lang;
+          const keepChosen = s.langChosen;
           ctx.save = defaultSave();
           ctx.save.settings.lang = keepLang;
+          ctx.save.settings.langChosen = keepChosen;
           ctx.cat.model.setLook(ctx.save.look);
           ctx.quests.applyUnlocks(false);
           writeSave(ctx.save);
