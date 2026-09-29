@@ -1,0 +1,41 @@
+name: Deploy ke Arcade (main.khaeransori.com/cat-simulator)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: arcade
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Siapkan kunci SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ARCADE_SSH_KEY }}" > ~/.ssh/arcade
+          chmod 600 ~/.ssh/arcade
+          echo "${{ secrets.ARCADE_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Upload ke server
+        run: |
+          # game.json & thumb.jpg dikelola server (katalog arcade), jangan dihapus
+          rsync -rtz --delete --exclude game.json --exclude thumb.jpg --exclude .deployed --exclude CARA-PASANG.txt \
+            -e "ssh -i ~/.ssh/arcade" dist/pwa/ ubuntu@${{ secrets.ARCADE_HOST }}:
+          date -u +%FT%TZ > .deployed
+          rsync -t -e "ssh -i ~/.ssh/arcade" .deployed ubuntu@${{ secrets.ARCADE_HOST }}:.deployed
+      - name: Cek live
+        run: |
+          sleep 5
+          curl -fsS -o /dev/null -w "HTTP %{http_code}\n" https://main.khaeransori.com/cat-simulator/
