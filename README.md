@@ -17,12 +17,15 @@ Alternatif tanpa hosting: unduh [cat-simulator.html](https://khaeransori.github.
 
 - **Satu hari = 3, 5, atau 8 menit** (atur di Pengaturan). Matahari turun terus; 45 detik terakhir musik makin cepat dan panah menunjuk ke sofa.
 - **Pulang tepat waktu:** pura-pura tidur di sofa sebelum Mama pulang dapat bonus. Kalau telat, Mama memergoki kucing di luar (lucu, bukan kalah).
-- **21 kenakalan di 5 area:**
+- **33 kenakalan di 8 area:**
   - Rumah: jatuhin gelas, jatuhin pot, tarik tisu, tidur di laptop, curi ikan goreng, cakar gorden.
   - Taman: jatuhin pot taman, gali taman bunga, kagetin merpati, curi bola anak-anak.
   - Jalan kompleks: bikin Bleki menggonggong, sobek koran Bu Siti, curi sandal, tidur di jok motor (alarm!), jatuhin pot tetangga.
   - Pasar Ikan: curi ikan, tumpahin ember, dorong keranjang tomat.
   - Atap tetangga: jatuhin jemuran, curi ikan asin, kagetin merpati atap.
+  - Sekolah (ujung barat jalan, dijaga Pak Satpam): coret-coret papan tulis, jatuhin tumpukan buku, tidur di meja guru, bunyiin bel sekolah (berisik!).
+  - Warung (ujung barat jalan, dijaga Bu Warung): curi kerupuk, jatuhin toples permen, dorong galon sampai menggelinding, tidur di atas kulkas es krim.
+  - Sungai (lewat jalan setapak antara taman dan pasar): dorong perahu kertas, kejar kupu-kupu, ganggu bebek, cebur-ceburan di batu loncatan. Ada jembatan bambu dan dermaga kecil.
 - **Satu tombol aksi kontekstual:** ikon dan tulisannya berubah sesuai barang terdekat (Dorong, Curi, Tidur, Cakar, Gali, Tarik, Kagetin, Mancing, Ngobrol). Barang yang belum dinakali hari ini berkilau ✦.
 - **Warga kompleks:** Bu Siti (nyapu, mengusir pakai sapu), Pak Ujang penjual ikan, Bu Tini penjual sayur, Dimas dan Putri yang main bola dan suka meluk kucing, Bleki si anjing di balik pagar. Orang yang melihat kenakalan akan kaget lalu mengusir, tapi tidak pernah menyakiti.
 - **Lisa, kucing pemberi quest:** 6 quest berantai, termasuk mancing di kolam taman, lalu quest mancing harian.
@@ -68,6 +71,7 @@ npm run test:smoke      # judul, pilih kucing, intro, jalan keluar rumah, jumlah
 npm run test:mischief   # 20 kenakalan satu per satu
 npm run test:quests     # rantai quest Lisa sampai hari sempurna
 npm run test:portrait   # layar portrait + joystick, kamera, dan tombol sentuh
+npm run test:areas      # Sekolah, Warung, Sungai: 12 kenakalan, warga baru, jalan dari rumah, akhir hari
 ```
 
 ### Struktur kode

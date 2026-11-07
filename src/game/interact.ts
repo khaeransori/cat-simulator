@@ -82,7 +82,9 @@ export class InteractSystem {
     for (const i of this.list) {
       if (!i.mischief) continue;
       const s = this.sparkles.get(i.id)!;
-      const vis = ctx.mode === 'play' && !doneToday.has(i.mischief) && i.enabled() && best !== i;
+      const cp = ctx.camera?.position;
+      const near = !cp || (i.pos.x - cp.x) ** 2 + (i.pos.z - cp.z) ** 2 < 60 * 60; // far ones are lost in the fog anyway
+      const vis = ctx.mode === 'play' && near && !doneToday.has(i.mischief) && i.enabled() && best !== i;
       s.visible = vis;
       if (vis) {
         const k = 0.2 + 0.08 * Math.sin(ctx.time * 4 + i.pos.x);

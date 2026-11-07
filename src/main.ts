@@ -283,6 +283,18 @@ function boot() {
       ctx.interact.update(gdt);
       for (const a of W.anim) a(gdt, ctx.time);
     }
+    // phone-friendly: skip drawing far-away critters and edge-area NPCs (fog hides them anyway)
+    {
+      const cp = camera.position;
+      const far2 = 52 * 52;
+      for (const f of ctx.flocks as Flock[]) if (f.state === 'ground') for (const b of f.birds) b.m.root.visible = (b.x - cp.x) ** 2 + (b.z - cp.z) ** 2 < far2;
+      for (const fl of ctx.butterflies.flies) fl.g.visible = ctx.butterflies.state !== 'away' && (fl.g.position.x - cp.x) ** 2 + (fl.g.position.z - cp.z) ** 2 < far2;
+      for (const h of [satpam, buWarung]) {
+        const v = h.active && (h.body.x - cp.x) ** 2 + (h.body.z - cp.z) ** 2 < far2;
+        h.model.root.visible = v;
+        h.shadow.visible = v;
+      }
+    }
     // action button
     if (input.act && ctx.mode === 'play' && !ctx.paused && !ctx.dialogOpen && cat.state === 'free') {
       const cur = ctx.interact.current;
