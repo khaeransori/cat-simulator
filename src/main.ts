@@ -19,6 +19,7 @@ import { Quests } from './game/quests';
 import { Fishing } from './game/fishing';
 import { setupMischief, dropCarried } from './game/mischief';
 import { Day } from './game/day';
+import { WeatherSystem, rollWeather, weatherNow } from './game/weather';
 import { UI, HUD_HTML } from './ui/ui';
 import { input, setupInput } from './input';
 import { sfx } from './audio';
@@ -92,6 +93,10 @@ function boot() {
   ctx.fishing = new Fishing();
   setupMischief();
   ctx.day = new Day();
+  // weather & time of day: ctx.weather = 'cerah' | 'hujan' | 'malam' (see game/weather.ts)
+  ctx.weatherSys = new WeatherSystem();
+  ctx.weatherNow = weatherNow;
+  ctx.rollWeather = rollWeather;
   const ui = new UI();
   ctx.ui = ui;
   ctx.quests.applyUnlocks(false);
@@ -123,6 +128,7 @@ function boot() {
     {
       let who = '', best = 4.5;
       for (const h of [...(ctx.npcs as Human[]), ctx.kids.a, ctx.kids.b] as Human[]) {
+        if (!h.active) continue;
         const d = Math.hypot(h.body.x - b.x, h.body.z - b.z);
         if (d < best) (best = d), (who = h.name);
       }
@@ -169,6 +175,7 @@ function boot() {
     ctx.catSit = kind === 'title';
     ctx.catEarsDown = false;
     ctx.camRig.override = null;
+    ctx.weatherSys.apply('cerah');
     ctx.sky.set(kind === 'title' ? 0.25 : 0.3);
   };
   const menuCamera = (dt: number) => {
@@ -194,8 +201,9 @@ function boot() {
     const low = ctx.save.settings.quality === 'low';
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, low ? 1 : 2));
     const fog = scene.fog as THREE.Fog;
-    fog.near = low ? 28 : 45;
-    fog.far = low ? 75 : 120;
+    const rainy = ctx.weather === 'hujan';
+    fog.near = (low ? 28 : 45) * (rainy ? 0.6 : 1);
+    fog.far = (low ? 75 : 120) * (rainy ? 0.7 : 1);
     camera.far = low ? 90 : 150;
     camera.updateProjectionMatrix();
     resize();
@@ -278,6 +286,7 @@ function boot() {
     ctx.day.update(gdt);
     if (ctx.mode === 'play' && !ctx.paused) ctx.quests.tick();
     ctx.fx.update(gdt);
+    ctx.weatherSys.update(gdt);
     if (ctx.mode === 'menu') menuCamera(dt);
     else ctx.camRig.update(dt, cat);
     const w = window.innerWidth, h = window.innerHeight;

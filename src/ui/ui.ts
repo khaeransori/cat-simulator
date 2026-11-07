@@ -197,14 +197,24 @@ export class UI {
     (el as any)._t = setTimeout(() => (el.hidden = true), 2400);
   }
 
-  banner(icon: string, title: string, sub: string, coins: number) {
+  banner(icon: string, title: string, sub: string, coins: number, note = '') {
     const el = $('banner');
-    el.innerHTML = `<div class="bi">${icon}</div><div><div class="bt">${esc(title)}</div><div class="bs">${esc(sub)}</div></div>${coins ? `<div class="bc">+${coins} 🐟</div>` : ''}`;
+    el.innerHTML = `<div class="bi">${icon}</div><div><div class="bt">${esc(title)}</div><div class="bs">${esc(sub)}</div>${note ? `<div class="bn">${esc(note)}</div>` : ''}</div>${coins ? `<div class="bc">+${coins} 🐟</div>` : ''}`;
     el.hidden = true;
     void el.offsetWidth;
     el.hidden = false;
     clearTimeout((el as any)._t);
-    (el as any)._t = setTimeout(() => (el.hidden = true), 2600);
+    (el as any)._t = setTimeout(() => (el.hidden = true), note ? 3600 : 2600);
+  }
+
+  /** day bar look for today's day type (icon on the sun marker + track colors) */
+  weather(kind: 'cerah' | 'hujan' | 'malam') {
+    const icon = kind === 'hujan' ? '🌧️' : kind === 'malam' ? '🌙' : '☀️';
+    if ($('daySun').textContent !== icon) $('daySun').textContent = icon;
+    const bar = $('daybar');
+    bar.classList.toggle('wx-hujan', kind === 'hujan');
+    bar.classList.toggle('wx-malam', kind === 'malam');
+    bar.dataset.wx = kind;
   }
 
   bigTitle(text: string) {
@@ -584,6 +594,7 @@ export class UI {
           <div class="set-row"><span>${esc(tr('graphics'))}</span>${seg('sQ', [['low', tr('gLow')], ['high', tr('gHigh')]], s.quality)}</div>
           <div class="set-row"><span>${esc(tr('dayLength'))}</span>${seg('sDay', [['180', tr('min', { n: 3 })], ['300', tr('min', { n: 5 })], ['480', tr('min', { n: 8 })]], String(s.dayLen))}</div>
           <div class="set-row"><span>${esc(tr('arrow'))}</span>${seg('sArrow', [['1', tr('on')], ['0', tr('off')]], s.arrow ? '1' : '0')}</div>
+          <div class="set-row"><span>${esc(tr('weatherSet'))}</span>${seg('sWx', [['acak', '🎲 ' + tr('wxRandom')], ['cerah', '☀️ ' + tr('wxSunny')]], s.weather)}</div>
           <div class="set-row"><span>${esc(tr('fullscreen'))}</span><button class="btn small" id="sFull">⛶</button></div>
           <div class="set-row" style="border:0"><span></span><button class="btn small pink" id="sReset">${esc(tr('resetData'))}</button></div>
         </div></div>`,
@@ -610,6 +621,7 @@ export class UI {
       });
       segBind('sDay', (v) => (s.dayLen = Number(v)));
       segBind('sArrow', (v) => (s.arrow = v === '1'));
+      segBind('sWx', (v) => (s.weather = v as any));
       const rng = (id: string, fn: (v: number) => void) => {
         const el = $(id) as HTMLInputElement;
         el.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -776,13 +788,15 @@ export class UI {
   }
 
   // ---------- summary ----------
-  summary(r: { n: number; list: { icon: string; name: string }[]; coins: number; bonusDay: number; bonusTime: number; slept: boolean; perfect: boolean }) {
+  summary(r: { n: number; list: { icon: string; name: string }[]; coins: number; bonusDay: number; bonusTime: number; slept: boolean; perfect: boolean; weather?: 'cerah' | 'hujan' | 'malam' }) {
+    const wx = r.weather || 'cerah';
+    const wxIcon = wx === 'hujan' ? '🌧️' : wx === 'malam' ? '🌙' : '☀️';
     this.hud(false);
     const chips = r.list.length ? r.list.map((m) => `<span class="chip">${m.icon} ${esc(m.name)}</span>`).join('') : `<span>${esc(tr('sumNone'))}</span>`;
     this.showScreen(
       `<div class="screen-center shade"><div class="panel summary-panel">
-        <h2>🌇 ${esc(tr('summaryTitle', { n: r.n }))}</h2>
-        <div class="stamps"><div class="stamp ${r.slept ? 'good' : 'bad'}">${r.slept ? '✓ ' + esc(tr('sumOnTime')) : '✗ ' + esc(tr('sumCaught'))}</div>${r.perfect ? `<div class="stamp good">🏆 ${esc(tr('perfectDay'))}</div>` : ''}</div>
+        <h2>${wx === 'cerah' ? '🌇' : wxIcon} ${esc(tr('summaryTitle', { n: r.n }))}</h2>
+        <div class="stamps"><div class="stamp wx wx-${wx}" id="sumWx">${wxIcon} ${esc(tr('wx_' + wx))}</div><div class="stamp ${r.slept ? 'good' : 'bad'}">${r.slept ? '✓ ' + esc(tr('sumOnTime')) : '✗ ' + esc(tr('sumCaught'))}</div>${r.perfect ? `<div class="stamp good">🏆 ${esc(tr('perfectDay'))}</div>` : ''}</div>
         <div style="font-weight:800">${esc(tr('sumMischief'))} (${r.list.length})</div>
         <div class="sum-list">${chips}</div>
         <div class="sum-row"><span>${esc(tr('sumDayBonus'))}</span><span>+${r.bonusDay} 🐟</span></div>

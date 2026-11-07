@@ -185,8 +185,15 @@ export class Flock {
       b.x = b.tx = b.hx;
       b.z = b.tz = b.hz;
       b.y = this.center.y;
-      b.m.root.visible = true;
+      b.m.root.visible = !this.hidden;
     }
+  }
+
+  hidden = false;
+  /** rainy days: the pigeons shelter somewhere out of sight */
+  setHidden(on: boolean) {
+    this.hidden = on;
+    for (const b of this.birds) b.m.root.visible = !on;
   }
 
   scare() {
@@ -205,6 +212,7 @@ export class Flock {
   }
 
   update(dt: number) {
+    if (this.hidden) return;
     this.t += dt;
     const cb = ctx.cat.body;
     for (const b of this.birds) {
@@ -365,7 +373,20 @@ export class Kids {
     this.ball.position.set(k.body.x + f * 0.55, 0.15, k.body.z + g * 0.55);
   }
 
+  away = false;
+  /** rain / night: Dimas and Putri stay indoors (no ball game) */
+  setAway(on: boolean) {
+    this.away = on;
+    if (on && ctx.cat?.carrying?.id === 'bola') return;
+    this.ball.visible = this.shadow.visible = !on;
+    for (const k of [this.a, this.b]) {
+      k.active = !on;
+      if (on) k.update(0);
+    }
+  }
+
   ballGrabbable() {
+    if (this.away) return false;
     return this.ballState === 'atA' || this.ballState === 'atB' || this.ballState === 'ground';
   }
 
@@ -406,6 +427,7 @@ export class Kids {
   }
 
   update(dt: number) {
+    if (this.away) return;
     const cat = ctx.cat;
     const cb = cat.body;
     this.modeT += dt;

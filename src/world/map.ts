@@ -39,6 +39,8 @@ export interface World {
   dogYard: { x0: number; z0: number; x1: number; z1: number };
   anim: ((dt: number, t: number) => void)[];
   fishShadows: THREE.Object3D[];
+  /** glow spots for night/rain (weather.ts): window glass boxes (out = facing outdoors) and street lamp heads */
+  glow: { windows: { x0: number; y0: number; z0: number; x1: number; y1: number; z1: number; px: number; pz: number }[]; lamps: THREE.Vector3[]; indoor: { x0: number; z0: number; x1: number; z1: number }[] };
 }
 
 const C = {
@@ -99,6 +101,7 @@ export function buildWorld(scene: THREE.Scene): World {
   const zones: Zone[] = [];
   const gates: World['gates'] = {};
   const fishShadows: THREE.Object3D[] = [];
+  const glow: World['glow'] = { windows: [], lamps: [], indoor: [] };
   const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
   const addProp = (id: string, obj: THREE.Object3D, surface: number, data?: any) => {
@@ -138,6 +141,7 @@ export function buildWorld(scene: THREE.Scene): World {
   const winZ = (x0: number, x1: number, z: number, y0: number, y1: number, out: number) => {
     // wall along x, window seen from side `out` (+1 or -1 in z)
     const zz = z + out * 0.16;
+    glow.windows.push({ x0: x0 + 0.02, y0: y0 + 0.02, z0: zz - 0.026, x1: x1 - 0.02, y1: y1 - 0.02, z1: zz + 0.026, px: (x0 + x1) / 2, pz: zz + out * 0.5 });
     S.mm(x0, y0, zz - 0.02, x1, y1, zz + 0.02, C.glass, { collide: false, jitter: 0 });
     S.mm(x0 - 0.08, y0 - 0.08, zz - 0.03, x1 + 0.08, y0, zz + 0.05, C.frame, { collide: false });
     S.mm(x0 - 0.08, y1, zz - 0.03, x1 + 0.08, y1 + 0.08, zz + 0.05, C.frame, { collide: false });
@@ -147,6 +151,7 @@ export function buildWorld(scene: THREE.Scene): World {
   };
   const winX = (z0: number, z1: number, x: number, y0: number, y1: number, out: number) => {
     const xx = x + out * 0.16;
+    glow.windows.push({ x0: xx - 0.026, y0: y0 + 0.02, z0: z0 + 0.02, x1: xx + 0.026, y1: y1 - 0.02, z1: z1 - 0.02, px: xx + out * 0.5, pz: (z0 + z1) / 2 });
     S.mm(xx - 0.02, y0, z0, xx + 0.02, y1, z1, C.glass, { collide: false, jitter: 0 });
     S.mm(xx - 0.03, y0 - 0.08, z0 - 0.08, xx + 0.05, y0, z1 + 0.08, C.frame, { collide: false });
     S.mm(xx - 0.03, y1, z0 - 0.08, xx + 0.05, y1 + 0.08, z1 + 0.08, C.frame, { collide: false });
@@ -222,6 +227,7 @@ export function buildWorld(scene: THREE.Scene): World {
     }
   };
   const lamp = (x: number, z: number) => {
+    glow.lamps.push(V(x, 3.66, z));
     S.box(x, 0, z, 0.16, 3.8, 0.16, 0x44474d, { cam: false });
     S.box(x, 3.8, z, 0.6, 0.12, 0.3, 0x44474d, { collide: false });
     S.box(x, 3.66, z, 0.4, 0.14, 0.22, 0xfff3c4, { collide: false });
@@ -333,6 +339,7 @@ export function buildWorld(scene: THREE.Scene): World {
   S.box(-11.5, 1.0, -5.8, 0.5, 0.35, 0.35, 0xe53935, { cam: false });
   // House A shell
   const HA = { x0: -22, z0: -27, x1: -6, z1: -13 };
+  glow.indoor.push(HA);
   rects.push({ x0: HA.x0, z0: HA.z0, x1: HA.x1, z1: HA.z1, c: '#f3b88f' });
   const H = 3.3;
   wallX(HA.x0, HA.x1, HA.z1 - 0.15, H, C.peach, [[-15, -13.4, 2.6]]);
@@ -1058,7 +1065,7 @@ export function buildWorld(scene: THREE.Scene): World {
   const mesh = S.build(mat);
   scene.add(mesh);
   const phys = new Physics(S.colliders);
-  return { mesh, phys, pts, props, gates, water, zones, rects, dogYard, anim, fishShadows };
+  return { mesh, phys, pts, props, gates, water, zones, rects, dogYard, anim, fishShadows, glow };
 }
 
 // ---------- prop mesh builders ----------

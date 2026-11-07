@@ -653,7 +653,7 @@ export function setupMischief() {
       pos: fl.center,
       r: 2.4,
       yTol: 0.8,
-      enabled: () => free() && fl.state === 'ground',
+      enabled: () => free() && fl.state === 'ground' && !fl.hidden,
       act: () => {
         const cat = ctx.cat;
         const f = cat.forward();

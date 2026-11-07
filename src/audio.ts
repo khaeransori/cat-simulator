@@ -17,6 +17,11 @@ class SoundSystem {
   nextTime = 0;
   timer: any = null;
   lastVoice = 0;
+  // weather ambience (rain loop / night crickets), see setAmbience()
+  amb: 'none' | 'rain' | 'night' = 'none';
+  ambNodes: AudioNode[] = [];
+  ambSrc: (AudioScheduledSourceNode)[] = [];
+  ambGain: GainNode | null = null;
 
   unlock() {
     if (!this.ac) {
@@ -37,6 +42,9 @@ class SoundSystem {
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.applyVolumes();
       this.ensureTimer();
+      const want = this.amb;
+      this.amb = 'none';
+      this.setAmbience(want);
     }
     if (this.ac && this.ac.state === 'suspended') this.ac.resume().catch(() => {});
   }
@@ -255,6 +263,117 @@ class SoundSystem {
     this.lastVoice = t;
     const f = 300 * base * (0.85 + Math.random() * 0.4);
     this.tone(f, 0.06, 'square', vol, 0, f * 1.1);
+  }
+
+  // soft splash when the cat steps in a puddle
+  puddle() {
+    this.noise(0.16, 0.12, 'bandpass', 1800, 1.2, 0, 700);
+    this.tone(700 + Math.random() * 200, 0.08, 'sine', 0.05, 0.02, 300);
+  }
+
+  // ---------- weather ambience ----------
+  // Rain: looped, filtered noise. Night: cricket chirps (an LFO-gated high sine).
+  // Both run through the sfx bus, so the sfx volume (and 0 = mute) applies.
+  setAmbience(kind: 'none' | 'rain' | 'night') {
+    if (this.amb === kind) return;
+    this.amb = kind;
+    if (!this.ac) return; // started on unlock()
+    const ac = this.ac;
+    const t = ac.currentTime;
+    // fade out + stop the old loop
+    if (this.ambGain) {
+      const g = this.ambGain;
+      g.gain.cancelScheduledValues(t);
+      g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.linearRampToValueAtTime(0, t + 0.8);
+      for (const s of this.ambSrc) s.stop(t + 0.9);
+      const nodes = this.ambNodes;
+      setTimeout(() => nodes.forEach((n) => n.disconnect()), 1200);
+    }
+    this.ambSrc = [];
+    this.ambNodes = [];
+    this.ambGain = null;
+    if (kind === 'none') return;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.connect(this.sfxBus);
+    this.ambGain = g;
+    this.ambNodes.push(g);
+    if (kind === 'rain') {
+      g.gain.linearRampToValueAtTime(0.16, t + 1.5);
+      const s = ac.createBufferSource();
+      s.buffer = this.noiseBuf;
+      s.loop = true;
+      const lp = ac.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 2400;
+      const hp = ac.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 350;
+      // slow swell so the loop doesn't sound static
+      const lfo = ac.createOscillator();
+      lfo.frequency.value = 0.13;
+      const lg = ac.createGain();
+      lg.gain.value = 500;
+      lfo.connect(lg);
+      lg.connect(lp.frequency);
+      s.connect(lp);
+      lp.connect(hp);
+      hp.connect(g);
+      s.start(t);
+      lfo.start(t);
+      this.ambSrc.push(s, lfo);
+      this.ambNodes.push(lp, hp, lg);
+    } else {
+      g.gain.linearRampToValueAtTime(0.05, t + 1.5);
+      for (const [f, rate, slow, pan] of [
+        [4300, 32, 0.9, -0.5],
+        [3900, 27, 0.63, 0.5],
+      ]) {
+        const o = ac.createOscillator();
+        o.frequency.value = f;
+        const g1 = ac.createGain(); // fast trill
+        g1.gain.value = 0.5;
+        const l1 = ac.createOscillator();
+        l1.type = 'square';
+        l1.frequency.value = rate;
+        const l1g = ac.createGain();
+        l1g.gain.value = 0.5;
+        l1.connect(l1g);
+        l1g.connect(g1.gain);
+        const g2 = ac.createGain(); // chirp on/off
+        g2.gain.value = 0;
+        const l2 = ac.createOscillator();
+        l2.type = 'square';
+        l2.frequency.value = slow;
+        const l2g = ac.createGain();
+        l2g.gain.value = 0.5;
+        l2.connect(l2g);
+        l2g.connect(g2.gain);
+        const sp = ac.createStereoPanner ? ac.createStereoPanner() : null;
+        o.connect(g1);
+        g1.connect(g2);
+        if (sp) {
+          sp.pan.value = pan;
+          g2.connect(sp);
+          sp.connect(g);
+          this.ambNodes.push(sp);
+        } else g2.connect(g);
+        // g2 base 0 + square(+-0.5) -> chirp half the time at 0.5; lift so it's 0..1
+        const dc = ac.createConstantSource ? ac.createConstantSource() : null;
+        if (dc) {
+          dc.offset.value = 0.5;
+          dc.connect(g2.gain);
+          dc.start(t);
+          this.ambSrc.push(dc);
+        }
+        o.start(t);
+        l1.start(t);
+        l2.start(t);
+        this.ambSrc.push(o, l1, l2);
+        this.ambNodes.push(g1, l1g, g2, l2g);
+      }
+    }
   }
 
   // ---------- music ----------

@@ -237,6 +237,34 @@ input:focus-visible {
   transform: translateY(-50%);
   font-size: 18px;
 }
+.daybar.wx-hujan .track {
+  background: linear-gradient(90deg, #b7c6d6, #9fb0c2 50%, #8a8fa8);
+}
+.daybar.wx-malam .track {
+  background: linear-gradient(90deg, #4a5f9e, #34467f 50%, #223266);
+}
+#banner .bn {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink2);
+  max-width: 60vw;
+}
+.stamp.wx {
+  color: #b77a00;
+  border-color: #e0a100;
+  background: #fff6d8;
+}
+.stamp.wx-hujan {
+  color: #2f5f8f;
+  border-color: #4f7fb0;
+  background: #e6f1ff;
+}
+.stamp.wx-malam {
+  color: #2e3a7a;
+  border-color: #4b5bb0;
+  background: #e7e9ff;
+}
 .daybar.hurry {
   background: #ffe0e0;
   animation: shake 0.4s infinite;

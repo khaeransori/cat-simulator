@@ -39,6 +39,9 @@ const T: Record<string, Pair> = {
   dayLength: { id: 'Durasi satu hari', en: 'Day length' },
   min: { id: '{n} menit', en: '{n} min' },
   arrow: { id: 'Panah petunjuk', en: 'Guide arrow' },
+  weatherSet: { id: 'Cuaca', en: 'Weather' },
+  wxRandom: { id: 'Acak', en: 'Random' },
+  wxSunny: { id: 'Selalu cerah', en: 'Always sunny' },
   on: { id: 'Nyala', en: 'On' },
   off: { id: 'Mati', en: 'Off' },
   fullscreen: { id: 'Layar penuh', en: 'Fullscreen' },
@@ -182,6 +185,23 @@ const T: Record<string, Pair> = {
   ar_pasar: { id: 'Pasar Ikan', en: 'Fish Market' },
   ar_atap: { id: 'Atap Tetangga', en: 'Rooftops' },
   ar_gang: { id: 'Gang Sempit', en: 'Narrow Alley' },
+
+  // Weather & time of day
+  wxToday: { id: 'Cuaca hari ini', en: "Today's weather" },
+  wx_cerah: { id: 'Hari Cerah', en: 'Sunny Day' },
+  wx_hujan: { id: 'Hari Hujan', en: 'Rainy Day' },
+  wx_malam: { id: 'Malam Hari', en: 'Night Time' },
+  wxSub_cerah: { id: 'Matahari bersinar. Ayo main!', en: "The sun is shining. Let's play!" },
+  wxSub_hujan: { id: 'Tik tik tik... ikan lebih gampang dipancing!', en: 'Pitter-patter... the fish bite faster!' },
+  wxSub_malam: { id: 'Bintang-bintang keluar. Warga lagi bobo, jalan pelan-pelan ya!', en: "The stars are out. Everyone's sleepy, tiptoe!" },
+  mamaByeRain: { id: 'Mama kerja dulu ya, {name}! Di luar hujan, jangan main basah-basahan, ya!', en: "Mom's off to work, {name}! It's raining, don't get all wet, okay?" },
+  mamaByeNight: { id: 'Mama kerja shift malam dulu ya, {name}! Bobo yang nyenyak, jangan nakal!', en: "Mom has the night shift, {name}! Sleep tight and be good!" },
+  mamaBye2Night: { id: 'Dadah! Mama pulang malam, ya!', en: "Bye! Mom will be home late tonight!" },
+  mamaHomeNight: { id: 'Mama pulang malam! {name}, kamu bobo nyenyak ya dari tadi? Anak baik!', en: "Mom's home late! {name}, were you sound asleep? Good kitty!" },
+  mamaSoonNight: { id: 'Mama pulang malam sebentar lagi! Ayo ke sofa!', en: 'Mom is almost home tonight! Get to the sofa!' },
+  wetCat: { id: 'Brrr, bulumu basah! Pulang ke rumah biar kering.', en: 'Brrr, your fur is wet! Go home to dry off.' },
+  dryCat: { id: 'Bulumu sudah kering lagi!', en: 'Your fur is dry again!' },
+  kidsHome: { id: 'Dimas dan Putri main di dalam rumah hari ini.', en: 'Dimas and Putri are playing indoors today.' },
 };
 
 export function tr(key: string, vars?: Record<string, any>): string {

@@ -182,6 +182,30 @@ export class HumanModel {
     this.height = 2.3 * sc;
   }
 
+  umbrella: THREE.Group | null = null;
+  // Rainy days: a simple box umbrella held over the head (built on first use).
+  setUmbrella(on: boolean, color = 0xe53935) {
+    if (!on && !this.umbrella) return;
+    if (!this.umbrella) {
+      const u = new THREE.Group();
+      u.add(B(0.05, 1.25, 0.05, 0x5d4037, 0, 0.62, 0));
+      u.add(B(0.12, 0.08, 0.06, 0x5d4037, 0.05, 0.02, 0));
+      const c2 = shade(color, 1.18);
+      u.add(B(1.5, 0.08, 1.5, color, 0, 1.26, 0));
+      u.add(B(1.1, 0.1, 1.1, c2, 0, 1.34, 0));
+      u.add(B(0.6, 0.1, 0.6, color, 0, 1.42, 0));
+      u.add(B(0.08, 0.14, 0.08, 0xfafafa, 0, 1.52, 0));
+      for (const [x, z] of [[0.72, 0], [-0.72, 0], [0, 0.72], [0, -0.72]]) u.add(B(0.1, 0.1, 0.1, 0xfafafa, x, 1.2, z));
+      u.position.set(-0.36, 1.3, 0.12);
+      this.inner.add(u);
+      this.umbrella = u;
+    }
+    this.umbrella.visible = on;
+    if (on) (this.umbrella.children[2] as THREE.Mesh).material = lam(color);
+    if (on) (this.umbrella.children[4] as THREE.Mesh).material = lam(color);
+    if (on) (this.umbrella.children[3] as THREE.Mesh).material = lam(shade(color, 1.18));
+  }
+
   setMouth(m: string) {
     if (this.mouth === m) return;
     this.mouth = m;

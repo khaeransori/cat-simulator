@@ -6,6 +6,7 @@ import { writeSave } from '../save';
 import { Human } from '../entities/npc';
 import { resetProps, addCoins, MBY, dropCarried } from './mischief';
 import { mbox } from '../world/builder';
+import { rollWeather, WEATHER_ICON, type Weather } from './weather';
 
 const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
@@ -28,6 +29,9 @@ export class Day {
   tips: { t: number; key: string; done: boolean }[] = [];
   playT = 0;
   wasSpotted = 0;
+  /** today's day type (also on ctx.weather) */
+  weather: Weather = 'cerah';
+  kidsHint = false;
 
   constructor() {
     this.mama = new Human('mama', { skin: 0xd9a877, shirt: 0x7e57c2, pants: 0x455a64, hair: 'hijab', hijabColor: 0xf06292, prop: 'tas', skirt: true, shoes: 0x5d4037 }, 'mama', ctx.world.pts.mamaStart, { x0: -30, z0: -30, x1: 30, z1: 10 }, 1.1);
@@ -91,6 +95,9 @@ export class Day {
     this.timeLeft = this.len;
     this.playT = 0;
     this.area = '';
+    this.kidsHint = false;
+    this.weather = rollWeather(this.n);
+    ctx.weatherSys.apply(this.weather);
     ctx.sky.set(0);
   }
 
@@ -125,14 +132,15 @@ export class Day {
       mama.yaw = Math.atan2(cat.body.x - mama.body.x, cat.body.z - mama.body.z);
       mama.pose = 'wave';
     }
-    if (!ctx.skipCut) await ctx.ui.dialogAsync([{ who: tr('mama'), text: tr('mamaBye', { name: ctx.save.name }), face: 'mama' }]);
+    if (!ctx.skipCut) await ctx.ui.dialogAsync([{ who: tr('mama'), text: tr(this.weather === 'malam' ? 'mamaByeNight' : this.weather === 'hujan' ? 'mamaByeRain' : 'mamaBye', { name: ctx.save.name }), face: 'mama' }]);
     mama.pose = 'walk';
     if (!ctx.skipCut) {
       ctx.camRig.override = { pos: V(-16.8, 1.6, -16.2), look: V(-14.2, 1.1, -12.5) };
       await mama.walkTo(V(-14.2, 0, -12.6), 2.2);
       sfx.door();
       await mama.walkTo(V(-14.2, 0, -9.5), 2.2);
-      mama.say({ id: tr('mamaBye2'), en: tr('mamaBye2') }, 2);
+      const bye2 = tr(this.weather === 'malam' ? 'mamaBye2Night' : 'mamaBye2');
+      mama.say({ id: bye2, en: bye2 }, 2);
       await ctx.cutWait(0.8);
     }
     // she keeps walking away on her own
@@ -151,6 +159,10 @@ export class Day {
     ctx.camRig.pitch = 0.3;
     ctx.camRig.snap(cat);
     ctx.ui.bigTitle(tr('dayStart', { n: this.n }));
+    ctx.ui.weather(this.weather);
+    const wx = this.weather;
+    ctx.after(1.9, () => this.running && ctx.ui.banner(WEATHER_ICON[wx], tr('wxToday'), tr('wx_' + wx), 0, tr('wxSub_' + wx)));
+    ctx.save.weatherSeen[wx] = (ctx.save.weatherSeen[wx] || 0) + 1;
     ctx.ui.hud(true);
     ctx.mode = 'play';
     this.running = true;
@@ -197,7 +209,7 @@ export class Day {
     if (this.timeLeft < 45 && !this.hurry) {
       this.hurry = true;
       sfx.setTrack('hurry');
-      ctx.ui.hint('⏰ ' + tr('mamaSoon'), 5);
+      ctx.ui.hint('⏰ ' + tr(this.weather === 'malam' ? 'mamaSoonNight' : 'mamaSoon'), 5);
       sfx.tone(880, 0.2, 'square', 0.1);
       sfx.tone(880, 0.2, 'square', 0.1, 0.3);
     }
@@ -217,6 +229,10 @@ export class Day {
     if (a !== this.area) {
       if (this.area) ctx.ui.area(tr('ar_' + a));
       this.area = a;
+      if (a === 'taman' && ctx.kids.away && !this.kidsHint) {
+        this.kidsHint = true;
+        ctx.after(2.6, () => ctx.ui.toast('🏠 ' + tr('kidsHome'), 3));
+      }
     }
     // locked market gate hint
     this.gateHintT -= dt;
@@ -261,6 +277,7 @@ export class Day {
     mama.goal = null;
     mama.body.y = 0;
     if (slept) {
+      mama.model.setUmbrella(false); // indoors
       cat.sleepAt(W.pts.sofa, Math.PI);
       mama.body.x = -14.2;
       mama.body.z = -11.2;
@@ -279,7 +296,7 @@ export class Day {
       mama.pose = 'laugh';
       mama.model.setMouth('grin');
       ctx.fx.hearts(mama.body.x, 2.5, mama.body.z, 3);
-      await ctx.ui.dialogAsync([{ who: tr('mama'), text: tr('mamaHome1', { name: ctx.save.name }), face: 'mama' }]);
+      await ctx.ui.dialogAsync([{ who: tr('mama'), text: tr(this.weather === 'malam' ? 'mamaHomeNight' : 'mamaHome1', { name: ctx.save.name }), face: 'mama' }]);
       if (this.homeMess) {
         mama.model.setMouth('o');
         mama.pose = 'idle';
@@ -331,6 +348,7 @@ export class Day {
       bonusTime,
       slept,
       perfect,
+      weather: this.weather,
     });
   }
 }

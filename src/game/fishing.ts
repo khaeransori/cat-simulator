@@ -7,6 +7,7 @@ import { mbox } from '../world/builder';
 import { fishMesh } from '../world/map';
 import { addCoins } from './mischief';
 import { writeSave } from '../save';
+import { weatherNow } from './weather';
 
 const P = (id: string, en: string): Pair => ({ id, en });
 
@@ -97,7 +98,8 @@ export class Fishing {
   beginWait() {
     this.phase = 'wait';
     this.t = 0;
-    this.waitFor = rand(1.8, 4.2);
+    // rain makes the fish hungry: bites come sooner
+    this.waitFor = weatherNow() === 'hujan' ? rand(0.9, 2.2) : rand(1.8, 4.2);
     this.hooked = null;
     ctx.ui.fishStatus(tr('fishWait'), false);
   }
@@ -107,9 +109,11 @@ export class Fishing {
     const goldChance = goldQ ? 0.35 : ctx.save.quest.idx > 4 ? 0.06 : 0;
     if (Math.random() < goldChance) return FISH[4];
     const pool = FISH.filter((f) => f.w > 0);
-    let r = Math.random() * pool.reduce((a, f) => a + f.w, 0);
+    // rainy days: catfish (lele) love the rain, about 2.5x more likely
+    const w = (f: FishDef) => (f.id === 'lele' && weatherNow() === 'hujan' ? f.w * 2.5 : f.w);
+    let r = Math.random() * pool.reduce((a, f) => a + w(f), 0);
     for (const f of pool) {
-      r -= f.w;
+      r -= w(f);
       if (r <= 0) return f;
     }
     return pool[0];

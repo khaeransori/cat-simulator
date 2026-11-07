@@ -60,6 +60,8 @@ export class Human {
   goal: THREE.Vector3 | null = null;
   goalSpeed = 1.8;
   goalCb: (() => void) | null = null;
+  /** hearing multiplier (weather: smaller at night, so sneaking is easier) */
+  hearK = 1;
 
   walkTo(p: THREE.Vector3, speed = 1.8) {
     return new Promise<void>((res) => {
@@ -133,7 +135,7 @@ export class Human {
   hear(x: number, z: number, radius: number) {
     if (!this.active || this.role === 'mama') return;
     const d = Math.hypot(x - this.body.x, z - this.body.z);
-    if (d > radius) return;
+    if (d > radius * this.hearK) return;
     if (this.state === 'patrol' || this.state === 'wait') {
       this.state = 'look';
       this.stateT = 0;

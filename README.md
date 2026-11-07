@@ -36,6 +36,7 @@ Alternatif tanpa hosting: unduh [cat-simulator.html](https://khaeransori.github.
 - **Mancing:** tunggu pelampung, tekan saat ada yang makan, lalu tekan lagi saat penanda di bagian hijau. Bisa dapat ikan kecil, ikan mas, lele, sepatu bekas, atau Ikan Emas.
 - **Gaya Kucing:** nama sendiri, 10 warna bulu, 6 pola, 5 warna mata, topi, kacamata, kalung, dan punggung (ransel, sayap, jubah). Dibuka dengan koin ikan atau hadiah quest.
 - **Buku Kenakalan** (koleksi kenakalan dan ikan) dan **peta** kompleks.
+- **Cuaca & waktu:** tiap hari baru diacak jadi ☀️ Hari Cerah (paling sering), 🌧️ Hari Hujan, atau 🌙 Malam Hari (3 hari pertama selalu cerah). Hujan: rintik hujan, genangan air yang bisa dicipratin, warga pakai payung dan jalan lebih pelan, Dimas & Putri main di dalam, merpati sembunyi, ikan lebih cepat makan umpan dan lele lebih sering muncul, bulu kucing basah lalu kering lagi di rumah. Malam: langit biru tua berbintang dan bulan, lampu jalan dan jendela menyala, kunang-kunang di taman, warga lebih sedikit dan kurang peka (lebih gampang jadi ninja), Mama pulang malam dari shift. Bisa diatur di Pengaturan: **Cuaca: Acak / Selalu cerah**. Kode: `src/game/weather.ts` (`ctx.weather`, `weatherNow()`).
 - **Bahasa Indonesia / English** bisa dipilih di Pengaturan.
 - Musik dan efek suara dibuat langsung dengan WebAudio, tanpa file audio.
 
@@ -68,6 +69,7 @@ npm run test:smoke      # judul, pilih kucing, intro, jalan keluar rumah, jumlah
 npm run test:mischief   # 20 kenakalan satu per satu
 npm run test:quests     # rantai quest Lisa sampai hari sempurna
 npm run test:portrait   # layar portrait + joystick, kamera, dan tombol sentuh
+npm run test:weather    # cuaca: cerah/hujan/malam dipaksa satu per satu, setelan Selalu cerah
 ```
 
 ### Struktur kode

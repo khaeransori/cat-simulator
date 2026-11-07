@@ -19,6 +19,8 @@ export interface Settings {
   quality: 'low' | 'high';
   dayLen: number; // seconds
   arrow: boolean;
+  /** 'acak' = random day types (sunny/rain/night), 'cerah' = always sunny */
+  weather: 'acak' | 'cerah';
 }
 
 export interface SaveData {
@@ -36,6 +38,8 @@ export interface SaveData {
   stats: { perfectDays: number; caught: number; onTime: number; fishTotal: number };
   firstRun: boolean;
   metLisa: boolean;
+  /** day type of each day played (counts), e.g. { hujan: 2 } */
+  weatherSeen: Record<string, number>;
 }
 
 const KEY = 'cat-sim-sebelum-mama-pulang-v1';
@@ -52,10 +56,11 @@ export function defaultSave(): SaveData {
     quest: { idx: 0, stage: 'offer', prog: {}, gen: null, recent: [] },
     day: 1,
     unlocked: { pasar: false, atap: false },
-    settings: { lang: 'id', langChosen: false, music: 0.6, sfx: 0.9, quality: 'high', dayLen: 300, arrow: true },
+    settings: { lang: 'id', langChosen: false, music: 0.6, sfx: 0.9, quality: 'high', dayLen: 300, arrow: true, weather: 'acak' },
     stats: { perfectDays: 0, caught: 0, onTime: 0, fishTotal: 0 },
     firstRun: true,
     metLisa: false,
+    weatherSeen: {},
   };
 }
 
@@ -69,7 +74,7 @@ function merge(base: any, extra: any): any {
     else if (typeof b === typeof e || b === null) base[k] = e;
   }
   // keep dynamic record keys (owned, mischief, fish, prog)
-  for (const k of ['owned', 'mischief', 'fish']) if (extra[k] && typeof extra[k] === 'object') base[k] = { ...extra[k] };
+  for (const k of ['owned', 'mischief', 'fish', 'weatherSeen']) if (extra[k] && typeof extra[k] === 'object') base[k] = { ...extra[k] };
   if (extra.quest && extra.quest.prog) base.quest.prog = extra.quest.prog;
   return base;
 }
