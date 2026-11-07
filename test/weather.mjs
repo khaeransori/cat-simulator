@@ -165,6 +165,16 @@ const dist = await h.ev(() => {
   return n;
 });
 check('random roll ~65/20/15', dist.cerah > 1100 && dist.hujan > 250 && dist.malam > 180, JSON.stringify(dist));
+const guarded = await h.ev(() => {
+  const s = window.__cat.save;
+  const keep = JSON.stringify(s.daily.list);
+  s.daily.list = [{ q: { type: 'event', ev: 'hug', goal: 1 }, stage: 'active', prog: {} }];
+  const n = { cerah: 0, hujan: 0, malam: 0 };
+  for (let i = 0; i < 300; i++) n[window.__cat.rollWeather(10)]++;
+  s.daily.list = JSON.parse(keep);
+  return n;
+});
+check('active hug challenge keeps days sunny', guarded.hujan === 0 && guarded.malam === 0, JSON.stringify(guarded));
 const early = await h.ev(() => [1, 2, 3].map((n) => window.__cat.rollWeather(n)).join(','));
 check('first days always sunny', early === 'cerah,cerah,cerah', early);
 // old save without weather keys still loads with defaults

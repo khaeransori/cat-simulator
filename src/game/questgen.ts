@@ -6,13 +6,16 @@ import type { Pair } from '../i18n';
 import { MISCHIEF } from './mischief';
 import { FISH } from './fishing';
 import type { QDef } from './quests';
+import { SPECIAL_ITEMS, key } from '../cosmetics';
 
 const P = (id: string, en: string): Pair => ({ id, en });
-const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
+// Random source: Math.random normally, a seeded one for the daily challenges.
+let R: () => number = Math.random;
+const pick = <T>(a: T[]): T => a[Math.floor(R() * a.length)];
 const shuffle = <T>(a: T[]): T[] => {
   const b = [...a];
   for (let i = b.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(R() * (i + 1));
     [b[i], b[j]] = [b[j], b[i]];
   }
   return b;
@@ -45,6 +48,9 @@ const HELLO: Pair[] = [
 
 // Bonus round number (0 = first bonus). Goals grow slowly so it never ends but stays doable.
 let LV = 0;
+// Options of the current genQuest call (giver flavour, allowed areas/spots).
+let OPT: GenOpts = {};
+const who = () => OPT.who || P('Lisa', 'Lisa');
 const up = (n: number, cap = 3) => n + Math.min(cap, Math.floor(LV / 6));
 
 type Gen = () => QDef | null;
@@ -56,16 +62,16 @@ function base(kind: string, title: Pair, ask: Pair, remind: Pair, coins: number,
     type: 'fish',
     goal: 1,
     title,
-    intro: [pick(HELLO), ask],
+    intro: [pick(OPT.hello || HELLO), ask],
     remind,
-    done: [pick(THANKS)],
+    done: [pick(OPT.thanks || THANKS)],
     coins,
     items: [],
     ...extra,
   };
 }
 
-const unlockedArea = (a: string) => (a === 'pasar' ? ctx.save.unlocked.pasar : a === 'atap' ? ctx.save.unlocked.atap : true);
+const unlockedArea = (a: string) => (a === 'pasar' ? ctx.save.unlocked.pasar : a === 'atap' ? ctx.save.unlocked.atap : true) && (!OPT.areas || OPT.areas.includes(a));
 
 const GENS: Record<string, Gen> = {
   // N fish of any kind
@@ -90,7 +96,9 @@ const GENS: Record<string, Gen> = {
   },
   // mischief in one area
   area: () => {
-    const a = pick(Object.keys(AREA).filter(unlockedArea));
+    const areas = Object.keys(AREA).filter(unlockedArea);
+    if (!areas.length) return null;
+    const a = pick(areas);
     const ids = MISCHIEF.filter((m) => m.area === a).map((m) => m.id);
     const g = Math.min(ids.length, pick([2, 3]));
     const an = AREA[a].name;
@@ -120,7 +128,8 @@ const GENS: Record<string, Gen> = {
   // bring a market fish
   bring: () => {
     if (!ctx.save.unlocked.pasar) return null;
-    return base('bring', P('Bawa ikan pasar ke Lisa', 'Bring a market fish to Lisa'),
+    const w = who();
+    return base('bring', P(`Bawa ikan pasar ke ${w.id}`, `Bring a market fish to ${w.en}`),
       P('Aku kangen ikan Pak Ujang... Ambilin satu lagi, ya. Jangan ketahuan!', "I miss Mr. Ujang's fish... Grab me another one. Don't get caught!"),
       P('Ambil ikan di meja Pak Ujang, lalu bawa ke aku.', "Take a fish from Mr. Ujang's table and bring it to me."), 30,
       { type: 'bring', goal: 1, target: 'pasar' });
@@ -135,7 +144,7 @@ const GENS: Record<string, Gen> = {
   },
   // the golden fish again (rare)
   gold: () =>
-    Math.random() < 0.5
+    R() < 0.5
       ? null
       : base('gold', P('Pancing Ikan Emas lagi ✨', 'Catch the Golden Fish again ✨'),
           P('Katanya Ikan Emas muncul lagi di kolam! Bisa tangkap?', 'They say the Golden Fish is back in the pond! Can you catch it?'),
@@ -223,7 +232,8 @@ const MORE: Record<string, Gen> = {
   },
   // tour of the neighborhood
   visit: () => {
-    const pool = SPOTS.filter((s) => !s.need || ctx.save.unlocked[s.need]);
+    const pool = SPOTS.filter((s) => (!s.need || ctx.save.unlocked[s.need]) && (!OPT.spots || OPT.spots.includes(s.pt)));
+    if (pool.length < 2) return null;
     const spots = shuffle(pool).slice(0, Math.min(pool.length, up(3, 2)));
     const ids = spots.map((s) => s.name.id).join(', ');
     const en = spots.map((s) => s.name.en).join(', ');
@@ -235,16 +245,74 @@ const MORE: Record<string, Gen> = {
 };
 Object.assign(GENS, MORE);
 
+export interface GenOpts {
+  kinds?: string[]; // only these templates (quest givers have their own flavour)
+  areas?: string[]; // area quests: only these areas
+  spots?: string[]; // visit quests: only these points
+  who?: Pair; // name of the giver (for 'bring')
+  hello?: Pair[];
+  thanks?: Pair[];
+  special?: boolean; // harder goal (the ⭐ challenge)
+  rng?: () => number; // seeded random (daily challenges)
+}
+
 /** Pick a new bonus quest: never one of the last few kinds, goals grow with the round. */
-export function genQuest(recent: string[] = [], round = 0): QDef {
-  LV = round;
-  const avoid = new Set(recent.slice(-4));
-  for (const k of shuffle(Object.keys(GENS))) {
-    if (avoid.has(k)) continue;
-    const q = GENS[k]();
-    if (q) return q;
+export function genQuest(recent: string[] = [], round = 0, opts: GenOpts = {}): QDef {
+  LV = round + (opts.special ? 12 : 0);
+  OPT = opts;
+  R = opts.rng || Math.random;
+  try {
+    const avoid = new Set(recent.slice(-4));
+    const kinds = opts.kinds ? Object.keys(GENS).filter((k) => opts.kinds!.includes(k)) : Object.keys(GENS);
+    for (const k of shuffle(kinds)) {
+      if (avoid.has(k)) continue;
+      const q = GENS[k]();
+      if (q) return q;
+    }
+    return GENS.anyMess()!;
+  } finally {
+    LV = 0;
+    OPT = {};
+    R = Math.random;
   }
-  return GENS.anyMess()!;
+}
+
+/** Small seeded RNG (mulberry32) from a string such as '2026-11-07'. */
+export function seeded(str: string): () => number {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** ⭐ Tantangan Spesial: a harder bonus quest whose reward is a cosmetic the player doesn't own yet. */
+export function specialQuest(recent: string[] = [], round = 0): QDef {
+  const q = genQuest(recent, round, { special: true });
+  q.special = true;
+  q.id = 'spc_' + q.kind;
+  q.title = { id: '⭐ ' + q.title.id, en: '⭐ ' + q.title.en };
+  const left = SPECIAL_ITEMS().filter((i) => !ctx.save.owned[key(i)]);
+  if (left.length) {
+    const it = pick(left);
+    q.items = [key(it)];
+    q.coins += 15;
+    q.intro = [P('Ini Tantangan Spesial ⭐! Agak susah, tapi hadiahnya keren banget...', "This is a Special Challenge ⭐! It's a bit harder, but the prize is super cool..."),
+      P(`Hadiahnya: ${it.name.id}! Belum ada kucing lain yang punya.`, `The prize: ${it.name.en}! No other cat has one yet.`), q.intro[1]];
+    q.done = [P(`Kamu berhasil! Ini ${it.name.id} buat kamu. Coba pakai di Gaya Kucing!`, `You did it! Here's the ${it.name.en}. Try it on in Cat Style!`)];
+  } else {
+    q.coins += 60;
+    q.intro = [P('Ini Tantangan Spesial ⭐! Hadiahnya banyak koin ikan!', 'This is a Special Challenge ⭐! The prize is lots of fish coins!'), q.intro[1]];
+    q.done = [P('Kamu memang jagoan! Ini koin ikan yang banyak buat kamu.', "You're a champion! Here's a big pile of fish coins.")];
+  }
+  return q;
 }
 
 export const GEN_KINDS = Object.keys(GENS);

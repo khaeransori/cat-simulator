@@ -13,6 +13,7 @@ import { sfx } from '../audio';
 import { L, type Pair } from '../i18n';
 import { glyphTex } from '../fx/particles';
 import { mbox } from '../world/builder';
+import type { Look } from '../save';
 
 const P = (id: string, en: string): Pair => ({ id, en });
 
@@ -364,6 +365,17 @@ export class Butterflies {
 }
 
 // ---------------- Lisa (quest-giver cat) ----------------
+// Also used for the other cat friends (Si Belang, Mpus) with their own look and marks.
+export interface CatFriendOpts {
+  pos: THREE.Vector3;
+  look: Look;
+  yaw?: number;
+  scale?: number;
+  mark: () => string;
+  happy: () => boolean;
+  visible?: () => boolean;
+}
+
 export class Lisa {
   model = new CatModel();
   anim = newAnim();
@@ -372,10 +384,19 @@ export class Lisa {
   baseYaw = Math.PI / 2;
   yaw = Math.PI / 2;
   shadow = blobShadow(0.7);
+  o: CatFriendOpts;
 
-  constructor() {
-    this.pos = ctx.world.pts.lisa.clone();
-    this.model.setLook({ fur: 'putih', pattern: 'calico', eyes: 'biruMata', head: 'pita', face: 'none', neck: 'lonceng', back: 'none' });
+  constructor(o?: CatFriendOpts) {
+    this.o = o || {
+      pos: ctx.world.pts.lisa,
+      look: { fur: 'putih', pattern: 'calico', eyes: 'biruMata', head: 'pita', face: 'none', neck: 'lonceng', back: 'none' },
+      mark: () => (ctx.quests ? ctx.quests.lisaMark() : ''),
+      happy: () => !!ctx.lisaHappy,
+    };
+    this.pos = this.o.pos.clone();
+    if (this.o.yaw !== undefined) this.baseYaw = this.yaw = this.o.yaw;
+    if (this.o.scale) this.model.root.scale.setScalar(this.o.scale);
+    this.model.setLook(this.o.look);
     this.model.root.position.copy(this.pos);
     ctx.scene.add(this.model.root);
     this.mark = new THREE.Sprite(new THREE.SpriteMaterial({ map: glyphTex('!', '#ffd84a'), transparent: true, depthTest: false }));
@@ -388,15 +409,27 @@ export class Lisa {
   }
 
   update(dt: number) {
+    if (this.o.visible) {
+      const vis = this.o.visible();
+      this.model.root.visible = this.shadow.visible = vis;
+      if (!vis) {
+        this.mark.visible = false;
+        return;
+      }
+    }
     const cb = ctx.cat.body;
     const d = Math.hypot(cb.x - this.pos.x, cb.z - this.pos.z);
+    // far away: skip the animation work (cheap on phones)
+    if (d > 45) {
+      this.mark.visible = false;
+      return;
+    }
     const want = d < 7 ? Math.atan2(cb.x - this.pos.x, cb.z - this.pos.z) : this.baseYaw;
     this.yaw = angleLerp(this.yaw, want, 1 - Math.exp(-3 * dt));
     this.model.root.rotation.y = this.yaw;
-    this.anim.happy = ctx.lisaHappy ? 1 : 0;
+    this.anim.happy = this.o.happy() ? 1 : 0;
     this.model.update(dt, this.anim);
-    const q = ctx.quests;
-    const g = q ? q.lisaMark() : '';
+    const g = this.o.mark();
     this.mark.visible = !!g;
     if (g) {
       (this.mark.material as THREE.SpriteMaterial).map = glyphTex(g, g === '?' ? '#7ad3ff' : '#ffd84a');

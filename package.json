@@ -15,7 +15,8 @@
     "test:portrait": "node test/portrait.mjs",
     "test:weather": "node test/weather.mjs",
     "test:areas": "node test/areas.mjs",
-    "test:npc": "node test/npcstuck.mjs"
+    "test:npc": "node test/npcstuck.mjs",
+    "test:progress": "node test/progress.mjs"
   },
   "dependencies": {
     "@fontsource/baloo-2": "^5.3.0",

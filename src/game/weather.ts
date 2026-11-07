@@ -32,17 +32,22 @@ export function weatherNow(): Weather {
 // while Lisa's active quest can only be finished with them.
 const KIDS_ONLY = ['bola'];
 const BIRDS = ['merpati_taman', 'merpati_atap'];
-function questNeeds(away: string[], hugBlocked: boolean) {
-  const q = ctx.quests;
-  if (!q || ctx.save.quest.stage !== 'active') return false;
-  const d = q.q;
+function blocked(d: any, prog: any, away: string[], hugBlocked: boolean) {
   if (!d) return false;
   if (d.type === 'event' && d.ev === 'hug') return hugBlocked;
   if (d.type === 'set' && d.set) {
-    const done: string[] = ctx.save.quest.prog?.set || [];
+    const done: string[] = prog?.set || [];
     const left = d.set.filter((id: string) => !done.includes(id) && !away.includes(id)).length;
     return done.length + left < d.goal;
   }
+  return false;
+}
+// Lisa's quest, the friends' quests (Si Belang, Mpus) and today's daily challenges
+function questNeeds(away: string[], hugBlocked: boolean) {
+  const s = ctx.save;
+  if (ctx.quests && s.quest.stage === 'active' && blocked(ctx.quests.q, s.quest.prog, away, hugBlocked)) return true;
+  for (const g of Object.values(s.givers || {}) as any[]) if (g.stage === 'active' && blocked(g.gen, g.prog, away, hugBlocked)) return true;
+  for (const e of (s.daily?.list || []) as any[]) if (e.stage === 'active' && blocked(e.q, e.prog, away, hugBlocked)) return true;
   return false;
 }
 

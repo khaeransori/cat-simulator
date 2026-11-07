@@ -1268,6 +1268,181 @@ input[type='range'] {
   font-size: 14px;
 }
 
+/* ---------- rank chip + daily challenges ---------- */
+.hud-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.rank-chip {
+  padding: 1px 10px;
+  background: #fff3c4;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--ink);
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.daily-btn {
+  position: relative;
+}
+.daily-btn .dbadge {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  min-width: 26px;
+  padding: 0 4px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 16px;
+}
+.daily-btn .dbadge.full {
+  background: #7be07b;
+}
+.daily-panel {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+}
+.daily-body {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+.daily-panel .panel-head {
+  margin-bottom: 6px;
+}
+.rk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #fff3c4;
+}
+.rk-ico {
+  font-size: 32px;
+  line-height: 1;
+}
+.rk-main {
+  flex: 1;
+  min-width: 0;
+}
+.rk-t {
+  font-weight: 700;
+  font-size: 16px;
+}
+.rk-sub {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+.pbar {
+  position: relative;
+  height: 12px;
+  margin: 3px 0;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  overflow: hidden;
+}
+.pbar i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #ffd23f, #ff9f43);
+  border-radius: 999px;
+}
+.dch {
+  padding: 5px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #fff;
+}
+.dch.done {
+  background: #e7ffd9;
+}
+.dch.done .pbar i {
+  background: #6bcb77;
+}
+.dch .dt {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.2;
+}
+.dch .dc {
+  white-space: nowrap;
+}
+.dch .dr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dch .dr .pbar {
+  flex: 1;
+}
+.dch .dn {
+  min-width: 42px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: right;
+}
+.dtop {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+@media (orientation: portrait) {
+  .dtop {
+    grid-template-columns: 1fr;
+  }
+}
+.streak {
+  padding: 4px 10px;
+  line-height: 1.2;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #ffe9dc;
+  text-align: center;
+}
+.flames {
+  font-size: 18px;
+  letter-spacing: 2px;
+}
+.flames span {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+.flames span.on {
+  filter: none;
+  opacity: 1;
+}
+@media (max-height: 420px) {
+  .rank-chip {
+    font-size: 12px;
+  }
+  .dch .dt {
+    font-size: 14px;
+  }
+  .daily-panel {
+    padding: 10px 14px;
+  }
+}
+
 /* portrait phones */
 @media (orientation: portrait) {
   .title-wrap {

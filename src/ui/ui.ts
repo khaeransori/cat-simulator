@@ -6,22 +6,32 @@ import { ITEMS, SLOTS, itemsFor, isOwned, key, furColor, type Item, type Slot } 
 import { MISCHIEF, AREA_KEY, AREAS } from '../game/mischief';
 import { FISH } from '../game/fishing';
 import { input } from '../input';
+import { qProgress } from '../game/quests';
 
 const $ = (id: string) => document.getElementById(id)!;
+const qProgressUI = (d: any) => qProgress(d.q, d);
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const hex = (n: number) => '#' + n.toString(16).padStart(6, '0');
 
-export function faceSVG(kind: 'cat' | 'lisa' | 'mama', fur?: number) {
+export type Face = 'cat' | 'lisa' | 'mama' | 'belang' | 'mpus';
+
+export function faceSVG(kind: Face, fur?: number) {
   if (kind === 'mama') {
     return `<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#ffe3ef"/><rect x="8" y="6" width="48" height="58" rx="6" fill="#f06292"/><rect x="16" y="16" width="32" height="34" rx="3" fill="#d9a877"/><rect x="22" y="26" width="5" height="7" fill="#1d1d24"/><rect x="37" y="26" width="5" height="7" fill="#1d1d24"/><rect x="18" y="35" width="6" height="3" fill="#f29b9b"/><rect x="40" y="35" width="6" height="3" fill="#f29b9b"/><rect x="26" y="40" width="12" height="3" fill="#7a2a2a"/><rect x="24" y="38" width="3" height="3" fill="#7a2a2a"/><rect x="37" y="38" width="3" height="3" fill="#7a2a2a"/><rect x="8" y="50" width="48" height="14" fill="#7e57c2"/></svg>`;
   }
-  const f = hex(fur ?? (kind === 'lisa' ? 0xf6f3ec : 0xf2a044));
-  const eye = kind === 'lisa' ? '#49a6f2' : '#6fcf5a';
+  const f = hex(fur ?? (kind === 'lisa' ? 0xf6f3ec : kind === 'belang' ? 0x9aa3ad : kind === 'mpus' ? 0xeed7ab : 0xf2a044));
+  const eye = kind === 'lisa' ? '#49a6f2' : kind === 'belang' ? '#f6cf3a' : '#6fcf5a';
   const extra =
     kind === 'lisa'
       ? `<rect x="36" y="14" width="18" height="12" fill="#f2a044"/><rect x="42" y="4" width="16" height="10" fill="#ff5fa2" transform="rotate(-15 50 9)"/><rect x="48" y="6" width="6" height="6" fill="#d9368a"/>`
-      : '';
-  return `<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#d7eeff"/><rect x="9" y="6" width="13" height="16" fill="${f}" transform="rotate(-10 15 14)"/><rect x="42" y="6" width="13" height="16" fill="${f}" transform="rotate(10 48 14)"/><rect x="12" y="10" width="6" height="8" fill="#f5a3b5" transform="rotate(-10 15 14)"/><rect x="46" y="10" width="6" height="8" fill="#f5a3b5" transform="rotate(10 48 14)"/><rect x="6" y="16" width="52" height="44" rx="5" fill="${f}"/>${extra}<rect x="17" y="28" width="9" height="11" fill="${eye}"/><rect x="38" y="28" width="9" height="11" fill="${eye}"/><rect x="20" y="29" width="4" height="9" fill="#15151c"/><rect x="41" y="29" width="4" height="9" fill="#15151c"/><rect x="22" y="29" width="2" height="2" fill="#fff"/><rect x="43" y="29" width="2" height="2" fill="#fff"/><rect x="22" y="40" width="20" height="12" fill="#fff" opacity=".45"/><rect x="29" y="41" width="6" height="4" fill="#f27a9a"/><rect x="27" y="47" width="4" height="2" fill="#4a2f2a"/><rect x="33" y="47" width="4" height="2" fill="#4a2f2a"/></svg>`;
+      : kind === 'belang'
+        ? `<rect x="26" y="16" width="4" height="10" fill="#5f666e"/><rect x="34" y="16" width="4" height="10" fill="#5f666e"/><rect x="6" y="40" width="7" height="3" fill="#5f666e"/><rect x="51" y="40" width="7" height="3" fill="#5f666e"/>`
+        : kind === 'mpus'
+          ? `<rect x="10" y="20" width="8" height="6" fill="#b08a56"/><rect x="44" y="18" width="7" height="7" fill="#b08a56"/><rect x="48" y="48" width="6" height="6" fill="#b08a56"/>`
+          : '';
+  // Si Belang wears sunglasses (drawn over the eyes)
+  const shades = kind === 'belang' ? `<rect x="14" y="28" width="15" height="10" fill="#15151c"/><rect x="35" y="28" width="15" height="10" fill="#15151c"/><rect x="28" y="30" width="8" height="3" fill="#15151c"/><rect x="17" y="30" width="4" height="2" fill="#fff"/>` : '';
+  return `<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#d7eeff"/><rect x="9" y="6" width="13" height="16" fill="${f}" transform="rotate(-10 15 14)"/><rect x="42" y="6" width="13" height="16" fill="${f}" transform="rotate(10 48 14)"/><rect x="12" y="10" width="6" height="8" fill="#f5a3b5" transform="rotate(-10 15 14)"/><rect x="46" y="10" width="6" height="8" fill="#f5a3b5" transform="rotate(10 48 14)"/><rect x="6" y="16" width="52" height="44" rx="5" fill="${f}"/>${extra}<rect x="17" y="28" width="9" height="11" fill="${eye}"/><rect x="38" y="28" width="9" height="11" fill="${eye}"/><rect x="20" y="29" width="4" height="9" fill="#15151c"/><rect x="41" y="29" width="4" height="9" fill="#15151c"/><rect x="22" y="29" width="2" height="2" fill="#fff"/><rect x="43" y="29" width="2" height="2" fill="#fff"/><rect x="22" y="40" width="20" height="12" fill="#fff" opacity=".45"/><rect x="29" y="41" width="6" height="4" fill="#f27a9a"/><rect x="27" y="47" width="4" height="2" fill="#4a2f2a"/><rect x="33" y="47" width="4" height="2" fill="#4a2f2a"/>${shades}</svg>`;
 }
 
 const ICON: Record<string, string> = {
@@ -50,9 +60,15 @@ const ICON: Record<string, string> = {
   'back:ransel': '🎒',
   'back:sayap': '👼',
   'back:jubah': '🦸',
+  'head:topiBintang': '🧙',
+  'head:headset': '🎧',
+  'face:bintangK': '🤩',
+  'neck:pelangi': '🌈',
+  'neck:syalApi': '🔥',
+  'back:kupu': '🦋',
 };
 
-type Line = { who: string; text: string; face: 'cat' | 'lisa' | 'mama' };
+type Line = { who: string; text: string; face: Face };
 
 export class UI {
   toastBox = $('toasts');
@@ -79,6 +95,14 @@ export class UI {
     $('btnMap').addEventListener('click', () => {
       sfx.click();
       this.map(true);
+    });
+    $('btnDaily').addEventListener('click', () => {
+      sfx.click();
+      this.dailyPanel();
+    });
+    $('rankChip').addEventListener('click', () => {
+      sfx.click();
+      this.dailyPanel();
     });
     $('questCard').addEventListener('click', () => {
       sfx.click();
@@ -115,6 +139,8 @@ export class UI {
       this.coins();
       this.quest();
       this.labels();
+      this.rank();
+      this.dailyBadge();
     }
   }
 
@@ -135,8 +161,69 @@ export class UI {
     if (!q) return;
     const txt = q.cardText();
     if ($('questText').textContent !== txt) $('questText').textContent = txt;
-    if (!$('questFace').firstChild) $('questFace').innerHTML = faceSVG('lisa');
-    $('questCard').classList.toggle('ready', ctx.save.quest.stage === 'ready' || q.canGive());
+    const face = q.cardFace() as Face;
+    const fe = $('questFace');
+    if (fe.dataset.face !== face) {
+      fe.dataset.face = face;
+      fe.innerHTML = faceSVG(face);
+    }
+    $('questCard').classList.toggle('ready', q.cardReady());
+  }
+
+  // ---------- rank + daily challenges ----------
+  rank() {
+    const p = ctx.progress;
+    if (!p) return;
+    const t = p.rankText();
+    const el = $('rankChip');
+    if (el.textContent !== t) el.textContent = t;
+  }
+  dailyBadge() {
+    const p = ctx.progress;
+    if (!p) return;
+    const n = p.dailyDone();
+    const b = $('dailyN');
+    b.textContent = n >= 3 ? '✓' : `${n}/3`;
+    b.classList.toggle('full', n >= 3);
+  }
+  dailyPanel() {
+    if (ctx.mode !== 'play') return;
+    const p = ctx.progress;
+    p.ensureDay();
+    ctx.paused = true;
+    const r = p.rank();
+    const nx = p.rankNext();
+    const rankBar = nx.need
+      ? `<div class="pbar"><i style="width:${Math.round(((nx.have - nx.from) / (nx.need - nx.from)) * 100)}%"></i></div><div class="rk-sub">${esc(tr('rankNext', { n: nx.need - nx.have }))}</div>`
+      : `<div class="rk-sub">${esc(tr('rankTop'))}</div>`;
+    const list = p
+      .daily()
+      .map((d: any, i: number) => {
+        const { n, g } = qProgressUI(d);
+        const done = d.stage === 'done';
+        const k = done ? 100 : Math.round((Math.min(n, g) / g) * 100);
+        return `<div class="dch ${done ? 'done' : ''}"><div class="dt"><span>${done ? '✅' : '📌'} ${esc(L(d.q.title))}</span><span class="dc">+${[10, 12, 15][i]} 🐟</span></div><div class="dr"><div class="pbar"><i style="width:${k}%"></i></div><span class="dn">${done ? esc(tr('dailyDone')) : `${Math.min(n, g)}/${g}`}</span></div></div>`;
+      })
+      .join('');
+    const st = p.streak();
+    const flames = Array.from({ length: 7 }, (_, i) => `<span class="${i < Math.min(st, 7) ? 'on' : ''}">🔥</span>`).join('');
+    const prize = ctx.save.owned['neck:syalApi'];
+    this.showScreen(
+      `<div class="screen-center shade"><div class="panel daily-panel">
+        <div class="panel-head"><h2>📅 ${esc(tr('dailyTitle'))}</h2><button class="btn small" id="dBack" style="white-space:nowrap">${esc(tr('resume'))}</button></div>
+        <div class="daily-body">
+          <div class="dtop">
+            <div class="rk"><div class="rk-ico">${r.icon}</div><div class="rk-main"><div class="rk-t">${esc(tr('rankTitle'))}: <b>${esc(L(r.name))}</b></div>${rankBar}</div></div>
+            <div class="streak"><div><b>🔥 ${esc(tr('streakDays', { n: st }))}</b></div><div class="flames">${flames}</div><div class="rk-sub">${esc(prize ? tr('streakHave') : tr('streakHint'))}</div></div>
+          </div>
+          ${list}
+        </div>
+      </div></div>`,
+    );
+    $('dBack').onclick = () => {
+      sfx.click();
+      this.resume();
+    };
   }
 
   timer(frac: number, left: number) {
@@ -315,7 +402,7 @@ export class UI {
       t.i = Math.min(t.full.length, n);
       $('dlgTxt').textContent = t.full.slice(0, t.i);
       const face = this.dialogQ[0]?.face;
-      sfx.voice(face === 'mama' ? 1.1 : face === 'lisa' ? 1.8 : 1.5, 0.05);
+      sfx.voice(face === 'mama' ? 1.1 : face === 'lisa' ? 1.8 : face === 'belang' ? 1.2 : face === 'mpus' ? 1.6 : 1.5, 0.05);
     }
   }
 
@@ -428,7 +515,7 @@ export class UI {
           if (slot === 'fur') sw = `<div class="sw" style="background:${hex(it.color!)}"></div>`;
           else if (slot === 'eyes') sw = `<div class="sw" style="background:linear-gradient(90deg, ${hex(it.color!)} 50%, ${hex(it.color2 ?? it.color!)} 50%)"></div>`;
           else sw = `<div class="sw">${ICON[key(it)] ?? '•'}</div>`;
-          const st = worn ? `<span class="st own">✓ ${esc(tr('wearing'))}</span>` : owned ? `<span class="st own">${esc(tr('wear'))}</span>` : it.quest ? `<span class="st">🔒 Lisa</span>` : `<span class="st">🐟 ${it.price}</span>`;
+          const st = worn ? `<span class="st own">✓ ${esc(tr('wearing'))}</span>` : owned ? `<span class="st own">${esc(tr('wear'))}</span>` : it.quest ? `<span class="st">🔒 ${it.quest === 'special' ? '⭐' : it.quest === 'streak' ? '🔥 7' : 'Lisa'}</span>` : `<span class="st">🐟 ${it.price}</span>`;
           return `<button class="tile ${sel ? 'sel' : ''} ${owned ? '' : 'locked'}" data-k="${key(it)}">${sw}<span>${esc(L(it.name))}</span>${st}</button>`;
         })
         .join('');
@@ -440,7 +527,7 @@ export class UI {
         let btn: string;
         if (worn) btn = `<button class="btn small" disabled>✓ ${esc(tr('wearing'))}</button>`;
         else if (owned) btn = `<button class="btn small green" id="selAct">${esc(tr('wear'))}</button>`;
-        else if (sel.quest) btn = `<button class="btn small" disabled>🔒 ${esc(tr('questLock'))}</button>`;
+        else if (sel.quest) btn = `<button class="btn small" disabled>🔒 ${esc(tr(sel.quest === 'special' ? 'specialLock' : sel.quest === 'streak' ? 'streakLock' : 'questLock'))}</button>`;
         else btn = `<button class="btn small primary" id="selAct" ${s.coins < sel.price ? 'data-poor="1"' : ''}>${esc(tr('buy'))} 🐟 ${sel.price}</button>`;
         bar = `<div class="sel-bar"><span class="nm">${esc(L(sel.name))}</span>${btn}</div>`;
       }
@@ -774,6 +861,7 @@ export class UI {
     const icon = (t: string, x: number, z: number) => g.fillText(t, X(x), Z(z) + 15);
     icon('🛋️', ctx.world.pts.sofa.x, ctx.world.pts.sofa.z);
     icon('🐈', ctx.world.pts.lisa.x, ctx.world.pts.lisa.z);
+    for (const g of ctx.progress?.givers || []) if (g.open()) icon('🐱', ctx.world.pts[g.def.pt].x, ctx.world.pts[g.def.pt].z);
     const tp = ctx.quests.targetPoint();
     if (tp) icon('⭐', tp.x, tp.z);
     // cat arrow
@@ -842,13 +930,14 @@ export const HUD_HTML = `
   <div class="joy-hint" id="joyHint"></div>
   <div class="hud-top">
     <div class="hud-left">
-      <div class="coins" id="coins"><span class="ico">🐟</span><span id="coinN">0</span></div>
+      <div class="hud-row"><div class="coins" id="coins"><span class="ico">🐟</span><span id="coinN">0</span></div><button class="rank-chip" id="rankChip"></button></div>
       <button class="quest-card" id="questCard"><span class="face" id="questFace"></span><span id="questText"></span></button>
     </div>
     <div class="hud-center">
       <div class="daybar" id="daybar"><span class="dl" id="dayLabel"></span><div class="track"><div id="dayFill" style="position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:rgba(255,255,255,.25)"></div><div class="sun" id="daySun">☀️</div><div class="house">🏠</div></div></div>
     </div>
     <div class="hud-right">
+      <button class="icon-btn daily-btn" id="btnDaily" aria-label="Daily">📅<span class="dbadge" id="dailyN">0/3</span></button>
       <button class="icon-btn" id="btnMap" aria-label="Map">🗺️</button>
       <button class="icon-btn" id="btnPause" aria-label="Pause">⏸</button>
     </div>

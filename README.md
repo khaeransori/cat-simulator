@@ -36,6 +36,10 @@ Alternatif tanpa hosting: unduh [cat-simulator.html](https://khaeransori.github.
   5. Pancing Ikan Emas legendaris → bulu emas
   6. Hari sempurna (8 kenakalan + pulang tepat waktu) → jubah pahlawan
 - **Tantangan bonus tanpa akhir** (`src/game/questgen.ts`): setelah tamat, tiap ngobrol ke Lisa dia bikin tantangan baru dari 16 tipe — mancing apa saja, mancing jenis tertentu, kenakalan per area, pilih 2 dari 3, N kenakalan beda, bawa ikan pasar, pulang tepat waktu, Ikan Emas, kombo cepat, ngemil, dipeluk anak-anak, diusir warga, ninja (tanpa diusir), meong ke orang berbeda, kumpulkan koin, jalan-jalan ke beberapa tempat. Tipe yang sama tidak muncul lagi dalam 5 tantangan berikutnya, angka/tempat diacak, dan target pelan-pelan naik tiap 6 tantangan.
+- **Tantangan Spesial ⭐:** tiap tantangan bonus ke-4 dari Lisa lebih susah, ditandai ⭐, dan hadiahnya barang langka yang belum kamu punya (topi penyihir bintang, headset DJ, kacamata bintang, syal pelangi, sayap kupu-kupu). Kalau semua sudah punya, hadiahnya koin ikan yang banyak.
+- **Teman kucing baru** (`src/game/progress.ts`): **Si Belang** (kucing abu-abu berkacamata hitam di atap rumah Bu Siti, muncul setelah atap terbuka) memberi tantangan atap/ninja/kombo; **Mpus** (kucing krem tutul di Pasar Ikan, muncul setelah pasar terbuka) memberi tantangan mancing/ngemil/bawa ikan. Masing-masing punya slot quest sendiri dan tanda `!` kalau punya tantangan. Kartu quest di HUD menampilkan quest dari teman yang terakhir kamu terima.
+- **Tantangan Harian 📅:** tiap tanggal ada 3 tantangan kecil (sama untuk tanggal yang sama), jalan bersamaan dengan quest Lisa. Tombol 📅 di HUD membuka daftar + progresnya. Beres semua 3 tiap hari → **main beruntun 🔥**; 7 hari beruntun dapat **Syal Api**. Kalau terlewat sehari, hitungannya mulai lagi dari awal (tanpa hukuman).
+- **Peringkat Kucing:** Kucing Kampung → Kucing Gang → Preman Gang → Jagoan Kompleks → Raja Kompleks → Legenda Kompleks (5, 10, 18, 28, 40 tantangan bonus/harian/teman yang beres). Tampil di HUD di sebelah koin, dengan banner + fanfare saat naik.
 - **Mancing:** tunggu pelampung, tekan saat ada yang makan, lalu tekan lagi saat penanda di bagian hijau. Bisa dapat ikan kecil, ikan mas, lele, sepatu bekas, atau Ikan Emas.
 - **Gaya Kucing:** nama sendiri, 10 warna bulu, 6 pola, 5 warna mata, topi, kacamata, kalung, dan punggung (ransel, sayap, jubah). Dibuka dengan koin ikan atau hadiah quest.
 - **Buku Kenakalan** (koleksi kenakalan dan ikan) dan **peta** kompleks.
@@ -74,6 +78,7 @@ npm run test:quests     # rantai quest Lisa sampai hari sempurna
 npm run test:portrait   # layar portrait + joystick, kamera, dan tombol sentuh
 npm run test:weather    # cuaca: cerah/hujan/malam dipaksa satu per satu, setelan Selalu cerah
 npm run test:areas      # Sekolah, Warung, Sungai: 12 kenakalan, warga baru, jalan dari rumah, akhir hari
+npm run test:progress   # tantangan harian + streak, peringkat, tantangan spesial, Si Belang & Mpus
 ```
 
 ### Struktur kode
