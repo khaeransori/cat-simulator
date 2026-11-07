@@ -9,7 +9,7 @@ export interface Item {
   slot: Slot;
   name: Pair;
   price: number; // 0 = free
-  quest?: string; // unlocked by this Lisa quest id
+  quest?: string; // unlocked by this Lisa quest id, or 'special' (⭐ challenge) / 'streak' (7-day 🔥 streak)
   color?: number;
   color2?: number;
 }
@@ -48,25 +48,34 @@ export const ITEMS: Item[] = [
   { id: 'koboi', slot: 'head', name: P('Topi koboi', 'Cowboy hat'), price: 40 },
   { id: 'topiPesta', slot: 'head', name: P('Topi pesta', 'Party hat'), price: 0, quest: 'q2' },
   { id: 'mahkota', slot: 'head', name: P('Mahkota raja', 'Royal crown'), price: 0, quest: 'q4' },
+  { id: 'topiBintang', slot: 'head', name: P('Topi penyihir bintang', 'Star wizard hat'), price: 0, quest: 'special' },
+  { id: 'headset', slot: 'head', name: P('Headset DJ', 'DJ headphones'), price: 0, quest: 'special' },
   // Face
   { id: 'none', slot: 'face', name: P('Tanpa kacamata', 'No glasses'), price: 0 },
   { id: 'bulat', slot: 'face', name: P('Kacamata kotak', 'Square glasses'), price: 20 },
   { id: 'hitamK', slot: 'face', name: P('Kacamata hitam', 'Sunglasses'), price: 30 },
   { id: 'hati', slot: 'face', name: P('Kacamata hati', 'Heart glasses'), price: 35 },
+  { id: 'bintangK', slot: 'face', name: P('Kacamata bintang', 'Star glasses'), price: 0, quest: 'special' },
   // Neck
   { id: 'none', slot: 'neck', name: P('Tanpa kalung', 'No collar'), price: 0 },
   { id: 'kalung', slot: 'neck', name: P('Kalung merah', 'Red collar'), price: 0 },
   { id: 'lonceng', slot: 'neck', name: P('Kalung lonceng', 'Bell collar'), price: 15 },
   { id: 'syal', slot: 'neck', name: P('Syal', 'Scarf'), price: 25 },
   { id: 'dasi', slot: 'neck', name: P('Dasi kupu-kupu', 'Bow tie'), price: 25 },
+  { id: 'pelangi', slot: 'neck', name: P('Syal pelangi', 'Rainbow scarf'), price: 0, quest: 'special' },
+  { id: 'syalApi', slot: 'neck', name: P('Syal api', 'Flame scarf'), price: 0, quest: 'streak' },
   // Back
   { id: 'none', slot: 'back', name: P('Kosong', 'Nothing'), price: 0 },
   { id: 'ransel', slot: 'back', name: P('Ransel mini', 'Mini backpack'), price: 35 },
   { id: 'sayap', slot: 'back', name: P('Sayap malaikat', 'Angel wings'), price: 60 },
   { id: 'jubah', slot: 'back', name: P('Jubah pahlawan', 'Hero cape'), price: 0, quest: 'q6' },
+  { id: 'kupu', slot: 'back', name: P('Sayap kupu-kupu', 'Butterfly wings'), price: 0, quest: 'special' },
 ];
 
 export const key = (it: Item) => it.slot + ':' + it.id;
+
+/** Rewards of the ⭐ special challenges. */
+export const SPECIAL_ITEMS = () => ITEMS.filter((i) => i.quest === 'special');
 
 export function itemsFor(slot: Slot) {
   return ITEMS.filter((i) => i.slot === slot);

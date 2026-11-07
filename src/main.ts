@@ -16,6 +16,9 @@ import { Human, NPC_LINES } from './entities/npc';
 import { Dog, Flock, Lisa, Kids } from './entities/creatures';
 import { CatModel } from './entities/catModel';
 import { Quests } from './game/quests';
+import { Progress, dailyFor, dayBefore, RANKS, GIVERS } from './game/progress';
+import { genQuest, specialQuest } from './game/questgen';
+import { SPECIAL_ITEMS } from './cosmetics';
 import { Fishing } from './game/fishing';
 import { setupMischief, dropCarried } from './game/mischief';
 import { Day } from './game/day';
@@ -89,6 +92,7 @@ function boot() {
 
   // ---- systems ----
   ctx.quests = new Quests();
+  ctx.progress = new Progress();
   ctx.fishing = new Fishing();
   setupMischief();
   ctx.day = new Day();
@@ -259,6 +263,7 @@ function boot() {
       ctx.dog.update(gdt);
       for (const f of ctx.flocks) f.update(gdt);
       ctx.lisa.update(gdt);
+      ctx.progress.update(gdt);
       ctx.props.update(gdt);
       ctx.fishing.update(gdt);
       ctx.interact.update(gdt);
@@ -291,6 +296,7 @@ function boot() {
   requestAnimationFrame(frame);
   // expose for debugging/testing
   (window as any).__cat = ctx;
+  ctx.progressApi = { dailyFor, dayBefore, RANKS, GIVERS, genQuest, specialQuest, SPECIAL_ITEMS };
   void rand;
 }
 

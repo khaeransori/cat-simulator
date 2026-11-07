@@ -36,7 +36,26 @@ export interface SaveData {
   stats: { perfectDays: number; caught: number; onTime: number; fishTotal: number };
   firstRun: boolean;
   metLisa: boolean;
+  /** whose quest is on the HUD card: 'lisa' | 'belang' | 'mpus' */
+  focus: string;
+  /** Tantangan Harian: 3 challenges per local date + 🔥 streak of fully finished days */
+  daily: { date: string; list: { q: any; stage: string; prog: any }[]; streak: number; best: number; lastFull: string; total: number };
+  /** Peringkat Kucing: bonus quests + daily challenges + friends' quests completed */
+  rank: { n: number; lv: number };
+  /** the other quest-giver cats, each with its own quest slot */
+  givers: Record<'belang' | 'mpus', GiverState>;
 }
+
+export interface GiverState {
+  stage: 'offer' | 'active' | 'ready';
+  prog: any;
+  gen: any;
+  recent: string[];
+  n: number; // quests finished for this friend
+  met: boolean;
+}
+
+const giver = (): GiverState => ({ stage: 'offer', prog: {}, gen: null, recent: [], n: 0, met: false });
 
 const KEY = 'cat-sim-sebelum-mama-pulang-v1';
 
@@ -56,6 +75,10 @@ export function defaultSave(): SaveData {
     stats: { perfectDays: 0, caught: 0, onTime: 0, fishTotal: 0 },
     firstRun: true,
     metLisa: false,
+    focus: 'lisa',
+    daily: { date: '', list: [], streak: 0, best: 0, lastFull: '', total: 0 },
+    rank: { n: 0, lv: 0 },
+    givers: { belang: giver(), mpus: giver() },
   };
 }
 
@@ -71,6 +94,8 @@ function merge(base: any, extra: any): any {
   // keep dynamic record keys (owned, mischief, fish, prog)
   for (const k of ['owned', 'mischief', 'fish']) if (extra[k] && typeof extra[k] === 'object') base[k] = { ...extra[k] };
   if (extra.quest && extra.quest.prog) base.quest.prog = extra.quest.prog;
+  if (extra.givers && typeof extra.givers === 'object')
+    for (const g of Object.keys(base.givers || {})) if (extra.givers[g]?.prog && typeof extra.givers[g].prog === 'object') base.givers[g].prog = extra.givers[g].prog;
   return base;
 }
 

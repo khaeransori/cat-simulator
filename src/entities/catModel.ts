@@ -296,6 +296,35 @@ export class CatModel {
         h.add(B(0.04, 0.04, 0.02, lam(0x43a047), -0.09, 0.035, 0.14));
         break;
       }
+      case 'topiBintang': {
+        // floppy wizard hat with a little gold star
+        const c = lam(0x5b3fd1);
+        const g = new THREE.Group();
+        g.rotation.z = -0.15;
+        h.add(B(0.4, 0.03, 0.36, c, 0, 0.015, 0));
+        for (let i = 0; i < 4; i++) {
+          const s = 0.24 - i * 0.055;
+          g.add(B(s, 0.08, s, c, 0.01 * i, 0.06 + i * 0.075, -0.01 * i));
+        }
+        const gold = lam(0xffd23f);
+        (gold as any).emissive?.setHex?.(0x332500);
+        g.add(B(0.08, 0.025, 0.02, gold, 0.06, 0.38, -0.03));
+        g.add(B(0.025, 0.08, 0.02, gold, 0.06, 0.38, -0.03));
+        g.add(B(0.04, 0.04, 0.03, gold, 0.06, 0.38, -0.03));
+        g.add(B(0.05, 0.05, 0.01, gold, 0.06, 0.12, 0.1));
+        h.add(g);
+        break;
+      }
+      case 'headset': {
+        const c = lam(0x22252e), r = lam(0xff3d7f);
+        h.add(B(0.36, 0.035, 0.06, c, 0, 0.03, -0.02));
+        for (const sx of [1, -1]) {
+          h.add(B(0.035, 0.12, 0.06, c, 0.19 * sx, -0.03, -0.02));
+          h.add(B(0.07, 0.13, 0.13, r, 0.205 * sx, -0.12, -0.02));
+          h.add(B(0.075, 0.07, 0.07, lam(0xffffff), 0.215 * sx, -0.12, -0.02));
+        }
+        break;
+      }
     }
     const f = this.faceAcc;
     switch (look.face) {
@@ -329,6 +358,21 @@ export class CatModel {
           f.add(B(0.035, 0.03, 0.02, c, x, -0.05, 0.004));
         }
         f.add(B(0.07, 0.015, 0.02, lam(0xd81b60), 0, 0.03, 0));
+        break;
+      }
+      case 'bintangK': {
+        const c = lam(0xffc61a);
+        (c as any).emissive?.setHex?.(0x2a1d00);
+        for (const sx of [1, -1]) {
+          const x = 0.09 * sx;
+          f.add(B(0.12, 0.04, 0.02, c, x, 0, 0.004));
+          f.add(B(0.04, 0.12, 0.02, c, x, 0, 0.004));
+          const d = B(0.07, 0.07, 0.02, c, x, 0, 0.004);
+          d.rotation.z = Math.PI / 4;
+          f.add(d);
+          f.add(B(0.035, 0.035, 0.02, lam(0x7ad3ff), x, 0, 0.014));
+        }
+        f.add(B(0.07, 0.015, 0.02, c, 0, 0.02, 0));
         break;
       }
     }
@@ -368,6 +412,29 @@ export class CatModel {
         n.add(a, b);
         break;
       }
+      case 'pelangi': {
+        const cols = [0xff5252, 0xffa726, 0xffee58, 0x66bb6a, 0x42a5f5, 0xab47bc];
+        n.add(B(0.36, 0.08, 0.05, lam(cols[0]), 0, 0.47, 0.27));
+        n.add(B(0.04, 0.08, 0.16, lam(cols[4]), 0.18, 0.48, 0.2));
+        n.add(B(0.04, 0.08, 0.16, lam(cols[2]), -0.18, 0.48, 0.2));
+        for (let i = 0; i < 6; i++) n.add(B(0.08, 0.045, 0.04, lam(cols[i]), 0.08, 0.41 - i * 0.04, 0.29));
+        break;
+      }
+      case 'syalApi': {
+        const red = lam(0xff4b1f), org = lam(0xffa21f), yel = lam(0xffe14a);
+        for (const m of [red, org, yel]) (m as any).emissive?.setHex?.(0x301000);
+        n.add(B(0.36, 0.08, 0.05, red, 0, 0.47, 0.27));
+        n.add(B(0.04, 0.08, 0.16, red, 0.18, 0.48, 0.2));
+        n.add(B(0.04, 0.08, 0.16, red, -0.18, 0.48, 0.2));
+        // flame tips on the front
+        n.add(B(0.06, 0.07, 0.04, org, -0.1, 0.53, 0.28));
+        n.add(B(0.05, 0.1, 0.04, yel, 0, 0.545, 0.285));
+        n.add(B(0.06, 0.07, 0.04, org, 0.1, 0.53, 0.28));
+        n.add(B(0.09, 0.2, 0.04, red, 0.08, 0.36, 0.29));
+        n.add(B(0.07, 0.07, 0.041, org, 0.08, 0.3, 0.29));
+        n.add(B(0.035, 0.05, 0.042, yel, 0.08, 0.27, 0.29));
+        break;
+      }
     }
     const bk = this.backAcc;
     switch (look.back) {
@@ -391,6 +458,23 @@ export class CatModel {
           const f3 = B(0.2, 0.07, 0.03, lam(0xeaf2ff), 0.1 * sx, -0.05, -0.1);
           f3.rotation.z = 0.1 * sx;
           g.add(f1, f2, f3);
+          g.rotation.y = -0.4 * sx;
+          bk.add(g);
+          this.wings.push(g);
+        }
+        break;
+      }
+      case 'kupu': {
+        const cols = [0xff7ac8, 0x7ad3ff];
+        for (const sx of [1, -1]) {
+          const g = new THREE.Group();
+          g.position.set(0.1 * sx, 0.6, -0.05);
+          const top = B(0.26, 0.2, 0.025, lam(cols[0]), 0.13 * sx, 0.07, 0);
+          top.rotation.z = 0.35 * sx;
+          const bot = B(0.17, 0.14, 0.025, lam(cols[1]), 0.09 * sx, -0.09, -0.01);
+          bot.rotation.z = -0.3 * sx;
+          const dot = B(0.06, 0.06, 0.03, lam(0xffe14a), 0.17 * sx, 0.1, 0.004);
+          g.add(top, bot, dot);
           g.rotation.y = -0.4 * sx;
           bk.add(g);
           this.wings.push(g);
