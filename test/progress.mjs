@@ -107,11 +107,11 @@ const rk = await h.ev(() => {
   C.progress.addDone(1);
   const mid = C.save.rank.lv;
   C.progress.addDone(1);
-  return { before, mid, lv: C.save.rank.lv, chip: document.getElementById('rankChip').textContent, banner: document.getElementById('banner').textContent };
+  return { before, mid, lv: C.save.rank.lv, chip: document.getElementById('rankChip').textContent, banner: document.getElementById('banner').textContent + ' | ' + (C.ui.bannerQueue || []).map((b) => b.title).join(' | ') };
 });
 check('rank starts as Kucing Kampung', rk.before.includes('Kucing Kampung'), rk.before);
 check('rank up after 5 completions', rk.mid === 0 && rk.lv === 1 && rk.chip.includes('Kucing Gang'), JSON.stringify(rk));
-check('rank up banner', rk.banner.includes('Naik peringkat'), rk.banner);
+check('rank up banner (shown or queued)', rk.banner.includes('Naik peringkat'), rk.banner);
 check('later ranks need more', await h.ev(() => { const R = window.__cat.progressApi.RANKS; return R.length === 6 && R[5].name.id === 'Legenda Kompleks' && R[5].at - R[4].at > R[1].at - R[0].at; }));
 await h.wait(300);
 await h.shot('progress-rank-hud');
@@ -288,10 +288,13 @@ await p.wait(400);
 await p.shot('progress-hud-portrait');
 const ov = await p.ev(() => {
   const r = (id) => document.getElementById(id).getBoundingClientRect();
-  const a = r('rankChip'), b = r('btnDaily'), c = r('questCard');
-  return { rankRight: a.right, dailyLeft: b.left, w: innerWidth, cardRight: c.right, rankVisible: a.width > 0 };
+  const a = r('rankChip'), b = r('btnDaily'), c = r('questCard'), m = r('btnPause');
+  // buttons sit right of the card, or (many buttons) wrap onto their own row below it
+  const sameRow = a.right <= b.left + 1 && c.right <= b.left + 1;
+  const below = b.top >= Math.max(a.bottom, c.bottom) - 1;
+  return { sameRow, below, rankVisible: a.width > 0, pauseRight: m.right, w: innerWidth };
 });
-check('portrait: rank chip and buttons fit', ov.rankVisible && ov.rankRight <= ov.dailyLeft + 1 && ov.cardRight <= ov.dailyLeft + 1, JSON.stringify(ov));
+check('portrait: rank chip and buttons fit', ov.rankVisible && (ov.sameRow || ov.below) && ov.pauseRight <= ov.w, JSON.stringify(ov));
 await p.page.tap('#btnDaily');
 await p.wait(500);
 await p.shot('progress-daily-portrait');

@@ -340,6 +340,9 @@ export class UI {
     this.bannerQ(icon, title, sub, coins, undefined, note);
   }
   bannerQ(icon: string, title: string, sub: string, coins: number, fn?: () => void, note = '') {
+    // same banner already waiting: don't show it twice (fn still runs once)
+    if (this.bannerQueue.some((b) => b.title === title && b.sub === sub)) return fn?.();
+    if (this.bannerQueue.length >= 6) this.bannerQueue.splice(0, this.bannerQueue.length - 5); // never lag far behind
     this.bannerQueue.push({ icon, title, sub, coins, note, fn });
     if (!this.bannerBusy) this.nextBanner();
   }
