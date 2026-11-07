@@ -12,7 +12,7 @@ check('river fishing point placed', await h.ev(() => !!window.__cat.world.pts.ri
 // ---- screenshots ----
 const views = [
   ['areas-sekolah-gate', -71, 0, 0.5, 0, 0.25],
-  ['areas-sekolah-yard', -66, 0, 9, -0.6, 0.35],
+  ['areas-sekolah-yard', -70, 0, 7.5, -0.5, 0.45],
   ['areas-sekolah-kelas', -72, 0, 21.5, 0, 0.35],
   ['areas-warung', -56, 0, -2.2, Math.PI, 0.3],
   ['areas-warung-dalam', -53.2, 0, -6.3, Math.PI + 0.6, 0.3],
