@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ctx, damp, angleLerp, angleDiff, rand, pick, clamp } from '../ctx';
 import { HumanModel, type HumanOpts, type HumanPose } from './humanModel';
 import type { Body } from '../world/physics';
+import { findPath, lineClear } from '../world/nav';
 import { blobShadow } from './cat';
 import { sfx } from '../audio';
 import { L, type Pair } from '../i18n';
@@ -88,6 +89,7 @@ export class Human {
     this.body.y = this.home.y;
     this.body.z = this.home.z;
     this.body.vx = this.body.vz = 0;
+    this.resetNav();
     this.state = 'patrol';
     this.stateT = 0;
     this.pathI = 0;
@@ -148,22 +150,85 @@ export class Human {
     return x > zn.x0 - m && x < zn.x1 + m && z > zn.z0 - m && z < zn.z1 + m;
   }
 
+  // --- navigation: go around obstacles instead of pushing into them ---
+  private nav: [number, number][] | null = null;
+  private navI = 0;
+  private navT = 0;
+  private navTx = 1e9;
+  private navTz = 1e9;
+  private searchT = 0; // throttle for the (costly) grid search
+  private lastX = 0;
+  private lastZ = 0;
+  /** Seconds spent trying to walk without getting anywhere (states use it to give up). */
+  stuckT = 0;
+
+  private replan(tx: number, tz: number) {
+    const b = this.body;
+    const P = ctx.world.phys;
+    this.navTx = tx;
+    this.navTz = tz;
+    this.navT = 0.5;
+    if (lineClear(P, b, b.x, b.z, tx, tz)) {
+      this.nav = null;
+      return;
+    }
+    // keep following the current route if we have one; search again at most once a second
+    if (this.searchT > 0) return;
+    this.searchT = 1;
+    const z = this.zone;
+    this.navI = 0;
+    this.nav = findPath(P, b, tx, tz, { x0: Math.min(z.x0, tx) - 3, z0: Math.min(z.z0, tz) - 3, x1: Math.max(z.x1, tx) + 3, z1: Math.max(z.z1, tz) + 3 });
+  }
+
   moveToward(tx: number, tz: number, sp: number, dt: number) {
     const b = this.body;
-    const dx = tx - b.x, dz = tz - b.z;
-    const d = Math.hypot(dx, dz);
-    if (d < 0.05) {
+    // progress watchdog (measured from the last frame's physics move)
+    if (dt > 0) {
+      const moved = Math.hypot(b.x - this.lastX, b.z - this.lastZ) / dt;
+      if (moved < sp * 0.2) this.stuckT += dt;
+      else this.stuckT = Math.max(0, this.stuckT - dt * 2);
+    }
+    this.lastX = b.x;
+    this.lastZ = b.z;
+    this.navT -= dt;
+    this.searchT -= dt;
+    if (this.navT <= 0 || Math.hypot(tx - this.navTx, tz - this.navTz) > 0.8 || (b.hitWall && !this.nav)) this.replan(tx, tz);
+    b.hitWall = false;
+    // steer at the current waypoint (or the target itself)
+    let wx = tx, wz = tz, d = Math.hypot(tx - b.x, tz - b.z);
+    if (this.nav && this.nav.length) {
+      while (this.navI < this.nav.length - 1 && Math.hypot(this.nav[this.navI][0] - b.x, this.nav[this.navI][1] - b.z) < 0.35) this.navI++;
+      [wx, wz] = this.nav[this.navI];
+      // remaining path length (the last waypoint may be a free spot next to a blocked target)
+      d = Math.hypot(wx - b.x, wz - b.z);
+      for (let i = this.navI + 1; i < this.nav.length; i++) d += Math.hypot(this.nav[i][0] - this.nav[i - 1][0], this.nav[i][1] - this.nav[i - 1][1]);
+    }
+    const dx = wx - b.x, dz = wz - b.z;
+    const dw = Math.hypot(dx, dz);
+    if (d < 0.05 || dw < 0.001) {
       b.vx = damp(b.vx, 0, 10, dt);
       b.vz = damp(b.vz, 0, 10, dt);
+      this.stuckT = 0;
       return d;
     }
-    b.vx = damp(b.vx, (dx / d) * sp, 8, dt);
-    b.vz = damp(b.vz, (dz / d) * sp, 8, dt);
+    b.vx = damp(b.vx, (dx / dw) * sp, 8, dt);
+    b.vz = damp(b.vz, (dz / dw) * sp, 8, dt);
     this.yaw = angleLerp(this.yaw, Math.atan2(dx, dz), 1 - Math.exp(-8 * dt));
     return d;
   }
 
+  /** Forget the current route (after a teleport or a state change). */
+  resetNav() {
+    this.nav = null;
+    this.navT = 0;
+    this.searchT = 0;
+    this.stuckT = 0;
+    this.lastX = this.body.x;
+    this.lastZ = this.body.z;
+  }
+
   alert() {
+    this.resetNav();
     this.state = 'alert';
     this.stateT = 0;
     this.model.setMouth('o');
@@ -214,10 +279,12 @@ export class Human {
         const t = this.path[this.pathI];
         const d = this.moveToward(t.x, t.z, this.speed, dt);
         pose = 'walk';
-        if (d < 0.3) {
+        if (d < 0.3 || this.stuckT > 2.5) {
+          // arrived (or this waypoint can't be reached right now: go on to the next one)
           this.state = 'wait';
           this.stateT = 0;
-          this.waitT = rand(1.5, 4);
+          this.waitT = d < 0.3 ? rand(1.5, 4) : 0.4;
+          this.resetNav();
         }
         break;
       }
@@ -270,7 +337,8 @@ export class Human {
         spd = 1.4;
         const reachable = cb.y - b.y < 0.9;
         const inArea = this.inZone(cb.x, cb.z, 2.5);
-        if (!reachable || !inArea || this.stateT > 5 || cat.state === 'hugged' || cat.state === 'cut') {
+        if (!reachable || !inArea || this.stateT > 5 || this.stuckT > 1.8 || cat.state === 'hugged' || cat.state === 'cut') {
+          this.resetNav();
           this.state = 'giveup';
           this.stateT = 0;
           this.say(LINES.gone, 1.8, 'shout');
@@ -312,12 +380,15 @@ export class Human {
           this.state = 'wait';
           this.stateT = 0;
           this.waitT = 1;
-        }
-        if (this.stateT > 12) {
-          // stuck: teleport home
+          this.resetNav();
+        } else if (this.stateT > 12 || this.stuckT > 4) {
+          // truly stuck: pop back to the route (out of sight is fine, kids won't mind)
           b.x = t.x;
           b.z = t.z;
           this.state = 'wait';
+          this.stateT = 0;
+          this.waitT = 1;
+          this.resetNav();
         }
         break;
       }
@@ -325,7 +396,13 @@ export class Human {
         if (this.goal) {
           const d = this.moveToward(this.goal.x, this.goal.z, this.goalSpeed, dt);
           this.pose = 'walk';
-          if (d < 0.25) {
+          if (this.stuckT > 3) {
+            // cutscenes must always finish
+            b.x = this.goal.x;
+            b.z = this.goal.z;
+            this.resetNav();
+          }
+          if (d < 0.25 || Math.hypot(this.goal.x - b.x, this.goal.z - b.z) < 0.25) {
             this.goal = null;
             b.vx = b.vz = 0;
             this.pose = 'idle';

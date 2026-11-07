@@ -13,7 +13,8 @@
     "test:mischief": "node test/mischief.mjs",
     "test:quests": "node test/quests.mjs",
     "test:portrait": "node test/portrait.mjs",
-    "test:areas": "node test/areas.mjs"
+    "test:areas": "node test/areas.mjs",
+    "test:npc": "node test/npcstuck.mjs"
   },
   "dependencies": {
     "@fontsource/baloo-2": "^5.3.0",
@@ -27,6 +28,6 @@
     "vite": "5.4.10",
     "vite-plugin-singlefile": "2.0.3"
   },
-  "description": "Cat Simulator: Sebelum Mama Pulang \u2014 game kucing nakal 3D kotak-kotak untuk anak, jalan offline di HP.",
+  "description": "Cat Simulator: Sebelum Mama Pulang — game kucing nakal 3D kotak-kotak untuk anak, jalan offline di HP.",
   "license": "UNLICENSED"
 }
