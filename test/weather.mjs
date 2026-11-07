@@ -47,6 +47,7 @@ const state = () =>
       ball: c.kids.ball.visible,
       pigeons: c.flocks[0].birds.some((b) => b.m.root.visible),
       umbrellas: c.npcs.filter((n) => n.model.umbrella?.visible).length,
+      adults: c.npcs.length,
       sitiActive: c.npcs.find((n) => n.name === 'siti').active,
       icon: document.getElementById('daySun').textContent,
       bg: '#' + c.scene.background.getHexString(),
@@ -72,10 +73,10 @@ check('hujan: ctx.weather + day bar icon', s.weather === 'hujan' && s.icon === '
 check('hujan: rain hidden indoors at home', !s.rain && s.puddles, JSON.stringify({ rain: s.rain, puddles: s.puddles }));
 check('hujan: kids indoors, ball hidden', !s.kidsVisible && !s.ball);
 check('hujan: pigeons hidden', !s.pigeons);
-check('hujan: adults carry umbrellas', s.umbrellas === 3, String(s.umbrellas));
+check('hujan: adults carry umbrellas', s.umbrellas === s.adults, `${s.umbrellas}/${s.adults}`);
 check('hujan: darker sky', s.bg !== d1.bg, s.bg);
 const spd = await h.ev(() => window.__cat.npcs.map((n) => n.speed.toFixed(2)).join(','));
-check('hujan: adults walk slower', spd !== '1.70,1.70,1.70' && Number(spd.split(',')[0]) < 1.7, spd);
+check('hujan: adults walk slower', Number(spd.split(',')[0]) < 1.7, spd);
 // ball mischief unavailable
 const bola = await h.ev(() => window.__cat.kids.ballGrabbable());
 check('hujan: no ball game', !bola);

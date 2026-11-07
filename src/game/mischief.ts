@@ -10,7 +10,7 @@ const P = (id: string, en: string): Pair => ({ id, en });
 
 export interface MDef {
   id: string;
-  area: 'rumah' | 'taman' | 'jalan' | 'pasar' | 'atap';
+  area: 'rumah' | 'taman' | 'jalan' | 'pasar' | 'atap' | 'sekolah' | 'warung' | 'sungai';
   icon: string;
   name: Pair;
   noise: number;
@@ -38,9 +38,22 @@ export const MISCHIEF: MDef[] = [
   { id: 'jemuran', area: 'atap', icon: '👕', name: P('Jatuhin jemuran', 'Drop the laundry'), noise: 4 },
   { id: 'ikan_asin', area: 'atap', icon: '🐡', name: P('Curi ikan asin', 'Steal salted fish'), noise: 0 },
   { id: 'merpati_atap', area: 'atap', icon: '🐦', name: P('Kagetin merpati atap', 'Spook the roof pigeons'), noise: 6 },
+  { id: 'papan', area: 'sekolah', icon: '🖍️', name: P('Coret-coret papan tulis', 'Scribble on the blackboard'), noise: 3 },
+  { id: 'buku', area: 'sekolah', icon: '📚', name: P('Jatuhin tumpukan buku', 'Topple the book stack'), noise: 7 },
+  { id: 'meja_guru', area: 'sekolah', icon: '🍎', name: P('Tidur di meja guru', "Nap on the teacher's desk"), noise: 0 },
+  { id: 'bel', area: 'sekolah', icon: '🔔', name: P('Bunyiin bel sekolah', 'Ring the school bell'), noise: 20 },
+  { id: 'kerupuk', area: 'warung', icon: '🍘', name: P('Curi kerupuk', 'Steal a cracker'), noise: 0 },
+  { id: 'permen', area: 'warung', icon: '🍬', name: P('Jatuhin toples permen', 'Knock over the candy jar'), noise: 8 },
+  { id: 'galon', area: 'warung', icon: '💧', name: P('Dorong galon sampai menggelinding', 'Roll the water jug'), noise: 7 },
+  { id: 'kulkas', area: 'warung', icon: '🍦', name: P('Tidur di atas kulkas es krim', 'Nap on the ice cream freezer'), noise: 0 },
+  { id: 'perahu', area: 'sungai', icon: '⛵', name: P('Dorong perahu kertas ke sungai', 'Launch the paper boat'), noise: 0 },
+  { id: 'kupu', area: 'sungai', icon: '🦋', name: P('Kejar kupu-kupu', 'Chase the butterflies'), noise: 0 },
+  { id: 'bebek', area: 'sungai', icon: '🦆', name: P('Ganggu bebek', 'Bother the ducks'), noise: 6 },
+  { id: 'cebur', area: 'sungai', icon: '💦', name: P('Cebur-ceburan di batu', 'Splash on the stepping stones'), noise: 3 },
 ];
 export const MBY: Record<string, MDef> = Object.fromEntries(MISCHIEF.map((m) => [m.id, m]));
-export const AREA_KEY: Record<string, string> = { rumah: 'ar_rumah', taman: 'ar_taman', jalan: 'ar_jalan', pasar: 'ar_pasar', atap: 'ar_atap' };
+export const AREAS = ['rumah', 'taman', 'jalan', 'pasar', 'atap', 'sekolah', 'warung', 'sungai'] as const;
+export const AREA_KEY: Record<string, string> = Object.fromEntries(AREAS.map((a) => [a, 'ar_' + a]));
 
 export function addCoins(n: number) {
   ctx.save.coins += n;
@@ -104,6 +117,9 @@ export function resetProps() {
   }
   ctx.props.clear();
   drawLaptop(false);
+  drawBoard(false);
+  boatT = -1;
+  rollRun++;
   for (const l of ctx.world.props.motor.data.lights) (l.material as THREE.MeshLambertMaterial).emissive.setHex(0);
   const g = ctx.world.gates;
   const U = ctx.save.unlocked;
@@ -145,6 +161,65 @@ export function drawLaptop(zzz: boolean) {
   }
   (d.screen.material.map as THREE.CanvasTexture).needsUpdate = true;
 }
+
+// classroom blackboard: a little lesson, or (after the cat) scribbles + paw prints
+export function drawBoard(messy: boolean) {
+  const d = ctx.world.props.papan?.data;
+  if (!d) return;
+  const c: HTMLCanvasElement = d.canvas;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#2f5d45';
+  g.fillRect(0, 0, 512, 128);
+  g.fillStyle = 'rgba(255,255,255,0.9)';
+  g.font = '700 40px "Baloo 2", system-ui, sans-serif';
+  g.textBaseline = 'middle';
+  if (!messy) {
+    g.fillText('1 + 1 = 2', 24, 40);
+    g.fillText('A  B  C  D', 24, 92);
+    g.fillText('Ini Budi.', 280, 40);
+    g.fillText('2 + 3 = 5', 280, 92);
+  } else {
+    g.globalAlpha = 0.35;
+    g.fillText('1 + 1 = 2', 24, 40);
+    g.fillText('A  B  C  D', 24, 92);
+    g.globalAlpha = 1;
+    // smudge stripes where the paws wiped
+    g.fillStyle = 'rgba(200,220,210,0.35)';
+    for (let i = 0; i < 6; i++) g.fillRect(40 + i * 70, 10 + (i % 2) * 20, 50, 100);
+    g.strokeStyle = '#fff6b0';
+    g.lineWidth = 5;
+    g.beginPath();
+    for (let i = 0; i < 40; i++) g.lineTo(250 + Math.sin(i * 0.9) * 80 + i * 4, 64 + Math.cos(i * 1.3) * 40);
+    g.stroke();
+    // cat face doodle
+    g.strokeStyle = '#ffffff';
+    g.lineWidth = 4;
+    g.beginPath();
+    g.arc(420, 64, 32, 0, Math.PI * 2);
+    g.moveTo(394, 44);
+    g.lineTo(398, 18);
+    g.lineTo(414, 34);
+    g.moveTo(446, 44);
+    g.lineTo(442, 18);
+    g.lineTo(426, 34);
+    g.stroke();
+    g.fillStyle = '#ffffff';
+    g.fillRect(406, 56, 6, 6);
+    g.fillRect(428, 56, 6, 6);
+    g.fillText('MEONG!', 70, 64);
+    // paw prints
+    g.fillStyle = 'rgba(255,255,255,0.75)';
+    for (const [x, y] of [[30, 110], [140, 20], [210, 100], [330, 24], [480, 108]]) {
+      g.beginPath();
+      g.arc(x, y, 8, 0, Math.PI * 2);
+      for (let k = 0; k < 3; k++) g.arc(x - 9 + k * 9, y - 11, 3.5, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  ((d.screen as THREE.Mesh).material as THREE.MeshLambertMaterial).map!.needsUpdate = true;
+}
+let boatT = -1;
+let rollRun = 0; // bumps on day reset to stop the rolling gallon
 
 // ---------- helpers ----------
 function supportEdgeDir(pr: PropInfo) {
@@ -695,6 +770,8 @@ export function setupMischief() {
     },
   });
 
+  setupEdgeMischief(flock);
+
   // --- carried item action (eat / drop / give) ---
   I.add({
     id: 'carry',
@@ -717,7 +794,312 @@ export function setupMischief() {
 export function carryAction(): 'eat' | 'drop' {
   const c = ctx.cat.carrying;
   if (!c) return 'drop';
-  if (c.id === 'ikan_dapur' || c.id === 'ikan_asin') return 'eat';
+  if (c.id === 'ikan_dapur' || c.id === 'ikan_asin' || c.id === 'kerupuk') return 'eat';
   if (c.id === 'ikan_pasar') return ctx.quests.wantsMarketFish() ? 'drop' : 'eat';
   return 'drop';
+}
+
+// ---------- new edge areas: Sekolah, Warung, Sungai ----------
+function setupEdgeMischief(flock: (id: string, fl: any) => void) {
+  const W = ctx.world;
+  const I = ctx.interact;
+  const props = W.props;
+  const free = () => !ctx.cat.carrying;
+  const home = (id: string) => props[id].obj.parent === ctx.scene && props[id].obj.visible && props[id].obj.position.distanceTo(props[id].home) < 0.01;
+  const P3 = (id: string) => props[id].home.clone();
+  const hop = (vy = 5) => {
+    const b = ctx.cat.body;
+    b.vy = vy;
+    b.onGround = false;
+  };
+  drawBoard(false);
+
+  // --- SEKOLAH ---
+  I.add({
+    id: 'papan',
+    mischief: 'papan',
+    label: 'a_scratch',
+    icon: '🖍️',
+    pos: W.pts.board,
+    r: 1.8,
+    yTol: 0.8,
+    enabled: () => free() && !ctx.day.doneToday.has('papan'),
+    act: () => {
+      const cat = ctx.cat;
+      cat.yaw = 0;
+      hop(5.2);
+      sfx.scratch();
+      ctx.after(0.25, () =>
+        cat.doAction('scratch', 1.0, () => {
+          drawBoard(true);
+          const p = W.pts.board;
+          ctx.fx.burst(p.x, 1.6, p.z + 0.5, 0xffffff, 18, { speed: 1.2, up: 1, size: 0.05, g: 2, life: 1.6, floor: 0 });
+          doMischief('papan');
+        }),
+      );
+    },
+  });
+  I.add({
+    id: 'buku',
+    mischief: 'buku',
+    label: 'a_push',
+    icon: '🐾',
+    pos: P3('buku'),
+    r: 0.95,
+    yTol: 0.6,
+    enabled: () => free() && home('buku'),
+    act: () =>
+      pushOff('buku', (x, y, z) => {
+        sfx.rollThuds();
+        sfx.paper();
+        const pr = props.buku;
+        for (const b of [...pr.obj.children]) {
+          const a = rand(0, Math.PI * 2);
+          ctx.scene.add(b);
+          b.position.set(x + rand(-0.2, 0.2), y + 0.2 + rand(0, 0.2), z + rand(-0.2, 0.2));
+          ctx.props.fall(b, Math.cos(a) * rand(0.8, 2), rand(1, 2.5), Math.sin(a) * rand(0.8, 2), { r: 0.08, bounces: 1 });
+        }
+        ctx.camRig.shake = 0.15;
+        doMischief('buku');
+      }),
+  });
+  I.add({
+    id: 'meja_guru',
+    mischief: 'meja_guru',
+    label: 'a_sleep',
+    icon: '💤',
+    pos: W.pts.teacherDesk,
+    r: 1.1,
+    yTol: 0.6,
+    enabled: () => free(),
+    act: () => {
+      ctx.cat.sleepAt(W.pts.teacherDesk, Math.PI, () => {
+        ctx.bubbles.say(ctx.cat.model.root, L(P('Bu Guru, aku ngantuk...', 'Teacher, I\'m sleepy...')), { ttl: 1.8, y: 1, kind: 'emote', key: 'catdesk' });
+        doMischief('meja_guru');
+      });
+    },
+  });
+  let bellSwing = 0;
+  I.add({
+    id: 'bel',
+    mischief: 'bel',
+    label: 'a_pull',
+    icon: '🔔',
+    pos: W.pts.bell,
+    r: 1.3,
+    yTol: 0.8,
+    enabled: () => free() && bellSwing <= 0,
+    act: () => {
+      hop(6.2);
+      ctx.cat.doAction('paw', 0.4);
+      ctx.after(0.3, () => {
+        sfx.bell();
+        const b = props.bel.obj;
+        bellSwing = 1.8;
+        const swing = () => {
+          bellSwing -= 0.03;
+          b.rotation.x = Math.sin(bellSwing * 14) * 0.5 * Math.max(0, bellSwing / 1.8);
+          if (bellSwing > 0) ctx.after(0.03, swing);
+          else b.rotation.x = 0;
+        };
+        swing();
+        ctx.bubbles.say(b, L(P('TENG TENG TENG!', 'DING DING DING!')), { ttl: 1.8, y: 0.3, kind: 'shout', key: 'bel' });
+        ctx.camRig.shake = 0.2;
+        doMischief('bel');
+      });
+    },
+  });
+
+  // --- WARUNG ---
+  I.add({
+    id: 'kerupuk',
+    mischief: 'kerupuk',
+    label: 'a_grab',
+    icon: '🍘',
+    pos: P3('kerupuk'),
+    r: 0.9,
+    yTol: 0.6,
+    enabled: () => free() && props.kerupuk.data.chip.parent === props.kerupuk.obj,
+    act: () => {
+      sfx.paper();
+      carry('kerupuk', props.kerupuk.data.chip, 0, 0.9);
+      doMischief('kerupuk');
+    },
+  });
+  I.add({
+    id: 'permen',
+    mischief: 'permen',
+    label: 'a_push',
+    icon: '🐾',
+    pos: P3('permen'),
+    r: 0.95,
+    yTol: 0.6,
+    enabled: () => free() && home('permen'),
+    act: () =>
+      pushOff('permen', (x, y, z) => {
+        sfx.glass();
+        sfx.rollThuds();
+        const pr = props.permen;
+        pr.obj.children[0].visible = false; // the jar shatters (plastic-ish: no shards left)
+        ctx.fx.burst(x, y + 0.1, z, 0xdff4ff, 10, { speed: 2, up: 2, size: 0.05, life: 1, floor: y });
+        for (const c of [...pr.obj.children].slice(1, 7)) {
+          const a = rand(0, Math.PI * 2);
+          ctx.scene.add(c);
+          c.position.set(x + rand(-0.15, 0.15), y + 0.15, z + rand(-0.15, 0.15));
+          ctx.props.fall(c, Math.cos(a) * rand(1.5, 3), rand(1.5, 3), Math.sin(a) * rand(1.5, 3), { roll: true, r: 0.05, bounces: 2 });
+        }
+        pr.obj.rotation.z = Math.PI / 2;
+        ctx.camRig.shake = 0.2;
+        doMischief('permen');
+      }),
+  });
+  I.add({
+    id: 'galon',
+    mischief: 'galon',
+    label: 'a_push',
+    icon: '🐾',
+    pos: P3('galon'),
+    r: 1.0,
+    yTol: 0.6,
+    enabled: () => free() && props.galon.data.mid.rotation.z === 0,
+    act: () => {
+      const cat = ctx.cat;
+      cat.doAction('paw', 0.35);
+      ctx.after(0.15, () => {
+        const pr = props.galon;
+        const o = pr.obj;
+        const { mid, body } = pr.data;
+        const cb = cat.body;
+        let dx = o.position.x - cb.x, dz = o.position.z - cb.z;
+        const l = Math.hypot(dx, dz) || 1;
+        dx /= l;
+        dz /= l;
+        o.rotation.y = Math.atan2(dx, dz);
+        sfx.thud(0.3);
+        let k = 0;
+        let v = 3.4;
+        const run = rollRun;
+        const step = () => {
+          if (run !== rollRun) return;
+          const dt = 0.02;
+          if (k < 1) {
+            k = Math.min(1, k + 0.12);
+            mid.rotation.z = k * (Math.PI / 2);
+            mid.position.y = 0.25 - k * 0.04;
+          } else {
+            const nx = o.position.x + dx * v * dt, nz = o.position.z + dz * v * dt;
+            if (W.phys.free(nx - 0.22, 0.05, nz - 0.22, nx + 0.22, 0.4, nz + 0.22)) {
+              o.position.x = nx;
+              o.position.z = nz;
+              body.rotation.y -= (v * dt) / 0.21;
+            } else {
+              v *= -0.3;
+              sfx.thud(0.2);
+            }
+            v *= 1 - 1.1 * dt;
+            if (Math.random() < 0.15) sfx.tone(140 + Math.random() * 40, 0.06, 'sine', 0.1, 0, 90);
+          }
+          if (Math.abs(v) > 0.08) ctx.after(dt, step);
+        };
+        step();
+        ctx.props.puddle(o.position.x + dx * 0.5, 0, o.position.z + dz * 0.5, 0x8fd3ff, 0.8);
+        doMischief('galon');
+      });
+    },
+  });
+  I.add({
+    id: 'kulkas',
+    mischief: 'kulkas',
+    label: 'a_sleep',
+    icon: '💤',
+    pos: W.pts.freezerTop,
+    r: 1.0,
+    yTol: 0.6,
+    enabled: () => free(),
+    act: () => {
+      ctx.cat.sleepAt(W.pts.freezerTop, Math.PI / 2, () => {
+        ctx.bubbles.say(ctx.cat.model.root, L(P('Adem... brrr...', 'So cool... brrr...')), { ttl: 1.8, y: 1, kind: 'emote', key: 'catfreezer' });
+        doMischief('kulkas');
+      });
+    },
+  });
+
+  // --- SUNGAI ---
+  I.add({
+    id: 'perahu',
+    mischief: 'perahu',
+    label: 'a_push',
+    icon: '🐾',
+    pos: P3('perahu'),
+    r: 0.95,
+    yTol: 0.6,
+    enabled: () => free() && home('perahu'),
+    act: () => {
+      ctx.cat.doAction('paw', 0.35);
+      ctx.after(0.15, () => {
+        const o = props.perahu.obj;
+        sfx.plop();
+        boatT = 0;
+        const x0 = o.position.x, z0 = o.position.z;
+        const step = () => {
+          if (boatT < 0) return; // day reset
+          boatT += 0.03;
+          const k = Math.min(1, boatT / 0.5);
+          o.position.set(x0 + boatT * 1.1, k < 1 ? 0.2 + Math.sin(k * Math.PI) * 0.25 - k * 0.12 : 0.08 + Math.sin(boatT * 4) * 0.015, z0 + k * 1.6);
+          o.rotation.z = Math.sin(boatT * 3) * 0.12;
+          if (boatT > 0.5 && boatT < 0.56) {
+            sfx.splash();
+            ctx.fx.burst(o.position.x, 0.1, o.position.z, 0x8fd3ff, 8, { speed: 1.2, up: 1.5, size: 0.05, life: 0.6, floor: 0.05 });
+          }
+          if (o.position.x > 43) o.visible = false;
+          else ctx.after(0.03, step);
+        };
+        step();
+        ctx.bubbles.say(ctx.cat.model.root, L(P('Dadah, perahu!', 'Bye bye, boat!')), { ttl: 1.6, y: 1, kind: 'emote', key: 'catboat' });
+        doMischief('perahu');
+      });
+    },
+  });
+  const bf = ctx.butterflies;
+  I.add({
+    id: 'kupu',
+    mischief: 'kupu',
+    label: 'a_chase',
+    icon: '🦋',
+    pos: bf.center,
+    r: 2.6,
+    yTol: 0.8,
+    enabled: () => free() && bf.state === 'idle',
+    act: () => {
+      const cat = ctx.cat;
+      const f = cat.forward();
+      hop(5.5);
+      cat.body.vx = f.x * 3;
+      cat.body.vz = f.z * 3;
+      sfx.meow(1.3);
+      cat.doAction('paw', 0.4);
+      if (bf.scare()) doMischief('kupu');
+    },
+  });
+  flock('bebek', ctx.flocks[2]);
+  I.add({
+    id: 'cebur',
+    mischief: 'cebur',
+    label: 'a_splash',
+    icon: '💦',
+    pos: W.pts.riverStones,
+    r: 0.9,
+    yTol: 0.5,
+    enabled: () => free(),
+    act: () => {
+      const cat = ctx.cat;
+      hop(4);
+      sfx.splash(true);
+      const b = cat.body;
+      for (const s of [-0.5, 0.5]) ctx.fx.burst(b.x + s, 0.15, b.z, 0x8fd3ff, 14, { speed: 2.4, up: 4, size: 0.08, life: 0.9, floor: 0.05 });
+      ctx.props.puddle(b.x, 0.25, b.z, 0x6fb8e8, 0.7);
+      ctx.bubbles.say(cat.model.root, L(P('Byur! Hihi, basah!', 'Splash! Hehe, wet!')), { ttl: 1.6, y: 1, kind: 'emote', key: 'catcebur' });
+      doMischief('cebur');
+    },
+  });
 }

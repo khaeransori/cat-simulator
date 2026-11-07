@@ -250,7 +250,7 @@ export class WeatherSystem {
     this.setWet(0);
     this.wetToast = false;
     // adults: umbrellas + slower in the rain; at night Bu Siti is asleep and everyone hears/sees less
-    const umb: Record<string, number> = { siti: 0xff7043, ujang: 0x1e88e5, tini: 0xfdd835 };
+    const umb: Record<string, number> = { siti: 0xff7043, ujang: 0x1e88e5, tini: 0xfdd835, satpam: 0x455a64, buwarung: 0x43a047 };
     for (const h of ctx.npcs as Human[]) {
       if (!this.baseSpeed.has(h)) {
         this.baseSpeed.set(h, h.speed);

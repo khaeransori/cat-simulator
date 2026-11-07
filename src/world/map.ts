@@ -264,12 +264,18 @@ export function buildWorld(scene: THREE.Scene): World {
   // perimeter walls (tall, with invisible extension)
   const PW = 0xd9cdb1;
   S.mm(-48, 0, -33, 68, 4.5, -31, PW);
-  S.mm(-48, 0, 39, 68, 4.5, 41, PW);
-  S.mm(-48, 0, -33, -46, 4.5, 41, PW);
+  // south wall: gap at the lane (x 12.3..17.6) leads to the river
+  S.mm(-48, 0, 39, 12.3, 4.5, 41, PW);
+  S.mm(17.6, 0, 39, 68, 4.5, 41, PW);
+  // west wall: gap where the street continues to the Warung and the Sekolah
+  S.mm(-48, 0, -33, -46, 4.5, -5, PW);
+  S.mm(-48, 0, 5, -46, 4.5, 41, PW);
   S.mm(66, 0, -33, 68, 4.5, 41, PW);
   S.wall(-48, 4.5, -33, 68, 12, -31);
-  S.wall(-48, 4.5, 39, 68, 12, 41);
-  S.wall(-48, 4.5, -33, -46, 12, 41);
+  S.wall(-48, 4.5, 39, 12.3, 12, 41);
+  S.wall(17.6, 4.5, 39, 68, 12, 41);
+  S.wall(-48, 4.5, -33, -46, 12, -5);
+  S.wall(-48, 4.5, 5, -46, 12, 41);
   S.wall(66, 4.5, -33, 68, 12, 41);
   // vines on perimeter
   for (let x = -44; x < 66; x += 7) S.mm(x, 2.5, -31.05, x + 2.5, 4.5, -30.9, 0x5aa55a, { collide: false });
@@ -1059,6 +1065,422 @@ export function buildWorld(scene: THREE.Scene): World {
   tree(-34, 34, 0.9, 0);
   S.mm(-44, 0, 16, -38, 0.6, 18, 0x8d6e63, { top: 0xa1887f });
   palm(-37, 9);
+
+  buildEdgeAreas();
+
+  // ================= NEW EDGE AREAS: WARUNG + SEKOLAH (west), SUNGAI (south) =================
+  function buildEdgeAreas() {
+    // ---- west extension: the street continues through a gap in the west wall ----
+    S.mm(-90, -1, -22, -48, 0, 32, C.grass, { top: C.grass, jitter: 0 });
+    S.mm(-90, 0, -22, -48, 4.5, -20, PW);
+    S.mm(-90, 0, 30, -48, 4.5, 32, PW);
+    S.mm(-90, 0, -22, -88, 4.5, 32, PW);
+    S.wall(-90, 4.5, -22, -48, 12, -20);
+    S.wall(-90, 4.5, 30, -48, 12, 32);
+    S.wall(-90, 4.5, -22, -88, 12, 32);
+    for (let x = -86; x < -50; x += 7) S.mm(x, 2.5, -20.05, x + 2.5, 4.5, -19.9, 0x5aa55a, { collide: false });
+    rects.push({ x0: -88, z0: -20, x1: -46, z1: 30, c: '#a8d88a' });
+    floor(-88, -3.5, -46, 3.5, C.asphalt, 0.012);
+    for (let x = -86; x < -48; x += 4) floor(x, -0.08, x + 2, 0.08, C.line, 0.02);
+    S.mm(-88, 0, -5, -46, 0.15, -3.5, C.sidewalk, { top: C.sidewalk });
+    S.mm(-88, 0, 3.5, -46, 0.15, 5, C.sidewalk, { top: C.sidewalk });
+    S.mm(-88, 0, -3.6, -46, 0.17, -3.45, C.curb, { collide: false });
+    S.mm(-88, 0, 3.45, -46, 0.17, 3.6, C.curb, { collide: false });
+    rects.push({ x0: -88, z0: -5, x1: -46, z1: 5, c: '#8b8f96' });
+    for (const x of [-80, -64]) lamp(x, 4.6);
+    for (const x of [-72, -64]) lamp(x, -4.6);
+    // dead end: barrier + planters
+    S.mm(-87.6, 0, -3.5, -87.2, 1.0, 3.5, 0xf5f5f5);
+    for (let z = -3.2; z < 3.4; z += 1.4) S.mm(-87.15, 0.3, z, -87.1, 0.7, z + 0.7, 0xe53935, { collide: false });
+    pottedPlant(-86.6, 0, -2.5, 1.2, 0xc86b3c);
+    pottedPlant(-86.6, 0, 2.5, 1.2, 0x5d8fc9);
+    // west wall gate posts (where the old wall opens up)
+    S.box(-47, 0, -5.2, 1.2, 3.0, 0.6, 0xc9bb9b);
+    S.box(-47, 0, 5.2, 1.2, 3.0, 0.6, 0xc9bb9b);
+    tree(-50, -17, 0.9, 2);
+    tree(-84, -16, 1, 0);
+    tree(-76, -9, 0.8, 1);
+    tree(-52, 26, 0.9, 0);
+    tree(-54, 12, 1, 2);
+    bench(-53.5, 18, false);
+    // decorative house next to the warung
+    solidHouse(-84, -18, -68, -9, C.mint, C.roof, false, -76);
+    fenceX(-88, -64, -5.25, 1.1, C.fence, [[-77.5, -74.5]]);
+    rects.push({ x0: -84, z0: -18, x1: -68, z1: -9, c: '#9ed1b0' });
+
+    // ================= WARUNG =================
+    const WX0 = -62, WX1 = -50, WZ0 = -13.5, WZ1 = -5.2;
+    rects.push({ x0: WX0, z0: WZ0, x1: WX1, z1: WZ1, c: '#f2c98a' });
+    checker(WX0 + 0.3, WZ0 + 0.3, WX1 - 0.3, WZ1, 0xf3e3c3, 0xe4cfa6, 1);
+    S.mm(WX0, 0, WZ0, WX1, 3.0, WZ0 + 0.3, C.cream);
+    S.mm(WX0, 0, WZ0, WX0 + 0.3, 3.0, -7.2, C.cream);
+    S.mm(WX1 - 0.3, 0, WZ0, WX1, 3.0, -7.2, C.cream);
+    S.mm(WX0 - 0.3, 3.0, WZ0 - 0.3, WX1 + 0.3, 3.25, -6.6, C.concrete, { top: 0xc9c4ba });
+    // striped awning over the front
+    for (let i = 0, x = WX0 - 0.3; x < WX1 + 0.3; x += 1, i++) S.rot(x + 0.5, 2.85, -6.0, 1.0, 0.06, 1.4, 0, i % 2 ? 0xffffff : 0xe53935, 0.3);
+    for (const x of [WX0 + 0.1, WX1 - 0.1]) S.box(x, 0, -5.6, 0.1, 2.6, 0.1, 0x9e9e9e, { cam: false });
+    {
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 0.8), new THREE.MeshBasicMaterial({ map: signTex(['WARUNG SERBA ADA'], '#e53935', '#fff4d6', 512, 96, 56) }));
+      sign.position.set((WX0 + WX1) / 2, 3.55, -6.55);
+      scene.add(sign);
+      S.mm(WX0 + 2.5, 3.1, -6.7, WX1 - 2.5, 4.0, -6.6, 0xb71c1c, { collide: false });
+    }
+    // back shelves full of goods
+    S.mm(WX0 + 0.5, 0, WZ0 + 0.3, WX1 - 0.5, 2.2, WZ0 + 0.8, C.wood);
+    const goods = [0xef5350, 0x42a5f5, 0xffee58, 0x66bb6a, 0xffa726, 0xab47bc, 0xffffff];
+    for (let r = 0; r < 3; r++) for (let i = 0; i < 18; i++) S.mm(WX0 + 0.7 + i * 0.6, 0.45 + r * 0.6, WZ0 + 0.82, WX0 + 1.1 + i * 0.6, 0.8 + r * 0.6 - (i % 3) * 0.06, WZ0 + 0.9, goods[(i + r * 2) % goods.length], { collide: false });
+    // hanging snack strips
+    for (let i = 0; i < 6; i++) S.mm(WX0 + 1 + i * 0.5, 1.7, -7.0, WX0 + 1.3 + i * 0.5, 2.8, -6.97, [0xffca28, 0xff7043, 0x29b6f6][i % 3], { collide: false });
+    // etalase (glass counter)
+    S.mm(-60, 0, -10.2, -55.2, 1.0, -9.4, C.wood, { top: 0xdcb87a });
+    S.mm(-59.8, 0.25, -9.39, -55.4, 0.85, -9.35, C.glass, { collide: false, jitter: 0 });
+    for (let i = 0; i < 7; i++) S.mm(-59.6 + i * 0.68, 0.3, -9.9, -59.2 + i * 0.68, 0.55, -9.5, goods[i % goods.length], { collide: false });
+    pts.warungCounter = V(-54.3, 0, -10.5);
+    pts.warung = V(-56, 0, -7.5);
+    pts.warungFront = V(-56, 0, -6.8);
+    // plastic chairs + small table
+    const chair = (x: number, z: number, color: number, back: number) => {
+      S.mm(x - 0.25, 0, z - 0.25, x + 0.25, 0.45, z + 0.25, color, { top: color + 0x111111 });
+      S.mm(x - 0.25, 0.45, z + back * 0.22 - 0.03, x + 0.25, 0.95, z + back * 0.22 + 0.03, color, { collide: false });
+    };
+    chair(-53.4, -8.6, 0xe53935, -1);
+    chair(-52.2, -8.6, 0x1e88e5, -1);
+    S.mm(-53.3, 0, -7.7, -52.3, 0.6, -7.1, 0xf5f5f5, { top: 0xeeeeee });
+    // ice cream freezer (sleep on top)
+    S.mm(-61.5, 0, -7.2, -59.9, 0.9, -6.2, 0xf7f7f7, { top: 0x64b5f6 });
+    S.mm(-61.4, 0.3, -6.19, -60.0, 0.75, -6.16, 0xffffff, { collide: false });
+    {
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.38), new THREE.MeshBasicMaterial({ map: signTex(['ES KRIM'], '#1e88e5', '#ffffff', 256, 76, 54) }));
+      sign.position.set(-60.7, 0.55, -6.14);
+      scene.add(sign);
+    }
+    pts.freezerTop = V(-60.7, 0.9, -6.7);
+    zones.push({ id: 'warung', x0: WX0, z0: WZ0, x1: WX1, z1: WZ1 });
+    // ---- warung props ----
+    const glassMat = new THREE.MeshLambertMaterial({ color: 0xdff4ff, transparent: true, opacity: 0.55 });
+    {
+      // kerupuk jar
+      const g = new THREE.Group();
+      g.add(new THREE.Mesh(boxGeo(0.42, 0.55, 0.42), glassMat));
+      g.children[0].position.y = 0.275;
+      for (let i = 0; i < 5; i++) g.add(mbox(0.3, 0.04, 0.3, 0xffe082, 0, 0.08 + i * 0.09, 0));
+      g.add(mbox(0.46, 0.08, 0.46, 0xe53935, 0, 0.59, 0));
+      const chip = new THREE.Group();
+      chip.add(mbox(0.3, 0.05, 0.26, 0xffd54f, 0, 0, 0));
+      chip.add(mbox(0.2, 0.052, 0.04, 0xe0a840, 0, 0.002, 0.05));
+      chip.position.set(0.05, 0.68, 0);
+      chip.rotation.z = 0.4;
+      g.add(chip);
+      g.position.set(-59.3, 1.0, -9.8);
+      addProp('kerupuk', g, 1.0, { chip });
+    }
+    {
+      // candy jar
+      const g = new THREE.Group();
+      g.add(new THREE.Mesh(boxGeo(0.34, 0.4, 0.34), glassMat));
+      g.children[0].position.y = 0.2;
+      const cc = [0xff5252, 0x40c4ff, 0xffeb3b, 0x69f0ae, 0xff80ab];
+      for (let i = 0; i < 6; i++) g.add(mbox(0.1, 0.08, 0.1, cc[i % cc.length], -0.08 + (i % 3) * 0.08, 0.08 + Math.floor(i / 3) * 0.09, (i % 2) * 0.08 - 0.04));
+      g.add(mbox(0.36, 0.06, 0.36, 0xffc107, 0, 0.43, 0));
+      g.position.set(-55.75, 1.0, -9.8);
+      addProp('permen', g, 1.0);
+    }
+    {
+      // water gallon: outer (heading) > mid (roll) > body (tip)
+      const outer = new THREE.Group();
+      const mid = new THREE.Group();
+      const body = new THREE.Group();
+      const gm = new THREE.MeshLambertMaterial({ color: 0x6ec6ff, transparent: true, opacity: 0.8 });
+      body.add(new THREE.Mesh(boxGeo(0.42, 0.5, 0.42), gm));
+      body.add(mbox(0.3, 0.08, 0.3, 0x4fb3f6, 0, 0.29, 0));
+      body.add(mbox(0.14, 0.06, 0.14, 0x1565c0, 0, 0.36, 0));
+      body.add(mbox(0.44, 0.05, 0.44, 0x90caf9, 0, -0.1, 0));
+      mid.position.y = 0.25;
+      mid.add(body);
+      outer.add(mid);
+      outer.position.set(-51.2, 0, -6.3);
+      addProp('galon', outer, 0, { mid, body });
+    }
+
+    // ================= SEKOLAH =================
+    const SX0 = -86, SX1 = -58, SZ0 = 5.3, SZ1 = 29;
+    rects.push({ x0: SX0, z0: SZ0, x1: SX1, z1: SZ1, c: '#d9d2c2' });
+    floor(SX0 + 0.2, SZ0 + 0.2, SX1 - 0.2, 18.4, 0xd8d2c4, 0.01);
+    floor(SX0 + 0.2, 18.4, SX1 - 0.2, SZ1 - 0.2, C.grass2, 0.008);
+    fenceX(SX0, SX1, SZ0, 1.6, 0x1e5aa8, [[-73, -69]], true);
+    fenceZ(SZ0, SZ1, SX0, 1.6, 0x1e5aa8, [], true);
+    fenceZ(SZ0, SZ1, SX1, 1.6, 0x1e5aa8, [], true);
+    S.mm(SX0, 0, SZ1 - 0.15, SX1, 2.0, SZ1 + 0.15, C.wallLot);
+    // gate pillars + arch sign + open gate leaves
+    S.box(-73.35, 0, SZ0, 0.7, 2.4, 0.7, 0xe0e0e0, { top: 0xbdbdbd });
+    S.box(-68.65, 0, SZ0, 0.7, 2.4, 0.7, 0xe0e0e0, { top: 0xbdbdbd });
+    S.box(-71, 3.0, SZ0, 5.4, 0.7, 0.3, 0x1e5aa8, { collide: false });
+    S.box(-73.35, 2.4, SZ0, 0.12, 0.7, 0.12, 0x1e5aa8, { collide: false });
+    S.box(-68.65, 2.4, SZ0, 0.12, 0.7, 0.12, 0x1e5aa8, { collide: false });
+    {
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.0, 0.62), new THREE.MeshBasicMaterial({ map: signTex(['SD KOMPLEKS'], '#1e5aa8', '#ffffff', 512, 64, 50), side: THREE.DoubleSide }));
+      sign.position.set(-71, 3.35, SZ0 - 0.17);
+      sign.rotation.y = Math.PI;
+      scene.add(sign);
+    }
+    for (const [x, d] of [[-73.1, 1], [-68.9, -1]] as [number, number][]) {
+      S.mm(Math.min(x, x + d * 0.08), 0, SZ0 + 0.2, Math.max(x, x + d * 0.08), 1.5, SZ0 + 2.2, 0x1e5aa8, { collide: false });
+      for (let z = SZ0 + 0.4; z < SZ0 + 2.2; z += 0.3) S.mm(x - 0.05, 0.1, z, x + 0.05, 1.45, z + 0.05, 0x2f6fc0, { collide: false });
+    }
+    // satpam post
+    S.mm(-66.5, 0, 6.5, -63.5, 2.4, 9, 0xf5f5f5);
+    S.mm(-66.7, 2.4, 6.3, -63.3, 2.6, 9.2, 0x1e5aa8);
+    winX(7.1, 8.4, -66.5, 1.0, 1.9, -1);
+    S.mm(-66.4, 0, 9.0, -65.4, 2.0, 9.06, 0x8a5a33, { collide: false });
+    {
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.4), new THREE.MeshBasicMaterial({ map: signTex(['POS SATPAM'], '#263238', '#ffffff', 256, 56, 40) }));
+      sign.position.set(-65, 2.15, 9.07);
+      scene.add(sign);
+    }
+    // flagpole on a small plinth
+    S.box(-71, 0, 12, 2.4, 0.2, 2.4, 0xbdbdbd, { top: 0xd6d6d6 });
+    S.box(-71, 0.2, 12, 1.4, 0.2, 1.4, 0xcfcfcf, { top: 0xe0e0e0 });
+    S.box(-71, 0.4, 12, 0.12, 6.8, 0.12, 0xeeeeee, { cam: false });
+    S.box(-71, 7.2, 12, 0.22, 0.22, 0.22, 0xffd54f, { collide: false });
+    {
+      const flag = new THREE.Group();
+      flag.add(mbox(1.4, 0.45, 0.03, 0xe53935, 0.75, 0.225, 0));
+      flag.add(mbox(1.4, 0.45, 0.03, 0xffffff, 0.75, -0.225, 0));
+      flag.position.set(-70.94, 6.6, 12);
+      scene.add(flag);
+      anim.push((dt, t) => {
+        flag.rotation.y = Math.sin(t * 2.2) * 0.25;
+        flag.children[0].rotation.y = flag.children[1].rotation.y = Math.sin(t * 3.1) * 0.08;
+      });
+    }
+    pts.flagpole = V(-71, 0, 13.6);
+    pts.sekolah = V(-71, 0, 10);
+    pts.schoolGate = V(-71, 0.15, 4.4);
+    // planters along the yard
+    for (const x of [-84, -80, -62, -59.5]) pottedPlant(x, 0, 17.4, 0.9, 0xc86b3c);
+    tree(-84, 9, 0.8, 1);
+    // classroom building
+    const CX0 = -82, CX1 = -62, CZ0 = 18.5, CZ1 = 28;
+    const CH = 3.2;
+    rects.push({ x0: CX0, z0: CZ0, x1: CX1, z1: CZ1, c: '#f6e3a6' });
+    wallX(CX0, CX1, CZ0 + 0.15, CH, 0xfff3c4, [[-66, -64.2, 2.5]]);
+    wallX(CX0, CX1, CZ1 - 0.15, CH, 0xfff3c4);
+    wallZ(CZ0, CZ1, CX0 + 0.15, CH, 0xfff3c4);
+    wallZ(CZ0, CZ1, CX1 - 0.15, CH, 0xfff3c4);
+    S.mm(CX0 - 0.04, 0, CZ0 - 0.04, -66, 0.5, CZ0 + 0.02, 0x7cb342, { collide: false });
+    S.mm(-64.2, 0, CZ0 - 0.04, CX1 + 0.04, 0.5, CZ0 + 0.02, 0x7cb342, { collide: false });
+    for (const x of [-80, -76, -72, -68.5]) {
+      winZ(x - 1.1, x + 1.1, CZ0 + 0.15, 1.1, 2.4, -1);
+      winZ(x - 1.1, x + 1.1, CZ0 + 0.15, 1.1, 2.4, 1);
+    }
+    S.mm(-66.1, 0, CZ0 - 0.05, -66, 2.6, CZ0 + 0.35, 0xffffff, { collide: false });
+    S.mm(-64.2, 0, CZ0 - 0.05, -64.1, 2.6, CZ0 + 0.35, 0xffffff, { collide: false });
+    S.mm(CX0, CH, CZ0, CX1, CH + 0.2, CZ1, 0xfaf7f0);
+    pitchedRoof(CX0, CZ0, CX1, CZ1, CH + 0.2, C.roof, 4);
+    {
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.45), new THREE.MeshBasicMaterial({ map: signTex(['KELAS 1'], '#2e7d32', '#ffffff', 256, 52, 40) }));
+      sign.position.set(-65.1, 2.9, CZ0 - 0.02);
+      sign.rotation.y = Math.PI;
+      scene.add(sign);
+    }
+    checker(CX0 + 0.3, CZ0 + 0.3, CX1 - 0.3, CZ1 - 0.3, 0xf1ece0, 0xdcd5c4, 1.2);
+    // board frame (the writing itself is a canvas prop)
+    S.mm(-75.2, 1.0, CZ1 - 0.36, -68.8, 2.6, CZ1 - 0.3, 0x8d6e63, { collide: false });
+    S.mm(-75.2, 0.95, CZ1 - 0.5, -68.8, 1.0, CZ1 - 0.3, 0x8d6e63, { collide: false });
+    // posters + clock
+    S.mm(-80.5, 1.4, CZ1 - 0.33, -78.5, 2.6, CZ1 - 0.3, 0xffcc80, { collide: false });
+    S.mm(-66.5, 1.4, CZ1 - 0.33, -64.5, 2.6, CZ1 - 0.3, 0x80deea, { collide: false });
+    S.mm(-72.3, 2.75, CZ1 - 0.34, -71.7, 3.1, CZ1 - 0.3, 0xffffff, { collide: false });
+    // teacher's desk
+    S.mm(-73.2, 0, 24.6, -70.8, 0.8, 25.4, C.woodD, { top: C.wood });
+    S.mm(-72.4, 0, 25.6, -71.6, 0.48, 26.2, C.wood, { top: C.woodL });
+    // student desks + chairs (facing the board)
+    for (const x of [-79, -75.5, -72, -68.5])
+      for (const z of [20.6, 22.6]) {
+        S.mm(x - 0.6, 0, z - 0.3, x + 0.6, 0.7, z + 0.3, C.woodL, { top: 0xe8c48e });
+        S.mm(x - 0.55, 0.2, z - 0.31, x + 0.55, 0.6, z - 0.29, C.wood, { collide: false });
+        S.mm(x - 0.25, 0, z - 0.95, x + 0.25, 0.42, z - 0.5, 0x5c8fd6, { top: 0x6fa0e0 });
+        S.mm(x - 0.25, 0.42, z - 0.97, x + 0.25, 0.85, z - 0.91, 0x5c8fd6, { collide: false });
+        S.mm(x - 0.15, 0.7, z - 0.1, x + 0.2, 0.72, z + 0.15, 0xffffff, { collide: false });
+      }
+    pts.teacherDesk = V(-72.5, 0.8, 25);
+    pts.board = V(-72, 0, 26.9);
+    // the school bell on a post by the classroom
+    S.box(-60.2, 0, 16.2, 0.16, 2.3, 0.16, 0x5d4037, { cam: false });
+    S.box(-60.5, 2.2, 16.2, 0.8, 0.12, 0.12, 0x5d4037, { collide: false });
+    {
+      const g = new THREE.Group();
+      g.add(mbox(0.03, 0.3, 0.03, 0x424242, 0, -0.15, 0));
+      g.add(mbox(0.34, 0.3, 0.34, 0xc9a227, 0, -0.42, 0));
+      g.add(mbox(0.42, 0.08, 0.42, 0xb08a1a, 0, -0.56, 0));
+      g.add(mbox(0.08, 0.1, 0.08, 0x5d4037, 0, -0.64, 0));
+      g.position.set(-60.75, 2.2, 16.2);
+      addProp('bel', g, 0);
+    }
+    pts.bell = V(-60.75, 0, 16.2);
+    pts.satpamA = V(-71, 0, 8.5);
+    pts.satpamB = V(-61.5, 0, 10.5);
+    pts.satpamC = V(-66, 0, 15);
+    pts.satpamD = V(-79, 0, 14);
+    zones.push({ id: 'sekolah', x0: SX0, z0: SZ0, x1: SX1, z1: SZ1 });
+    // ---- school props ----
+    {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 128;
+      const board = new THREE.Mesh(new THREE.PlaneGeometry(6.0, 1.5), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(c) }));
+      (board.material.map as THREE.Texture).colorSpace = THREE.SRGBColorSpace;
+      board.position.set(-72, 1.8, CZ1 - 0.37);
+      board.rotation.y = Math.PI;
+      addProp('papan', board, 0, { canvas: c, screen: board });
+    }
+    {
+      const g = new THREE.Group();
+      const bc = [0xe57373, 0x64b5f6, 0xffd54f, 0x81c784, 0xba68c8];
+      for (let i = 0; i < 5; i++) {
+        const b = mbox(0.42 - (i % 2) * 0.05, 0.07, 0.3, bc[i], (i % 3) * 0.02 - 0.02, 0.035 + i * 0.075, 0);
+        b.rotation.y = (i % 3) * 0.12 - 0.1;
+        g.add(b);
+      }
+      g.position.set(-71.25, 0.8, 25.05);
+      addProp('buku', g, 0.8);
+    }
+
+    // ================= SUNGAI =================
+    // reached through a gap in the south wall at the end of the park/market lane
+    const RX0 = -10, RX1 = 44, RZ1 = 62;
+    const W0 = 50, W1 = 56; // water band
+    S.mm(-12, -1, 42, 46, 0, 64, C.grass, { top: C.grass, jitter: 0 });
+    S.mm(-12, 0, 41, -10, 4.5, 64, PW);
+    S.mm(44, 0, 41, 46, 4.5, 64, PW);
+    S.mm(-12, 0, 62, 46, 4.5, 64, PW);
+    S.wall(-12, 4.5, 41, -10, 12, 64);
+    S.wall(44, 4.5, 41, 46, 12, 64);
+    S.wall(-12, 4.5, 62, 46, 12, 64);
+    rects.push({ x0: RX0, z0: 41, x1: RX1, z1: RZ1, c: '#8fd26b' });
+    // lane gap + path down to the bank
+    floor(12.3, 37, 17.6, 41.5, 0xe2d3b4, 0.014);
+    floor(13.5, 41.5, 16.4, 48, 0xe2d3b4, 0.014);
+    floor(-8, 46.5, 40, 48.2, 0xe2d3b4, 0.012);
+    rects.push({ x0: 12.3, z0: 37, x1: 17.6, z1: 46, c: '#e2d3b4' });
+    {
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.6), new THREE.MeshBasicMaterial({ map: signTex(['SUNGAI'], '#1565c0', '#fffbe6', 256, 60, 48), side: THREE.DoubleSide }));
+      sign.position.set(17.2, 2.2, 42.4);
+      sign.rotation.y = Math.PI;
+      scene.add(sign);
+      S.box(17.2, 0, 42.5, 0.14, 1.95, 0.14, 0x6d4c41, { cam: false });
+    }
+    // stone edging both banks
+    S.mm(RX0, 0, W0 - 0.4, RX1, 0.2, W0, C.stone, { top: 0xb0b0a8 });
+    S.mm(RX0, 0, W1, RX1, 0.2, W1 + 0.4, C.stone, { top: 0xb0b0a8 });
+    rects.push({ x0: RX0, z0: W0, x1: RX1, z1: W1, c: '#4aa3df' });
+    floor(RX0, W0, RX1, W1, 0x2d6f9a, -0.02);
+    const rMat = new THREE.MeshLambertMaterial({ color: C.water, transparent: true, opacity: 0.85 });
+    const rm = new THREE.Mesh(new THREE.BoxGeometry(RX1 - RX0, 0.05, W1 - W0), rMat);
+    rm.position.set((RX0 + RX1) / 2, 0.03, (W0 + W1) / 2);
+    scene.add(rm);
+    water.push({ x0: RX0, z0: W0, x1: RX1, z1: W1 });
+    // flowing water: one merged mesh of light streaks that slides downstream (+x) and wraps
+    {
+      const F = new StaticBuilder();
+      for (let x = RX0 + 0.5; x < RX1 - 7.5; x += 3)
+        for (let i = 0; i < 4; i++) {
+          const z = W0 + 0.6 + i * 1.35 + (Math.floor(x) % 2) * 0.4;
+          const len = 0.9 + ((x * 7 + i * 3) % 5) * 0.2;
+          F.geom(x + i * 0.7, 0.062, z, x + i * 0.7 + len, 0.066, z + 0.07, 0xd8f1ff, undefined, 0.05);
+        }
+      const fm = F.build(new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.7 }));
+      fm.matrixAutoUpdate = true;
+      scene.add(fm);
+      anim.push((dt, t) => {
+        fm.position.x = (t * 0.9) % 3;
+        fm.position.y = Math.sin(t * 1.7) * 0.004;
+        rMat.color.setHSL(0.56, 0.6, 0.55 + Math.sin(t * 1.1) * 0.02);
+      });
+    }
+    // stepping stones (cebur spot is the middle one)
+    for (const z of [50.75, 52.15, 53.55, 54.95]) {
+      S.box(22, -0.05, z, 0.85, 0.3, 0.8, 0x8f8f88, { top: 0xa9a9a1 });
+      S.box(22.08, 0.25, z - 0.05, 0.5, 0.02, 0.45, 0xb8b8b0, { collide: false });
+    }
+    rects.push({ x0: 21.6, z0: 50.4, x1: 22.4, z1: 55.4, c: '#9a9a92' });
+    pts.riverStones = V(22, 0.25, 53.55);
+    // bamboo bridge with stepped ramps and rails
+    {
+      const bx0 = 4, bx1 = 6.2;
+      const steps: [number, number, number][] = [
+        [47.6, 48.3, 0.2],
+        [48.3, 49.0, 0.4],
+        [49.0, 57.0, 0.6],
+        [57.0, 57.7, 0.4],
+        [57.7, 58.4, 0.2],
+      ];
+      for (const [a, b, h] of steps) S.mm(bx0, 0, a, bx1, h, b, 0xb8c46a, { top: 0xc9d47a });
+      for (let z = 47.7; z < 58.4; z += 0.32) S.mm(bx0, 0, z, bx1, 0.005 + steps.find((s) => z >= s[0] && z < s[1])![2], z + 0.04, 0x8e9a48, { collide: false, jitter: 0 });
+      for (const x of [bx0 + 0.06, bx1 - 0.06]) {
+        S.mm(x - 0.06, 0.6, 49, x + 0.06, 1.5, 57, 0, { visible: false, cam: false });
+        S.mm(x - 0.05, 1.3, 48.4, x + 0.05, 1.38, 57.6, 0x9aa64e, { collide: false });
+        S.mm(x - 0.05, 0.95, 48.6, x + 0.05, 1.02, 57.4, 0x9aa64e, { collide: false });
+        for (let z = 48.5; z < 58; z += 1.5) S.box(x, 0, z, 0.1, 1.4, 0.1, 0x7f8a3e, { collide: false });
+      }
+      for (const x of [bx0 + 0.3, bx1 - 0.3]) S.box(x, -0.2, 53, 0.2, 0.8, 0.2, 0x6b7533, { collide: false });
+      rects.push({ x0: bx0, z0: 47.6, x1: bx1, z1: 58.4, c: '#c9d47a' });
+      pts.bridge = V(5.1, 0.6, 53);
+    }
+    // fishing spot on the north bank: small wooden platform over the water.
+    // NOTE: river fishing is wired by the fishing-spots feature (pts.riverFish / pts.riverFishLook).
+    S.mm(11, 0, 48.6, 13, 0.3, 50.8, C.woodL, { top: 0xdcb87a });
+    for (let x = 11.1; x < 13; x += 0.45) S.mm(x, 0.3, 48.6, x + 0.04, 0.305, 50.8, C.woodD, { collide: false });
+    for (const x of [11.1, 12.9]) S.box(x, -0.2, 50.7, 0.14, 0.8, 0.14, C.woodD, { cam: false });
+    rects.push({ x0: 11, z0: 48.6, x1: 13, z1: 50.8, c: '#d4a46a' });
+    pts.riverFish = V(12, 0.3, 50.3);
+    pts.riverFishLook = V(12, 0, 53.5);
+    // flower patch for the butterflies
+    pts.butterflies = V(-3, 0, 44.5);
+    S.mm(-6, 0, 43, 0, 0.12, 46, 0x6d8f3c, { top: 0x78a043 });
+    for (let i = 0; i < 18; i++) {
+      const x = -5.6 + (i % 6) * 1.0, z = 43.4 + Math.floor(i / 6) * 1.0;
+      S.box(x, 0.12, z, 0.05, 0.35, 0.05, 0x388e3c, { collide: false });
+      S.box(x, 0.45, z, 0.18, 0.12, 0.18, [0xff80ab, 0xfff176, 0xffffff, 0xba68c8][i % 4], { collide: false });
+    }
+    pts.ducks = V(34, 0, 46);
+    pts.sungai = V(15, 0, 48);
+    // reeds, rocks, trees, bamboo clumps
+    for (let i = 0; i < 14; i++) S.box(RX0 + 1 + i * 3.7, 0, W1 + 0.7 + (i % 2) * 0.3, 0.08, 0.9 + (i % 3) * 0.25, 0.08, 0x558b2f, { collide: false });
+    for (let i = 0; i < 10; i++) S.box(RX0 + 2.3 + i * 5.3, 0, W0 - 0.75, 0.07, 0.7 + (i % 3) * 0.2, 0.07, 0x689f38, { collide: false });
+    const bamboo = (x: number, z: number) => {
+      for (let i = 0; i < 5; i++) S.box(x + Math.cos(i * 1.3) * 0.4, 0, z + Math.sin(i * 1.3) * 0.4, 0.14, 3.5 + (i % 3) * 0.7, 0.14, 0x8bc34a, { collide: false });
+      S.box(x, 0, z, 0.8, 3.2, 0.8, 0, { visible: false });
+      S.box(x, 3.2, z, 2.0, 0.8, 2.0, 0x7cb342, { collide: false });
+      S.box(x, 4.0, z, 1.2, 0.6, 1.2, 0x8bc34a, { collide: false });
+    };
+    bamboo(-8.5, 48.5);
+    bamboo(42.5, 48.5);
+    bamboo(-8.5, 58.5);
+    bamboo(42.5, 58.5);
+    for (const x of [-4, 9, 17, 30, 38]) tree(x, 59.5, 0.9 + (x % 3) * 0.05, x % 2 ? 2 : 0);
+    tree(-8, 44.2, 0.8, 1);
+    tree(26, 43.5, 0.9, 0);
+    for (const [x, z, s] of [[3, 44, 0.6], [24, 45.5, 0.5], [40, 44.5, 0.7], [33, 58, 0.6]] as [number, number, number][]) S.box(x, 0, z, s * 1.4, s * 0.6, s, 0x9e9e9e, { top: 0xb5b5ad });
+    bench(28, 43.2, true);
+    lamp(10, 46);
+    lamp(32, 46);
+    zones.push({ id: 'sungai', x0: RX0, z0: 41, x1: RX1, z1: RZ1 });
+    // ---- river props ----
+    {
+      // paper boat on the bank edging
+      const g = new THREE.Group();
+      g.add(mbox(0.42, 0.06, 0.18, 0xffffff, 0, 0.03, 0));
+      const s1 = mbox(0.4, 0.12, 0.03, 0xf5f5f5, 0, 0.1, 0.08);
+      s1.rotation.x = -0.4;
+      const s2 = mbox(0.4, 0.12, 0.03, 0xf5f5f5, 0, 0.1, -0.08);
+      s2.rotation.x = 0.4;
+      g.add(s1, s2, mbox(0.12, 0.2, 0.04, 0xe3f2fd, 0, 0.16, 0));
+      g.position.set(30, 0.2, W0 - 0.2);
+      g.rotation.y = 0.15;
+      addProp('perahu', g, 0.2);
+    }
+  }
 
   // Build
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });

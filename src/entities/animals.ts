@@ -151,3 +151,59 @@ export class PigeonModel {
     }
   }
 }
+
+// Small white duck for the river flock (same interface as PigeonModel).
+export class DuckModel {
+  root = new THREE.Group();
+  body = new THREE.Group();
+  head = new THREE.Group();
+  wingL = new THREE.Group();
+  wingR = new THREE.Group();
+  t = rand(0, 10);
+  peckT = rand(0, 3);
+
+  constructor(color = 0xfafafa) {
+    const wing = color === 0xfafafa ? 0xe8e8e8 : color - 0x101010;
+    this.root.add(this.body);
+    this.body.add(B(0.26, 0.2, 0.4, color, 0, 0.18, 0));
+    this.body.add(B(0.16, 0.08, 0.12, color, 0, 0.26, -0.22));
+    this.body.add(B(0.04, 0.1, 0.06, 0xff9800, 0.07, 0.04, 0));
+    this.body.add(B(0.04, 0.1, 0.06, 0xff9800, -0.07, 0.04, 0));
+    this.body.add(B(0.1, 0.02, 0.12, 0xff9800, 0.07, 0.0, 0.03));
+    this.body.add(B(0.1, 0.02, 0.12, 0xff9800, -0.07, 0.0, 0.03));
+    this.head.position.set(0, 0.34, 0.16);
+    this.head.add(B(0.07, 0.14, 0.07, color, 0, -0.02, 0));
+    this.head.add(B(0.15, 0.15, 0.17, color, 0, 0.1, 0.02));
+    this.head.add(B(0.1, 0.04, 0.1, 0xffa726, 0, 0.07, 0.14));
+    this.head.add(B(0.02, 0.03, 0.01, 0x111111, 0.075, 0.13, 0.06));
+    this.head.add(B(0.02, 0.03, 0.01, 0x111111, -0.075, 0.13, 0.06));
+    this.body.add(this.head);
+    for (const [g, sx] of [
+      [this.wingL, 1],
+      [this.wingR, -1],
+    ] as [THREE.Group, number][]) {
+      g.position.set(0.13 * sx, 0.24, -0.02);
+      g.add(B(0.22, 0.03, 0.28, wing, 0.1 * sx, 0, 0));
+      this.body.add(g);
+    }
+    this.wingL.rotation.z = -1.45;
+    this.wingR.rotation.z = 1.45;
+  }
+
+  update(dt: number, flying: boolean) {
+    this.t += dt;
+    if (flying) {
+      const f = Math.sin(this.t * 22) * 0.9;
+      this.wingL.rotation.z = f;
+      this.wingR.rotation.z = -f;
+      this.head.rotation.x = 0;
+    } else {
+      this.wingL.rotation.z = -1.45;
+      this.wingR.rotation.z = 1.45;
+      this.peckT -= dt;
+      if (this.peckT < 0) this.peckT = rand(1, 3.5);
+      this.head.rotation.x = this.peckT < 0.3 ? 0.8 : 0;
+      this.body.rotation.z = Math.sin(this.t * 6) * 0.06;
+    }
+  }
+}

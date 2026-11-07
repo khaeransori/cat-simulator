@@ -14,6 +14,7 @@
     "test:quests": "node test/quests.mjs",
     "test:portrait": "node test/portrait.mjs",
     "test:weather": "node test/weather.mjs",
+    "test:areas": "node test/areas.mjs",
     "test:npc": "node test/npcstuck.mjs"
   },
   "dependencies": {

@@ -252,6 +252,16 @@ class SoundSystem {
   eat() {
     for (let i = 0; i < 4; i++) this.noise(0.06, 0.2, 'bandpass', 900, 2, i * 0.12);
   }
+  bell() {
+    for (let i = 0; i < 6; i++) {
+      this.tone(1320, 0.45, 'triangle', 0.16, i * 0.28);
+      this.tone(1980, 0.25, 'sine', 0.07, i * 0.28);
+    }
+  }
+  quack() {
+    this.tone(520, 0.11, 'sawtooth', 0.08, 0, 380);
+    this.tone(500, 0.13, 'sawtooth', 0.08, 0.16, 360);
+  }
   door() {
     this.tone(200, 0.3, 'triangle', 0.15, 0, 160);
   }

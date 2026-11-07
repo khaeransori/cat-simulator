@@ -7,9 +7,13 @@ const res = await h.page.evaluate(async (secs) => {
   const C = window.__cat; const out = {};
   const W = () => new Promise((r) => setTimeout(r, 250));
   const hist = {};
+  const s0 = C.npcs.find((n) => n.name === 'satpam');
+  const satpamStart = s0 ? [s0.body.x, s0.body.z] : null;
+  let satpamMax = 0;
   const npcs = [...C.npcs, C.kids.a, C.kids.b];
   for (let i = 0; i < secs * 4; i++) {
     await W();
+    if (s0) satpamMax = Math.max(satpamMax, Math.hypot(s0.body.x - satpamStart[0], s0.body.z - satpamStart[1]));
     for (const n of npcs) {
       const k = n.name; const b = n.body;
       (hist[k] = hist[k] || []).push([b.x, b.z, n.state, C.time]);
@@ -23,8 +27,10 @@ const res = await h.page.evaluate(async (secs) => {
       }
     }
   }
-  return out;
+  return { out, satpamMax, names: C.npcs.map((n) => n.name) };
 }, secs);
 console.log(JSON.stringify(res));
-check('no NPC stuck while walking', Object.keys(res).length === 0);
+check('new NPCs present (satpam, buwarung)', res.names.includes('satpam') && res.names.includes('buwarung'), res.names.join(','));
+check('Pak Satpam patrols his yard', res.satpamMax > 4, res.satpamMax.toFixed(1));
+check('no NPC stuck while walking', Object.keys(res.out).length === 0);
 await h.close();
