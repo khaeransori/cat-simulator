@@ -29,7 +29,7 @@ export interface SaveData {
   owned: Record<string, boolean>;
   mischief: Record<string, number>; // times done, all-time
   fish: Record<string, number>;
-  quest: { idx: number; stage: 'offer' | 'active' | 'ready' | 'done'; prog: any; gen: any; lastKind: string };
+  quest: { idx: number; stage: 'offer' | 'active' | 'ready' | 'done'; prog: any; gen: any; recent: string[] };
   day: number;
   unlocked: { pasar: boolean; atap: boolean };
   settings: Settings;
@@ -49,7 +49,7 @@ export function defaultSave(): SaveData {
     owned: {},
     mischief: {},
     fish: {},
-    quest: { idx: 0, stage: 'offer', prog: {}, gen: null, lastKind: '' },
+    quest: { idx: 0, stage: 'offer', prog: {}, gen: null, recent: [] },
     day: 1,
     unlocked: { pasar: false, atap: false },
     settings: { lang: 'id', langChosen: false, music: 0.6, sfx: 0.9, quality: 'high', dayLen: 300, arrow: true },

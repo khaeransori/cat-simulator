@@ -45,6 +45,7 @@ export const AREA_KEY: Record<string, string> = { rumah: 'ar_rumah', taman: 'ar_
 export function addCoins(n: number) {
   ctx.save.coins += n;
   if (ctx.day) ctx.day.coinsToday += n;
+  if (n > 0) ctx.quests?.onEvent('coins', n);
   ctx.ui?.coins(n);
   writeSave(ctx.save);
 }
@@ -270,6 +271,7 @@ function eatCarried() {
   });
   cat.carrying = null;
   sfx.eat();
+  ctx.quests.onEvent('eat');
 }
 
 // ---------- registration ----------

@@ -99,6 +99,7 @@ function boot() {
   // ---- events ----
   ctx.onShooed = (h: Human) => {
     ui.toast('💨 ' + tr('shooed'));
+    ctx.quests.onEvent('shoo');
     const c = cat.carrying;
     if (c) {
       if (h.owns.includes(c.id) && c.id === 'sandal') {
@@ -111,10 +112,22 @@ function boot() {
       } else dropCarried(true);
     }
   };
-  ctx.onHugged = () => ui.toast('💕 ' + tr('hugged'));
+  ctx.onHugged = () => {
+    ui.toast('💕 ' + tr('hugged'));
+    ctx.quests.onEvent('hug');
+  };
   ctx.onSpotted = () => ctx.camRig && (ctx.camRig.shake = 0.15);
   ctx.onMeow = () => {
     const b = cat.body;
+    // meow quests: the nearest person within reach counts once
+    {
+      let who = '', best = 4.5;
+      for (const h of [...(ctx.npcs as Human[]), ctx.kids.a, ctx.kids.b] as Human[]) {
+        const d = Math.hypot(h.body.x - b.x, h.body.z - b.z);
+        if (d < best) (best = d), (who = h.name);
+      }
+      if (who) ctx.quests.onEvent('meow', 1, who);
+    }
     for (const h of ctx.npcs as Human[]) {
       const d = Math.hypot(h.body.x - b.x, h.body.z - b.z);
       if (d < 7 && (h.state === 'patrol' || h.state === 'wait') && Math.random() < 0.6) {
@@ -263,6 +276,7 @@ function boot() {
       }
     }
     ctx.day.update(gdt);
+    if (ctx.mode === 'play' && !ctx.paused) ctx.quests.tick();
     ctx.fx.update(gdt);
     if (ctx.mode === 'menu') menuCamera(dt);
     else ctx.camRig.update(dt, cat);

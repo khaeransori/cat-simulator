@@ -51,27 +51,51 @@ check('no ! over Lisa', (await h.ev(() => window.__cat.quests.lisaMark())) === '
 check('no arrow to Lisa', (await h.ev(() => window.__cat.quests.targetPoint())) === null);
 q = await talk();
 check('bonus quest is opt-in via talking', q.idx === 6 && q.stage === 'active' && !!q.gen);
-// Walk 12 generated quests: each must be completable and differ from the last
+// Walk 40 generated quests through the real progress hooks
 const kinds = [];
-for (let r = 0; r < 12; r++) {
+const fails = [];
+for (let r = 0; r < 40; r++) {
+  await h.ev(() => (window.__cat.day.timeLeft = window.__cat.day.len));
   if (r > 0) { q = await talk(); }
   q = await h.ev(() => window.__cat.save.quest);
-  const g = q.gen; kinds.push(g.kind);
+  const g = q.gen; if (!g) { console.log("no gen at", r, JSON.stringify(q), await h.ev(() => [window.__cat.cat.state, window.__cat.interact.current?.id, !!window.__cat.cat.carrying, window.__cat.mode])); break; } kinds.push(g.kind);
   await h.ev((g) => {
-    const Q = window.__cat.quests, s = window.__cat.save;
+    const C = window.__cat, Q = C.quests, s = C.save;
+    const any = ['gelas', 'tisu', 'laptop', 'gorden', 'koran', 'gali', 'bola', 'ember', 'tomat'];
     if (g.type === 'fish') for (let i = 0; i < g.goal; i++) Q.onFish(g.fish || 'mas');
     else if (g.type === 'gold') Q.onFish('emas');
-    else if (g.type === 'set') (g.set || ['gelas', 'tisu', 'laptop', 'gorden', 'koran', 'gali', 'bola']).slice(0, g.goal).forEach((m) => Q.onMischief(m));
-    else { s.quest.stage = 'ready'; s.quest.prog = { n: g.goal }; } // bring / perfect paths are covered above
+    else if (g.type === 'set') (g.set || any).slice(0, g.goal).forEach((m) => Q.onMischief(m));
+    else if (g.type === 'combo' || g.type === 'sneaky') for (let i = 0; i < g.goal; i++) Q.onMischief(any[i]);
+    else if (g.type === 'event') {
+      if (g.ev === 'coins') Q.onEvent('coins', g.goal);
+      else if (g.ev === 'meow') ['siti', 'ujang', 'tini', 'dimas', 'putri'].slice(0, g.goal).forEach((w) => Q.onEvent('meow', 1, w));
+      else for (let i = 0; i < g.goal; i++) Q.onEvent(g.ev);
+    } else if (g.type === 'visit') {
+      for (const p of g.spots) { const pt = C.world.pts[p]; const b = C.cat.body; b.x = pt.x; b.y = pt.y; b.z = pt.z; Q.tick(); }
+    } else { s.quest.stage = 'ready'; s.quest.prog = { n: g.goal }; } // bring / perfect: chain test above covers the real path
   }, g);
-  const ready = await h.ev(() => window.__cat.save.quest.stage);
-  if (ready !== 'ready') check('gen ' + g.kind + ' completable', false, JSON.stringify(g.title));
+  const st = await h.ev(() => window.__cat.save.quest.stage);
+  if (st !== 'ready') fails.push(g.kind + ' ' + JSON.stringify(await h.ev(() => window.__cat.save.quest.prog)));
+  await h.ev(() => { window.__cat.cat.setState('free'); window.__cat.day.timeLeft = window.__cat.day.len; });
   q = await talk();
-  if (q.stage !== 'offer' || q.gen) check('gen ' + g.kind + ' rewarded', false);
+  if (q.stage !== 'offer' || q.gen) fails.push(g.kind + ' not rewarded');
 }
 console.log('kinds:', kinds.join(', '));
-check('bonus quests vary (no repeat in a row)', kinds.every((k, i) => i === 0 || k !== kinds[i - 1]));
-check('at least 5 different kinds', new Set(kinds).size >= 5);
+check('every generated quest completable + rewarded', fails.length === 0, fails.join(' | '));
+check('no kind repeats within 5 in a row', kinds.every((k, i) => !kinds.slice(Math.max(0, i - 4), i).includes(k)));
+check('at least 13 different kinds seen', new Set(kinds).size >= 13, String(new Set(kinds).size));
+check('sneaky resets on shoo', await h.ev(() => {
+  const Q = window.__cat.quests, s = window.__cat.save;
+  s.quest.gen = { id: 'gen_sneaky', kind: 'sneaky', type: 'sneaky', goal: 4, title: { id: 'x', en: 'x' }, intro: [], remind: { id: '', en: '' }, done: [], coins: 1, items: [] };
+  s.quest.stage = 'active'; s.quest.prog = {};
+  Q.onMischief('gelas'); Q.onMischief('tisu'); Q.onEvent('shoo'); return Q.progress().n === 0;
+}));
+check('meow counts each person once', await h.ev(() => {
+  const Q = window.__cat.quests, s = window.__cat.save;
+  s.quest.gen = { id: 'gen_meow', kind: 'meow', type: 'event', ev: 'meow', distinct: true, goal: 3, title: { id: 'x', en: 'x' }, intro: [], remind: { id: '', en: '' }, done: [], coins: 1, items: [] };
+  s.quest.stage = 'active'; s.quest.prog = {};
+  Q.onEvent('meow', 1, 'siti'); Q.onEvent('meow', 1, 'siti'); Q.onEvent('meow', 1, ''); return Q.progress().n === 1;
+}));
 check('boot does not count for normal fish quest', await h.ev(() => {
   const Q = window.__cat.quests, s = window.__cat.save;
   s.quest.gen = { id: 'gen_t', kind: 'fishAny', type: 'fish', goal: 2, title: { id: 'x', en: 'x' }, intro: [], remind: { id: '', en: '' }, done: [], coins: 1, items: [] };

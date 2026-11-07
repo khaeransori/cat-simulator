@@ -32,6 +32,7 @@ Alternatif tanpa hosting: unduh [cat-simulator.html](https://khaeransori.github.
   4. 2 kenakalan di atap → mahkota
   5. Pancing Ikan Emas legendaris → bulu emas
   6. Hari sempurna (8 kenakalan + pulang tepat waktu) → jubah pahlawan
+- **Tantangan bonus tanpa akhir** (`src/game/questgen.ts`): setelah tamat, tiap ngobrol ke Lisa dia bikin tantangan baru dari 16 tipe — mancing apa saja, mancing jenis tertentu, kenakalan per area, pilih 2 dari 3, N kenakalan beda, bawa ikan pasar, pulang tepat waktu, Ikan Emas, kombo cepat, ngemil, dipeluk anak-anak, diusir warga, ninja (tanpa diusir), meong ke orang berbeda, kumpulkan koin, jalan-jalan ke beberapa tempat. Tipe yang sama tidak muncul lagi dalam 5 tantangan berikutnya, angka/tempat diacak, dan target pelan-pelan naik tiap 6 tantangan.
 - **Mancing:** tunggu pelampung, tekan saat ada yang makan, lalu tekan lagi saat penanda di bagian hijau. Bisa dapat ikan kecil, ikan mas, lele, sepatu bekas, atau Ikan Emas.
 - **Gaya Kucing:** nama sendiri, 10 warna bulu, 6 pola, 5 warna mata, topi, kacamata, kalung, dan punggung (ransel, sayap, jubah). Dibuka dengan koin ikan atau hadiah quest.
 - **Buku Kenakalan** (koleksi kenakalan dan ikan) dan **peta** kompleks.

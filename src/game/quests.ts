@@ -11,7 +11,7 @@ const P = (id: string, en: string): Pair => ({ id, en });
 
 export interface QDef {
   id: string;
-  type: 'fish' | 'set' | 'bring' | 'gold' | 'perfect';
+  type: 'fish' | 'set' | 'bring' | 'gold' | 'perfect' | 'combo' | 'event' | 'sneaky' | 'visit';
   goal: number;
   set?: string[];
   title: Pair;
@@ -24,6 +24,11 @@ export interface QDef {
   target?: string; // point name for the guide arrow
   fish?: string; // fish quests: only this species counts
   kind?: string; // generated bonus quests: template name
+  window?: number; // combo: max seconds between mischiefs
+  ev?: 'eat' | 'hug' | 'shoo' | 'meow' | 'coins'; // event quests
+  distinct?: boolean; // event quests: count each source once
+  spots?: string[]; // visit: world point names
+  spotNames?: Pair[];
 }
 
 export const QUESTS: QDef[] = [
@@ -208,6 +213,7 @@ export class Quests {
     const pr = this.st.prog || {};
     if (q.type === 'set') return { n: (pr.set || []).length, g: q.goal };
     if (q.type === 'perfect') return { n: ctx.day ? ctx.day.doneToday.size : 0, g: q.goal };
+    if (q.type === 'visit') return { n: (pr.v || []).length, g: q.goal };
     return { n: pr.n || 0, g: q.goal };
   }
 
@@ -230,6 +236,18 @@ export class Quests {
     if (s === 'offer' || s === 'ready') return W.pts.lisa;
     const q = this.q;
     if (q.type === 'bring') return ctx.cat.carrying?.id === 'ikan_pasar' ? W.pts.lisa : ctx.save.unlocked.pasar ? W.props.ikan_pasar.home : W.pts.pasarGate;
+    if (q.type === 'visit') {
+      const left = (q.spots || []).filter((p) => !(this.st.prog.v || []).includes(p));
+      if (!left.length) return null;
+      const cb = ctx.cat.body;
+      left.sort((a, b) => W.pts[a].distanceToSquared(cb as any) - W.pts[b].distanceToSquared(cb as any));
+      const p = left[0];
+      // rooftop spots: guide to the crates first while on the ground
+      if (W.pts[p].y > 3 && cb.y < 3.2) return W.pts.crates;
+      return W.pts[p];
+    }
+    if (q.target === 'kids') return ctx.kids?.a?.body ? new THREE.Vector3(ctx.kids.a.body.x, 0, ctx.kids.a.body.z) : W.pts.kidA;
+    if (q.target === 'pasar') return ctx.save.unlocked.pasar ? W.pts.pasarIn : W.pts.pasarGate;
     if (q.target === 'dock') return W.pts.dock;
     if (q.target === 'parkCenter') return W.pts.flowerBed;
     if (q.target === 'crates') {
@@ -255,8 +273,8 @@ export class Quests {
     if (s.stage === 'offer') {
       if (this.allDone()) {
         // a fresh, different bonus request every time
-        s.gen = genQuest(s.lastKind);
-        s.lastKind = s.gen.kind;
+        s.gen = genQuest(s.recent || [], s.idx - QUESTS.length);
+        s.recent = [...(s.recent || []), s.gen.kind!].slice(-6);
         return this.talk2(s.gen);
       }
       const lines = [...q.intro];
@@ -398,8 +416,64 @@ export class Quests {
       s.prog.set = s.prog.set || [];
       if (!s.prog.set.includes(id)) s.prog.set.push(id);
       this.check();
+    } else if (q.type === 'sneaky') {
+      s.prog.n = (s.prog.n || 0) + 1;
+      this.check();
+    } else if (q.type === 'combo') {
+      const t = ctx.day ? ctx.day.playT : ctx.time;
+      const gap = t - (s.prog.t ?? -1e9);
+      s.prog.n = gap >= 0 && gap <= (q.window || 40) ? (s.prog.n || 0) + 1 : 1;
+      s.prog.t = t;
+      if (s.prog.n > 1 && s.prog.n < q.goal) ctx.ui.toast(`⚡ ${s.prog.n}/${q.goal}`, 1.2);
+      this.check();
     }
     void MBY;
+  }
+
+  /** Generic hook for event quests: eat, hug, shoo, meow (key = who), coins (amount). */
+  onEvent(ev: string, amount = 1, key = '') {
+    const s = this.st;
+    if (s.stage !== 'active') return;
+    const q = this.q;
+    if (q.type === 'sneaky' && ev === 'shoo' && (s.prog.n || 0) > 0) {
+      s.prog.n = 0;
+      ctx.ui.toast('🥷 0/' + q.goal, 1.6);
+      writeSave(ctx.save);
+      ctx.ui.quest();
+      return;
+    }
+    if (q.type !== 'event' || q.ev !== ev) return;
+    if (q.distinct) {
+      if (!key) return;
+      s.prog.k = s.prog.k || [];
+      if (s.prog.k.includes(key)) return;
+      s.prog.k.push(key);
+      s.prog.n = s.prog.k.length;
+      ctx.ui.toast(`🗣️ ${s.prog.n}/${q.goal}`, 1.2);
+    } else s.prog.n = (s.prog.n || 0) + amount;
+    this.check();
+  }
+
+  /** Per-frame: visit quests tick off spots the cat reaches. */
+  tick() {
+    const s = this.st;
+    if (s.stage !== 'active') return;
+    const q = this.q;
+    if (q.type !== 'visit' || !q.spots) return;
+    const cb = ctx.cat.body;
+    const W = ctx.world;
+    s.prog.v = s.prog.v || [];
+    q.spots.forEach((p, i) => {
+      if (s.prog.v.includes(p)) return;
+      const pt = W.pts[p];
+      if (!pt) return;
+      if (Math.hypot(pt.x - cb.x, pt.z - cb.z) < 2.4 && Math.abs(pt.y - cb.y) < 1.6) {
+        s.prog.v.push(p);
+        sfx.coin();
+        ctx.ui.toast(`📍 ${q.spotNames ? L(q.spotNames[i]) : ''}  ${s.prog.v.length}/${q.goal}`, 1.8);
+        this.check();
+      }
+    });
   }
 
   onDayEnd(onTime: boolean) {
