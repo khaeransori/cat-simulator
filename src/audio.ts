@@ -244,6 +244,14 @@ class SoundSystem {
   eat() {
     for (let i = 0; i < 4; i++) this.noise(0.06, 0.2, 'bandpass', 900, 2, i * 0.12);
   }
+  shutter() {
+    // mechanical "ka-chik": two short noise clicks + a tiny whir
+    this.noise(0.04, 0.45, 'highpass', 2500, 1);
+    this.tone(1400, 0.03, 'square', 0.08, 0, 600);
+    this.noise(0.06, 0.35, 'bandpass', 1800, 1.5, 0.09);
+    this.tone(900, 0.05, 'square', 0.06, 0.09, 500);
+    this.noise(0.18, 0.08, 'bandpass', 4000, 3, 0.16, 2500);
+  }
   door() {
     this.tone(200, 0.3, 'triangle', 0.15, 0, 160);
   }

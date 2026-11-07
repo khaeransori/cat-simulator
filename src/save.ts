@@ -36,6 +36,10 @@ export interface SaveData {
   stats: { perfectDays: number; caught: number; onTime: number; fishTotal: number };
   firstRun: boolean;
   metLisa: boolean;
+  /** Rumah Kucing: owned decorations (id -> true) */
+  decor: Record<string, boolean>;
+  /** owned decorations the player put away (not shown in the house) */
+  decorOff: Record<string, boolean>;
 }
 
 const KEY = 'cat-sim-sebelum-mama-pulang-v1';
@@ -56,6 +60,8 @@ export function defaultSave(): SaveData {
     stats: { perfectDays: 0, caught: 0, onTime: 0, fishTotal: 0 },
     firstRun: true,
     metLisa: false,
+    decor: {},
+    decorOff: {},
   };
 }
 
@@ -69,7 +75,7 @@ function merge(base: any, extra: any): any {
     else if (typeof b === typeof e || b === null) base[k] = e;
   }
   // keep dynamic record keys (owned, mischief, fish, prog)
-  for (const k of ['owned', 'mischief', 'fish']) if (extra[k] && typeof extra[k] === 'object') base[k] = { ...extra[k] };
+  for (const k of ['owned', 'mischief', 'fish', 'decor', 'decorOff']) if (extra[k] && typeof extra[k] === 'object') base[k] = { ...extra[k] };
   if (extra.quest && extra.quest.prog) base.quest.prog = extra.quest.prog;
   return base;
 }

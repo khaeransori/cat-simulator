@@ -35,6 +35,8 @@ Alternatif tanpa hosting: unduh [cat-simulator.html](https://khaeransori.github.
 - **Tantangan bonus tanpa akhir** (`src/game/questgen.ts`): setelah tamat, tiap ngobrol ke Lisa dia bikin tantangan baru dari 16 tipe — mancing apa saja, mancing jenis tertentu, kenakalan per area, pilih 2 dari 3, N kenakalan beda, bawa ikan pasar, pulang tepat waktu, Ikan Emas, kombo cepat, ngemil, dipeluk anak-anak, diusir warga, ninja (tanpa diusir), meong ke orang berbeda, kumpulkan koin, jalan-jalan ke beberapa tempat. Tipe yang sama tidak muncul lagi dalam 5 tantangan berikutnya, angka/tempat diacak, dan target pelan-pelan naik tiap 6 tantangan.
 - **Mancing:** tunggu pelampung, tekan saat ada yang makan, lalu tekan lagi saat penanda di bagian hijau. Bisa dapat ikan kecil, ikan mas, lele, sepatu bekas, atau Ikan Emas.
 - **Gaya Kucing:** nama sendiri, 10 warna bulu, 6 pola, 5 warna mata, topi, kacamata, kalung, dan punggung (ransel, sayap, jubah). Dibuka dengan koin ikan atau hadiah quest.
+- **Mode Foto 📸:** tombol 📸 di HUD (atau di menu jeda) membekukan permainan dan menyembunyikan HUD. Geser untuk memutar kamera mengelilingi kucing, cubit atau roda mouse untuk zoom, pilih gaya (berdiri, duduk, tidur, meong, lompat), bingkai (polaroid, kayu, hati, film), dan tempel stiker emoji yang bisa digeser, diketuk untuk ganti ukuran, atau dibuang ke 🗑️. Tombol jepret menyimpan PNG (unduh, atau Bagikan di HP). 6 foto terakhir tersimpan kecil di Album 🖼️.
+- **Rumah Kucing 🏠:** toko hiasan di tab 🏠 Rumah pada Gaya Kucing, tombol 🏠 di HUD saat di dalam rumah, atau menu jeda. 12 hiasan (20–60 koin) dengan tempat tetap di ruang tamu: bola benang (bisa ditendang), tikus mainan, mangkuk makan (ngemil), tanaman, karpet bulat, poster ikan, rumah kardus (ngumpet), lampu tidur, tiang cakar (cakar sepuasnya, bisa dipanjat ke rak dinding), kasur kucing (bobo; kalau Mama pulang saat kucing tidur di kasur, tetap dihitung tidur di rumah), rak dinding, akuarium kecil. Hiasan bisa disimpan/dipasang lagi.
 - **Buku Kenakalan** (koleksi kenakalan dan ikan) dan **peta** kompleks.
 - **Bahasa Indonesia / English** bisa dipilih di Pengaturan.
 - Musik dan efek suara dibuat langsung dengan WebAudio, tanpa file audio.
@@ -68,6 +70,7 @@ npm run test:smoke      # judul, pilih kucing, intro, jalan keluar rumah, jumlah
 npm run test:mischief   # 20 kenakalan satu per satu
 npm run test:quests     # rantai quest Lisa sampai hari sempurna
 npm run test:portrait   # layar portrait + joystick, kamera, dan tombol sentuh
+npm run test:photohome  # mode foto (jeda, HUD, jepret PNG) + toko Rumah Kucing, hiasan interaktif, jalan ke sofa/pintu
 ```
 
 ### Struktur kode
@@ -87,6 +90,8 @@ npm run test:portrait   # layar portrait + joystick, kamera, dan tombol sentuh
 | `src/game/fishing.ts` | Mini game mancing |
 | `src/game/day.ts` | Alur satu hari, cutscene Mama, panah petunjuk |
 | `src/ui/` | HUD, menu, toko gaya, buku, peta, pengaturan |
+| `src/ui/photo.ts` | Mode Foto: kamera orbit, gaya, bingkai, stiker, jepret, album |
+| `src/game/decor.ts` | Rumah Kucing: katalog hiasan, geometri (digabung jadi satu mesh), interaksi |
 | `src/cosmetics.ts` | Katalog bulu, pola, mata, dan aksesori |
 | `src/i18n.ts` | Teks Indonesia dan Inggris |
 

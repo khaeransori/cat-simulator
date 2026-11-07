@@ -72,6 +72,7 @@ export class Day {
     cat.carrying = null;
     ctx.fishing.stop();
     resetProps();
+    ctx.decor?.reset();
     ctx.quests.applyUnlocks(false);
     for (const h of ctx.npcs as Human[]) h.reset();
     ctx.kids.reset();
@@ -202,7 +203,8 @@ export class Day {
       sfx.tone(880, 0.2, 'square', 0.1, 0.3);
     }
     if (this.timeLeft <= 0 && active && !this.ended) {
-      this.end(cat.state === 'sleep' && cat.pos.distanceTo(ctx.world.pts.sofa) < 0.8);
+      // napping in the bought cat bed counts as asleep at home too
+      this.end(cat.state === 'sleep' && (cat.pos.distanceTo(ctx.world.pts.sofa) < 0.8 || !!ctx.decor?.sleepingInBed()));
       return;
     }
     // tips

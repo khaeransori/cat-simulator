@@ -19,6 +19,8 @@ import { Quests } from './game/quests';
 import { Fishing } from './game/fishing';
 import { setupMischief, dropCarried } from './game/mischief';
 import { Day } from './game/day';
+import { DecorSystem } from './game/decor';
+import { PhotoMode } from './ui/photo';
 import { UI, HUD_HTML } from './ui/ui';
 import { input, setupInput } from './input';
 import { sfx } from './audio';
@@ -92,8 +94,10 @@ function boot() {
   ctx.fishing = new Fishing();
   setupMischief();
   ctx.day = new Day();
+  ctx.decor = new DecorSystem();
   const ui = new UI();
   ctx.ui = ui;
+  ctx.photo = new PhotoMode();
   ctx.quests.applyUnlocks(false);
 
   // ---- events ----
@@ -231,7 +235,7 @@ function boot() {
     if (ctx.timeScale) dt *= ctx.timeScale;
     ctx.time += dt;
     input.update(ctx.time);
-    if (input.pause) {
+    if (input.pause && !ctx.photoMode) {
       if (ctx.mode === 'play' && !ctx.paused && !ctx.dialogOpen) ui.pause();
       else if (ctx.paused && ctx.mode === 'play') ui.resume();
     }
@@ -278,11 +282,12 @@ function boot() {
     ctx.day.update(gdt);
     if (ctx.mode === 'play' && !ctx.paused) ctx.quests.tick();
     ctx.fx.update(gdt);
-    if (ctx.mode === 'menu') menuCamera(dt);
+    if (ctx.photoMode) ctx.photo.update(dt);
+    else if (ctx.mode === 'menu' && !ctx.camRig.override) menuCamera(dt);
     else ctx.camRig.update(dt, cat);
     const w = window.innerWidth, h = window.innerHeight;
     ctx.bubbles.update(dt, camera, w, h);
-    if (ctx.mode === 'play') ui.updateAction();
+    if (ctx.mode === 'play' && !ctx.photoMode) ui.updateAction();
     if (ctx.mode === 'play' && Math.floor(ctx.time * 4) !== Math.floor((ctx.time - dt) * 4)) ui.quest();
     ui.updateDialog(dt);
     input.consume();

@@ -6,6 +6,8 @@ import { ITEMS, SLOTS, itemsFor, isOwned, key, furColor, type Item, type Slot } 
 import { MISCHIEF, AREA_KEY } from '../game/mischief';
 import { FISH } from '../game/fishing';
 import { input } from '../input';
+import { DECOR, DECOR_BY, decorOwned, decorPlaced, type DecorDef } from '../game/decor';
+import * as THREE from 'three';
 
 const $ = (id: string) => document.getElementById(id)!;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -65,6 +67,7 @@ export class UI {
   styleBackup: any = null;
   lastCoins = -1;
   bookTab: 'm' | 'f' = 'm';
+  decorSel: DecorDef | null = null;
 
   constructor() {
     this.bindHud();
@@ -75,6 +78,32 @@ export class UI {
     $('btnPause').addEventListener('click', () => {
       sfx.click();
       this.pause();
+    });
+    $('btnPhoto').addEventListener('click', () => {
+      sfx.click();
+      ctx.photo.enter();
+    });
+    $('btnHome').addEventListener('click', () => {
+      sfx.click();
+      this.decorShop('play');
+    });
+    $('photoExit').addEventListener('click', (e) => {
+      e.stopPropagation();
+      ctx.photo.exit();
+    });
+    $('photoShutter').addEventListener('click', (e) => {
+      e.stopPropagation();
+      ctx.photo.shoot();
+    });
+    $('photoAlbumBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      sfx.click();
+      ctx.photo.openGallery();
+    });
+    $('photoResClose').addEventListener('click', (e) => {
+      e.stopPropagation();
+      sfx.click();
+      ctx.photo.backToCamera();
     });
     $('btnMap').addEventListener('click', () => {
       sfx.click();
@@ -148,6 +177,10 @@ export class UI {
   }
 
   updateAction() {
+    const home = $('btnHome');
+    const cb = ctx.cat.body;
+    const inHome = cb.x > -22 && cb.x < -6 && cb.z > -27 && cb.z < -13 && cb.y < 2;
+    if (home.hidden === inHome) home.hidden = !inHome;
     const btn = $('btnAct');
     let icon = '🐾', label = tr('noAction'), idle = true, hot = false;
     if (ctx.fishing?.active) {
@@ -408,7 +441,7 @@ export class UI {
       const s = ctx.save;
       const slot = this.styleSlot;
       const items = itemsFor(slot);
-      const tabs = (first ? (['fur', 'eyes'] as Slot[]) : SLOTS).map((sl) => `<button class="tab ${sl === slot ? 'on' : ''}" data-slot="${sl}">${esc(tr('slot_' + sl))}</button>`).join('');
+      const tabs = (first ? (['fur', 'eyes'] as Slot[]) : SLOTS).map((sl) => `<button class="tab ${sl === slot ? 'on' : ''}" data-slot="${sl}">${esc(tr('slot_' + sl))}</button>`).join('') + (first ? '' : `<button class="tab decor-tab" id="tabDecor">🏠 ${esc(tr('decorTab'))}</button>`);
       const tiles = items
         .map((it) => {
           const owned = isOwned(it);
@@ -451,7 +484,16 @@ export class UI {
         s.name = v || 'Meong';
         writeSave(s);
       });
-      document.querySelectorAll('.tab').forEach(
+      const td = document.getElementById('tabDecor');
+      if (td)
+        td.onclick = () => {
+          sfx.click();
+          this.styleSel = null;
+          ctx.cat.model.setLook(ctx.save.look);
+          writeSave(ctx.save);
+          this.decorShop('menu');
+        };
+      document.querySelectorAll('.tab[data-slot]').forEach(
         (b) =>
           ((b as HTMLElement).onclick = () => {
             sfx.click();
@@ -642,6 +684,7 @@ export class UI {
           ctx.save.settings.langChosen = keepChosen;
           ctx.cat.model.setLook(ctx.save.look);
           ctx.quests.applyUnlocks(false);
+          ctx.decor.refresh();
           writeSave(ctx.save);
           this.toast(tr('resetDone'));
           ctx.styledOnce = false;
@@ -656,6 +699,121 @@ export class UI {
     render();
   }
 
+  // ---------- Rumah Kucing (decor shop) ----------
+  /** from: 'menu' (style screen tab), 'play' (HUD 🏠 button), 'pause' (pause menu) */
+  decorShop(from: 'menu' | 'play' | 'pause') {
+    const s = ctx.save;
+    const D = ctx.decor;
+    if (from !== 'menu') {
+      ctx.paused = true;
+      $('hud').hidden = true;
+    }
+    const camFor = (d: DecorDef | null) => {
+      const p = d ? d.pos : new THREE.Vector3(-10.2, 0.1, -16.6);
+      const camPos = d?.cam ? d.cam.clone() : d ? (() => {
+        // look from the middle of the living room toward the item
+        const c = new THREE.Vector3(-13.6, 0, -15.6);
+        const dir = new THREE.Vector3(c.x - p.x, 0, c.z - p.z);
+        if (dir.lengthSq() < 0.01) dir.set(0, 0, 1);
+        dir.normalize().multiplyScalar(2.7);
+        return new THREE.Vector3(p.x + dir.x, 1.9, p.z + dir.z);
+      })() : new THREE.Vector3();
+      // shift the look point so the item sits beside the panel (right in landscape, bottom in portrait)
+      const fwd = new THREE.Vector3().subVectors(p, camPos).normalize();
+      const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize();
+      const portrait = window.innerHeight > window.innerWidth;
+      const look = p.clone().add(new THREE.Vector3(0, 0.25, 0));
+      if (portrait) look.y -= 0.9;
+      else look.addScaledVector(right, 0.95);
+      if (!d) {
+        // overview of the cat corner, framed beside the panel
+        if (portrait) camPos.set(-13.6, 3.0, -15.9), look.set(-8.2, -1.8, -16.2);
+        else camPos.set(-15.0, 2.6, -16.6), look.set(-8.5, 0.2, -12.6);
+      }
+      const first = !ctx.camRig.override;
+      ctx.camRig.override = { pos: camPos, look };
+      // jump straight in the first time (the menu camera is outside the house)
+      if (first) ctx.camRig.update(0, ctx.cat, true);
+    };
+    const close = () => {
+      D.preview(null);
+      this.decorSel = null;
+      ctx.camRig.override = null;
+      if (from === 'menu') this.style(false);
+      else if (from === 'pause') this.pause();
+      else {
+        ctx.camRig.snap(ctx.cat);
+        this.resume();
+      }
+    };
+    const render = () => {
+      const sel = this.decorSel;
+      const tiles = DECOR.map((d) => {
+        const owned = decorOwned(d.id);
+        const st = owned ? `<span class="st own">${decorPlaced(d.id) ? '✓ ' + esc(tr('decorPlaced')) : esc(tr('decorStored'))}</span>` : `<span class="st">🐟 ${d.price}</span>`;
+        return `<button class="tile dtile ${sel?.id === d.id ? 'sel' : ''} ${owned ? '' : 'locked'}" data-d="${d.id}"><div class="sw">${d.icon}</div><span>${esc(L(d.name))}</span>${st}</button>`;
+      }).join('');
+      let bar = `<div class="sel-bar"><span class="nm sub">${esc(tr('decorSub'))}</span></div>`;
+      if (sel) {
+        const owned = decorOwned(sel.id);
+        let btn: string;
+        if (!owned) btn = `<button class="btn small primary" id="decAct" ${s.coins < sel.price ? 'data-poor="1"' : ''}>${esc(tr('buy'))} 🐟 ${sel.price}</button>`;
+        else if (decorPlaced(sel.id)) btn = `<button class="btn small" id="decAct">📦 ${esc(tr('decorHide'))}</button>`;
+        else btn = `<button class="btn small green" id="decAct">✨ ${esc(tr('decorShow'))}</button>`;
+        bar = `<div class="sel-bar"><span class="nm">${sel.icon} ${esc(L(sel.name))}<small>${esc(L(sel.desc))}</small></span>${btn}</div>`;
+      }
+      this.showScreen(`
+        <div class="panel style-panel decor-panel">
+          <div class="panel-head"><h2>🏠 ${esc(tr('decorShop'))}</h2><div class="coins-mini">🐟 <span class="coins-live">${s.coins}</span></div></div>
+          <div class="grid">${tiles}</div>
+          ${bar}
+          <button class="btn primary" id="decDone">${esc(from === 'play' ? tr('resume') : tr('back'))}</button>
+        </div>`);
+      document.querySelectorAll('.dtile').forEach(
+        (b) =>
+          ((b as HTMLElement).onclick = () => {
+            sfx.pop();
+            const d = DECOR_BY[(b as HTMLElement).dataset.d!];
+            this.decorSel = d;
+            D.preview(decorOwned(d.id) ? null : d.id);
+            camFor(d);
+            render();
+          }),
+      );
+      const act = document.getElementById('decAct');
+      if (act && sel)
+        act.onclick = () => {
+          if (!decorOwned(sel.id)) {
+            if (s.coins < sel.price) {
+              sfx.deny();
+              this.toast('🐟 ' + tr('notEnough'));
+              return;
+            }
+            D.preview(null);
+            D.buy(sel.id);
+            sfx.jingle();
+            this.toast('🏠 ' + tr('decorBought', { item: L(sel.name) }));
+            ctx.fx.sparkle(sel.pos.x, sel.pos.y + 0.5, sel.pos.z, 10);
+            this.coins();
+          } else {
+            sfx.click();
+            D.toggle(sel.id);
+            if (decorPlaced(sel.id)) ctx.fx.sparkle(sel.pos.x, sel.pos.y + 0.5, sel.pos.z, 6);
+          }
+          render();
+        };
+      $('decDone').onclick = () => {
+        sfx.click();
+        close();
+      };
+    };
+    this.decorSel = null;
+    D.preview(null);
+    ctx.camRig.override = null;
+    camFor(null);
+    render();
+  }
+
   // ---------- pause ----------
   pause() {
     if (ctx.mode !== 'play') return;
@@ -664,6 +822,7 @@ export class UI {
       `<div class="screen-center shade"><div class="panel pause-panel">
         <h2>⏸ ${esc(tr('pause'))}</h2>
         <button class="btn primary" id="pRes">▶ ${esc(tr('resume'))}</button>
+        <div class="row pause-duo"><button class="btn" id="pPhoto">📸 ${esc(tr('photo'))}</button><button class="btn" id="pHome">🏠 ${esc(tr('decorShop'))}</button></div>
         <button class="btn" id="pMap">🗺️ ${esc(tr('map'))}</button>
         <button class="btn" id="pBook">📖 ${esc(tr('book'))}</button>
         <button class="btn" id="pSet">⚙️ ${esc(tr('settings'))}</button>
@@ -677,6 +836,15 @@ export class UI {
     $('pMap').onclick = () => {
       sfx.click();
       this.map(false);
+    };
+    $('pPhoto').onclick = () => {
+      sfx.click();
+      this.resume();
+      ctx.photo.enter();
+    };
+    $('pHome').onclick = () => {
+      sfx.click();
+      this.decorShop('pause');
     };
     $('pBook').onclick = () => {
       sfx.click();
@@ -698,6 +866,12 @@ export class UI {
     };
   }
   resume() {
+    if (ctx.mode === 'play' && ctx.camRig?.override) {
+      ctx.camRig.override = null;
+      ctx.camRig.snap(ctx.cat);
+    }
+    ctx.decor?.preview(null);
+    if (ctx.mode === 'play' && $('hud').hidden && !ctx.photoMode) this.hud(true);
     ctx.paused = false;
     this.showScreen(null);
     input.consume();
@@ -827,6 +1001,8 @@ export const HUD_HTML = `
       <div class="daybar" id="daybar"><span class="dl" id="dayLabel"></span><div class="track"><div id="dayFill" style="position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:rgba(255,255,255,.25)"></div><div class="sun" id="daySun">☀️</div><div class="house">🏠</div></div></div>
     </div>
     <div class="hud-right">
+      <button class="icon-btn" id="btnHome" aria-label="Rumah Kucing" hidden>🏠</button>
+      <button class="icon-btn" id="btnPhoto" aria-label="Foto">📸</button>
       <button class="icon-btn" id="btnMap" aria-label="Map">🗺️</button>
       <button class="icon-btn" id="btnPause" aria-label="Pause">⏸</button>
     </div>
@@ -848,6 +1024,18 @@ export const HUD_HTML = `
 <div id="banner" hidden></div>
 <div id="bigTitle" hidden></div>
 <div id="dialog" hidden><div class="face" id="dlgFace"></div><div style="flex:1;min-width:0"><div class="who" id="dlgWho"></div><div class="txt" id="dlgTxt"></div><div class="next" id="dlgNext"></div></div></div>
+<div id="photoUI" hidden>
+  <canvas id="photoFrame"></canvas>
+  <div id="photoTouch"></div>
+  <div id="photoStickers"></div>
+  <div class="ph-top"><div class="ph-title" id="photoTitle"></div><button class="icon-btn" id="photoAlbumBtn">🖼️</button><button class="btn small" id="photoExit"></button></div>
+  <div id="photoBar"></div>
+  <button id="photoShutter" aria-label="Cekrek"><span>📸</span></button>
+  <div id="photoTrash" hidden>🗑️</div>
+  <div id="photoFlash"></div>
+  <div id="photoResult" hidden><div class="panel ph-res"><div class="panel-head"><h2 id="photoResTitle"></h2><button class="btn small" id="photoResClose">✕</button></div><img id="photoImg" alt=""><div class="row" id="photoResBtns"></div></div></div>
+  <div id="photoGallery" class="screen-center shade" hidden></div>
+</div>
 <div id="screen" hidden></div>
 <div id="modal" hidden></div>
 <div id="fade"></div>

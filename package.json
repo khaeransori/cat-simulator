@@ -12,7 +12,8 @@
     "test:smoke": "node test/smoke.mjs",
     "test:mischief": "node test/mischief.mjs",
     "test:quests": "node test/quests.mjs",
-    "test:portrait": "node test/portrait.mjs"
+    "test:portrait": "node test/portrait.mjs",
+    "test:photohome": "node test/photo-home.mjs"
   },
   "dependencies": {
     "@fontsource/baloo-2": "^5.3.0",
