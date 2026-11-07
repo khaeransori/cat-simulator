@@ -37,5 +37,23 @@ await h.page.click('#cYes');
 for (let k = 0; k < 10; k++) { await h.wait(1200); await h.dialogs(); if (await h.page.$('#sNext')) break; }
 q = await h.ev(() => window.__cat.save.quest);
 check('q6 ready after a perfect day', q.idx === 5 && q.stage === 'ready');
+await h.page.click('#sNext');
+await h.wait(700);
+{ const sk = await h.page.$('#skipBtn:not([hidden])'); if (sk) await sk.click(); }
+await h.wait(700);
+await h.dialogs();
+await h.page.waitForFunction(() => window.__cat.mode === 'play', null, { timeout: 30000 });
+q = await talk();
+check('q6 done, no auto bonus quest', q.idx === 6 && q.stage === 'offer');
+const card = await h.ev(() => document.getElementById('questText').textContent);
+check('card says all done', card.includes('Semua quest Lisa selesai'));
+check('no ! over Lisa', (await h.ev(() => window.__cat.quests.lisaMark())) === '');
+check('no arrow to Lisa', (await h.ev(() => window.__cat.quests.targetPoint())) === null);
+q = await talk();
+check('bonus fish is opt-in via talking', q.idx === 6 && q.stage === 'active');
+await h.ev(() => { for (let i = 0; i < 2; i++) window.__cat.quests.onFish('mas'); });
+q = await talk();
+check('bonus done, back to all-done', q.idx === 7 && q.stage === 'offer');
+await h.shot('quests-alldone');
 await h.shot('quests-summary');
 await h.close();

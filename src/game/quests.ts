@@ -131,8 +131,8 @@ const REPEAT: QDef = {
   id: 'rep',
   type: 'fish',
   goal: 2,
-  title: P('Mancing 2 ikan untuk Lisa', 'Catch 2 fish for Lisa'),
-  intro: [P('Aku lapar lagi... Mancingin 2 ikan lagi, ya?', "I'm hungry again... Catch me 2 more fish?")],
+  title: P('Bonus: mancing 2 ikan untuk Lisa', 'Bonus: catch 2 fish for Lisa'),
+  intro: [P('Aku lapar lagi... Mancingin 2 ikan lagi, ya? (bonus, boleh kok nggak)', "I'm hungry again... Catch me 2 more fish? (just a bonus)")],
   remind: P('Ikannya {n} dari {g}.', '{n} of {g} fish.'),
   done: [P('Makasih! Kamu memang sahabat terbaik.', "Thanks! You're my best friend.")],
   coins: 15,
@@ -157,6 +157,18 @@ export class Quests {
       act: () => this.talk(),
     });
     // track progress each frame via hooks
+    // Old saves: after the main chain, the bonus fish request was auto-accepted
+    // and kept the HUD stuck on "Mancing 2 ikan". Put it back to optional.
+    if (this.allDone() && this.st.stage === 'active') {
+      this.st.stage = 'offer';
+      this.st.prog = {};
+      writeSave(ctx.save);
+    }
+  }
+
+  /** All main quests finished; only the optional bonus request remains. */
+  allDone() {
+    return ctx.save.quest.idx >= QUESTS.length;
   }
 
   get q(): QDef {
@@ -177,7 +189,7 @@ export class Quests {
 
   lisaMark() {
     const s = this.st.stage;
-    if (s === 'offer') return '!';
+    if (s === 'offer') return this.allDone() ? '' : '!';
     if (s === 'ready' || this.canGive()) return '?';
     return '';
   }
@@ -199,6 +211,7 @@ export class Quests {
   cardText() {
     const s = this.st.stage;
     if (!ctx.save.metLisa && s === 'offer' && this.st.idx === 0) return tr('questFindLisa');
+    if (s === 'offer' && this.allDone()) return tr('questDoneAll');
     if (s === 'offer') return tr('questNew');
     if (s === 'ready') return tr('questReady');
     const { n, g } = this.progress();
@@ -209,6 +222,7 @@ export class Quests {
   targetPoint(): THREE.Vector3 | null {
     const W = ctx.world;
     const s = this.st.stage;
+    if (s === 'offer' && this.allDone()) return null;
     if (s === 'offer' || s === 'ready') return W.pts.lisa;
     const q = this.q;
     if (q.type === 'bring') return ctx.cat.carrying?.id === 'ikan_pasar' ? W.pts.lisa : ctx.save.unlocked.pasar ? W.props.ikan_pasar.home : W.pts.pasarGate;
@@ -256,6 +270,13 @@ export class Quests {
         s.stage = 'offer';
         s.prog = {};
         writeSave(ctx.save);
+        ctx.ui.quest();
+        if (this.allDone()) {
+          // main chain finished (or a bonus request done): stop here, no auto-chain
+          ctx.lisaHappy = false;
+          if (q !== REPEAT) ctx.after(1.2, () => ctx.ui.toast('🏆 ' + tr('questDoneAll'), 4));
+          return;
+        }
         // chain straight into the next request
         ctx.after(0.4, () => this.talk());
       });
