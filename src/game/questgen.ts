@@ -4,7 +4,7 @@
 import { ctx } from '../ctx';
 import type { Pair } from '../i18n';
 import { MISCHIEF } from './mischief';
-import { FISH } from './fishing';
+import { fishAvailable, spotOf, isJunk } from './fishing';
 import type { QDef } from './quests';
 import { SPECIAL_ITEMS, key } from '../cosmetics';
 
@@ -79,20 +79,22 @@ const GENS: Record<string, Gen> = {
     const g = up(pick([2, 3, 4]));
     return base('fishAny', P(`Mancing ${g} ikan apa saja`, `Catch ${g} fish of any kind`),
       P(`Perutku keroncongan. Mancingin ${g} ikan, ya!`, `My tummy is rumbling. Catch me ${g} fish!`),
-      P('Ikannya {n} dari {g}.', '{n} of {g} fish.'), 8 + g * 4, { type: 'fish', goal: g, target: 'dock' });
+      P('Ikannya {n} dari {g}.', '{n} of {g} fish.'), 8 + g * 4, { type: 'fish', goal: g, target: 'fishAny' });
   },
   // one specific species (incl. the old boot, for laughs)
   fishKind: () => {
-    const f = pick(FISH.filter((x) => x.id !== 'emas'));
-    const g = f.id === 'sepatu' ? 1 : f.id === 'lele' ? 1 : 2;
-    const boot = f.id === 'sepatu';
+    // only fish from spots the player can reach (no rare ones: those are album goals)
+    const f = pick(fishAvailable());
+    const boot = isJunk(f.id);
+    const g = boot || f.hard ? 1 : 2;
+    const sp = spotOf(f.id);
     return base('fishKind_' + f.id,
       P(`Pancing ${g} ${f.name.id} ${f.icon}`, `Catch ${g} ${f.name.en} ${f.icon}`),
       boot
-        ? P('Aku mau bikin rumah dari sepatu bekas. Pancingin satu dari kolam, ya! Hihi.', 'I want to build a house out of an old boot. Fish one out of the pond! Hehe.')
-        : P(`Aku lagi pengin ${f.name.id} ${f.icon}. Pancingin ${g}, ya! Ikan lain nggak dihitung.`, `I'm craving ${f.name.en} ${f.icon}. Catch me ${g}! Other fish don't count.`),
-      P(`${f.name.id}: {n} dari {g}. Terus mancing!`, `${f.name.en}: {n} of {g}. Keep fishing!`),
-      boot ? 25 : 12 + g * 5, { type: 'fish', goal: g, fish: f.id, target: 'dock' });
+        ? P(`Aku mau bikin rumah dari ${f.name.id}. Pancingin satu dari ${sp.name.id}, ya! Hihi.`, `I want to build a house out of a ${f.name.en}. Fish one out of the ${sp.name.en}! Hehe.`)
+        : P(`Aku lagi pengin ${f.name.id} ${f.icon}. Pancingin ${g} di ${sp.name.id}, ya! Ikan lain nggak dihitung.`, `I'm craving ${f.name.en} ${f.icon}. Catch me ${g} at the ${sp.name.en}! Other fish don't count.`),
+      P(`${f.name.id}: {n} dari {g}. Mancingnya di ${sp.name.id}!`, `${f.name.en}: {n} of {g}. Fish at the ${sp.name.en}!`),
+      boot ? 25 : 12 + g * 5, { type: 'fish', goal: g, fish: f.id, target: sp.target });
   },
   // mischief in one area
   area: () => {
@@ -316,3 +318,5 @@ export function specialQuest(recent: string[] = [], round = 0): QDef {
 }
 
 export const GEN_KINDS = Object.keys(GENS);
+/** build one generator kind directly (tests) */
+export const genKind = (k: string) => GENS[k]?.();

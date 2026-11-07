@@ -1104,6 +1104,195 @@ h2 {
   color: var(--ink2);
 }
 
+/* album extras */
+.book-panel > .panel-head,
+.book-panel > .tabs,
+.style-panel > .tabs {
+  flex: none;
+}
+.book-panel > .panel-head {
+  margin-bottom: 0;
+}
+.book-panel .book-body {
+  flex: 1;
+  min-height: 0;
+}
+.has-dot {
+  position: relative;
+}
+.has-dot.dot::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ff3b3b;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.book-panel h2 .all-pct {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.book-panel .tab small {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.pbar {
+  height: 10px;
+  margin: 4px 0 2px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #eceff5;
+  overflow: hidden;
+}
+.pbar > div {
+  height: 100%;
+  background: linear-gradient(90deg, var(--leaf), var(--sun));
+}
+.area-h .ah-n {
+  margin-left: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #eceff5;
+  letter-spacing: 0;
+}
+.area-h .ah-n.full {
+  background: var(--sun);
+  color: var(--ink);
+}
+.area-h .ah-lock {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 13px;
+}
+.mcard {
+  position: relative;
+}
+.mcard .new,
+.sticker .new {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ff3b3b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+}
+.fcard .fn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+@media (max-width: 480px) {
+  .book-panel > .tabs .tab {
+    flex: 1 1 0;
+    padding: 2px 4px;
+    font-size: 13px;
+    line-height: 1.05;
+  }
+  .book-panel > .tabs .tab small {
+    display: block;
+  }
+  .book-panel .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .book-panel .mcard {
+    padding: 6px 8px;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .book-panel .mcard .mi {
+    font-size: 24px;
+  }
+}
+.fcard .fn small {
+  font-size: 12px;
+  font-weight: 800;
+  color: #2f8a3a;
+}
+.fcard.rare:not(.unk) {
+  background: linear-gradient(135deg, #fff8d6, #ffe9f6 55%, #e3f4ff);
+  box-shadow: 0 0 0 2px var(--sun2);
+}
+.fcard.rare.unk {
+  border-style: dashed;
+}
+.mcard .mi.sil {
+  position: relative;
+  filter: brightness(0) opacity(0.35);
+}
+.mcard .mi.sil b {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  color: #fff;
+  filter: none;
+}
+.stickers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.sticker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 8px 6px 6px;
+  border: 3px dashed #9aa5b8;
+  border-radius: 16px;
+  background: #eceff5;
+  color: #6c778b;
+  text-align: center;
+  line-height: 1.1;
+}
+.sticker.got {
+  border: 3px solid var(--ink);
+  background: #fff;
+  color: var(--ink);
+  transform: rotate(-1.5deg);
+}
+.sticker.got:nth-child(even) {
+  transform: rotate(1.5deg);
+}
+.sticker.got.big {
+  background: #fff5c7;
+}
+.sticker .si {
+  font-size: 30px;
+  line-height: 1.1;
+}
+.sticker .sn {
+  font-weight: 800;
+  font-size: 14px;
+}
+.sticker .sd {
+  font-size: 12px;
+  font-weight: 700;
+}
+.sticker .sr {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink2);
+}
+.sticker.got .sr {
+  color: #2f8a3a;
+}
+
 /* settings */
 .settings-panel {
   width: min(560px, 100%);
@@ -1465,7 +1654,7 @@ input[type='range'] {
     row-gap: 8px;
   }
   .hud-left {
-    max-width: calc(100% - 120px);
+    max-width: calc(100% - 172px);
     flex: 1;
   }
   .hud-center {

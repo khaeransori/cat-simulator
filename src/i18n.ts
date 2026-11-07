@@ -20,7 +20,7 @@ const T: Record<string, Pair> = {
   play: { id: 'Main', en: 'Play' },
   continueDay: { id: 'Main (Hari {n})', en: 'Play (Day {n})' },
   style: { id: 'Gaya Kucing', en: 'Cat Style' },
-  book: { id: 'Buku Kenakalan', en: 'Mischief Book' },
+  book: { id: 'Album Koleksi', en: 'Collection Album' },
   settings: { id: 'Pengaturan', en: 'Settings' },
   back: { id: 'Kembali', en: 'Back' },
   close: { id: 'Tutup', en: 'Close' },
@@ -77,6 +77,20 @@ const T: Record<string, Pair> = {
   hintArea: { id: 'Petunjuk: di {area}', en: 'Hint: in {area}' },
   bookProgress: { id: '{a} dari {b} ditemukan', en: '{a} of {b} found' },
   locked: { id: 'Terkunci', en: 'Locked' },
+  tabBadges: { id: 'Stiker', en: 'Stickers' },
+  albumAll: { id: 'Album {p}% lengkap', en: 'Album {p}% complete' },
+  albumPct: { id: '{p}% lengkap', en: '{p}% complete' },
+  albumNew: { id: 'Baru di album: {x}', en: 'New in the album: {x}' },
+  albumLock: { id: 'Hadiah album', en: 'Album reward' },
+  fishBest: { id: 'Terbesar {n} cm', en: 'Biggest {n} cm' },
+  fishTotal: { id: 'Total tangkapan: {n}', en: 'Total catches: {n}' },
+  spotLocked: { id: 'Belum terbuka', en: 'Not open yet' },
+  badgeGot: { id: 'Stiker baru!', en: 'New sticker!' },
+  setDone: { id: 'Koleksi lengkap!', en: 'Set complete!' },
+  newTag: { id: 'BARU', en: 'NEW' },
+  rareFish: { id: 'Ikan langka!', en: 'Rare fish!' },
+  newRecord: { id: 'Rekor baru!', en: 'New record!' },
+  rewardItem: { id: 'Hadiah: {item}', en: 'Reward: {item}' },
 
   // HUD
   day: { id: 'Hari {n}', en: 'Day {n}' },
@@ -274,6 +288,11 @@ const T: Record<string, Pair> = {
   ar_warung: { id: 'Warung', en: 'Corner Shop' },
   ar_sungai: { id: 'Sungai', en: 'River' },
 };
+
+/** the raw {id,en} pair of a key (for text built in both languages) */
+export function pair(key: string): Pair {
+  return T[key] ?? { id: key, en: key };
+}
 
 export function tr(key: string, vars?: Record<string, any>): string {
   const p = T[key];

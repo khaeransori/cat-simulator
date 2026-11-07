@@ -10,6 +10,7 @@ export interface Item {
   name: Pair;
   price: number; // 0 = free
   quest?: string; // unlocked by this Lisa quest id, or 'special' (⭐ challenge) / 'streak' (7-day 🔥 streak)
+  album?: string; // unlocked by this album badge id
   color?: number;
   color2?: number;
 }
@@ -50,12 +51,14 @@ export const ITEMS: Item[] = [
   { id: 'mahkota', slot: 'head', name: P('Mahkota raja', 'Royal crown'), price: 0, quest: 'q4' },
   { id: 'topiBintang', slot: 'head', name: P('Topi penyihir bintang', 'Star wizard hat'), price: 0, quest: 'special' },
   { id: 'headset', slot: 'head', name: P('Headset DJ', 'DJ headphones'), price: 0, quest: 'special' },
+  { id: 'topiNelayan', slot: 'head', name: P('Topi nelayan', 'Fisher hat'), price: 0, album: 'allFish' },
   // Face
   { id: 'none', slot: 'face', name: P('Tanpa kacamata', 'No glasses'), price: 0 },
   { id: 'bulat', slot: 'face', name: P('Kacamata kotak', 'Square glasses'), price: 20 },
   { id: 'hitamK', slot: 'face', name: P('Kacamata hitam', 'Sunglasses'), price: 30 },
   { id: 'hati', slot: 'face', name: P('Kacamata hati', 'Heart glasses'), price: 35 },
   { id: 'bintangK', slot: 'face', name: P('Kacamata bintang', 'Star glasses'), price: 0, quest: 'special' },
+  { id: 'topengNakal', slot: 'face', name: P('Topeng si nakal', 'Rascal mask'), price: 0, album: 'allMischief' },
   // Neck
   { id: 'none', slot: 'neck', name: P('Tanpa kalung', 'No collar'), price: 0 },
   { id: 'kalung', slot: 'neck', name: P('Kalung merah', 'Red collar'), price: 0 },
@@ -64,6 +67,7 @@ export const ITEMS: Item[] = [
   { id: 'dasi', slot: 'neck', name: P('Dasi kupu-kupu', 'Bow tie'), price: 25 },
   { id: 'pelangi', slot: 'neck', name: P('Syal pelangi', 'Rainbow scarf'), price: 0, quest: 'special' },
   { id: 'syalApi', slot: 'neck', name: P('Syal api', 'Flame scarf'), price: 0, quest: 'streak' },
+  { id: 'mutiara', slot: 'neck', name: P('Kalung mutiara', 'Pearl necklace'), price: 0, album: 'allRare' },
   // Back
   { id: 'none', slot: 'back', name: P('Kosong', 'Nothing'), price: 0 },
   { id: 'ransel', slot: 'back', name: P('Ransel mini', 'Mini backpack'), price: 35 },
@@ -86,7 +90,7 @@ export function getItem(slot: Slot, id: string): Item | undefined {
 }
 
 export function isOwned(it: Item) {
-  if (it.price === 0 && !it.quest) return true;
+  if (it.price === 0 && !it.quest && !it.album) return true;
   return !!ctx.save.owned[key(it)];
 }
 

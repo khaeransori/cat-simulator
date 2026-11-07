@@ -18,9 +18,10 @@ import { DuckModel } from './entities/animals';
 import { CatModel } from './entities/catModel';
 import { Quests } from './game/quests';
 import { Progress, dailyFor, dayBefore, RANKS, GIVERS } from './game/progress';
-import { genQuest, specialQuest } from './game/questgen';
+import { genQuest, specialQuest, genKind } from './game/questgen';
 import { SPECIAL_ITEMS } from './cosmetics';
-import { Fishing } from './game/fishing';
+import { Fishing, FBY, SPOTS, fishAvailable } from './game/fishing';
+import { Album } from './game/album';
 import { setupMischief, dropCarried } from './game/mischief';
 import { Day } from './game/day';
 import { WeatherSystem, rollWeather, weatherNow } from './game/weather';
@@ -125,6 +126,7 @@ function boot() {
   const ui = new UI();
   ctx.ui = ui;
   ctx.photo = new PhotoMode();
+  ctx.album = new Album();
   ctx.quests.applyUnlocks(false);
 
   // ---- events ----
@@ -342,6 +344,7 @@ function boot() {
   // expose for debugging/testing
   (window as any).__cat = ctx;
   ctx.progressApi = { dailyFor, dayBefore, RANKS, GIVERS, genQuest, specialQuest, SPECIAL_ITEMS };
+  (window as any).__catDev = { FBY, SPOTS, fishAvailable, genKind };
   void rand;
 }
 

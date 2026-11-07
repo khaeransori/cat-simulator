@@ -31,6 +31,9 @@ export interface SaveData {
   owned: Record<string, boolean>;
   mischief: Record<string, number>; // times done, all-time
   fish: Record<string, number>;
+  fishBest: Record<string, number>; // biggest catch per fish, cm
+  /** collection album: badges earned (value = day) and entries not yet seen in the album (red dot) */
+  album: { badges: Record<string, number>; news: string[] };
   quest: { idx: number; stage: 'offer' | 'active' | 'ready' | 'done'; prog: any; gen: any; recent: string[] };
   day: number;
   unlocked: { pasar: boolean; atap: boolean };
@@ -76,6 +79,8 @@ export function defaultSave(): SaveData {
     owned: {},
     mischief: {},
     fish: {},
+    fishBest: {},
+    album: { badges: {}, news: [] },
     quest: { idx: 0, stage: 'offer', prog: {}, gen: null, recent: [] },
     day: 1,
     unlocked: { pasar: false, atap: false },
@@ -103,10 +108,11 @@ function merge(base: any, extra: any): any {
     else if (typeof b === typeof e || b === null) base[k] = e;
   }
   // keep dynamic record keys (owned, mischief, fish, prog)
-  for (const k of ['owned', 'mischief', 'fish', 'weatherSeen', 'decor', 'decorOff']) if (extra[k] && typeof extra[k] === 'object') base[k] = { ...extra[k] };
+  for (const k of ['owned', 'mischief', 'fish', 'weatherSeen', 'decor', 'decorOff', 'fishBest']) if (extra[k] && typeof extra[k] === 'object') base[k] = { ...extra[k] };
   if (extra.quest && extra.quest.prog) base.quest.prog = extra.quest.prog;
   if (extra.givers && typeof extra.givers === 'object')
     for (const g of Object.keys(base.givers || {})) if (extra.givers[g]?.prog && typeof extra.givers[g].prog === 'object') base.givers[g].prog = extra.givers[g].prog;
+  if (extra.album && extra.album.badges && typeof extra.album.badges === 'object') base.album.badges = { ...extra.album.badges };
   return base;
 }
 

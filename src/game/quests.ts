@@ -6,6 +6,7 @@ import { writeSave } from '../save';
 import { addCoins, MBY, dropCarried } from './mischief';
 import { ITEMS, key, type Slot } from '../cosmetics';
 import { genQuest, specialQuest } from './questgen';
+import { SPOTS, SPOT_BY, spotSeat, isJunk } from './fishing';
 
 const P = (id: string, en: string): Pair => ({ id, en });
 
@@ -45,7 +46,7 @@ export function qProgress(q: QDef, st: QSt): { n: number; g: number } {
 
 export function tFish(q: QDef, s: QSt, type: string) {
   if (q.type === 'fish') {
-    if (q.fish ? type !== q.fish : type === 'sepatu') return false;
+    if (q.fish ? type !== q.fish : isJunk(type)) return false;
     s.prog.n = (s.prog.n || 0) + 1;
     return true;
   }
@@ -137,6 +138,23 @@ export function questTarget(q: QDef, s: QSt, home: THREE.Vector3): THREE.Vector3
   if (q.target === 'kids') return ctx.kids?.a?.body ? new THREE.Vector3(ctx.kids.a.body.x, 0, ctx.kids.a.body.z) : W.pts.kidA;
   if (q.target === 'pasar') return ctx.save.unlocked.pasar ? W.pts.pasarIn : W.pts.pasarGate;
   if (q.target === 'dock') return W.pts.dock;
+  if (q.target === 'fishAny') {
+    // any fish: the nearest open fishing spot (rooftop: crates first while on the ground)
+    const cb = ctx.cat.body;
+    const open = SPOTS.filter((sp) => sp.unlocked()).map(spotSeat);
+    open.sort((a, b) => a.distanceToSquared(cb as any) - b.distanceToSquared(cb as any));
+    const p = open[0] ?? W.pts.dock;
+    return p.y > 3 && cb.y < 3.2 ? W.pts.crates : p;
+  }
+  if (q.target?.startsWith('spot_')) {
+    const sp = SPOT_BY[q.target.slice(5)];
+    if (sp) {
+      const p = spotSeat(sp);
+      if (sp.area === 'pasar' && !ctx.save.unlocked.pasar) return W.pts.pasarGate;
+      if (p.y > 3 && ctx.cat.body.y < 3.2) return W.pts.crates;
+      return p;
+    }
+  }
   if (q.target === 'parkCenter') return W.pts.flowerBed;
   if (q.target === 'sekolah' || q.target === 'warung' || q.target === 'sungai') return W.pts[q.target];
   if (q.target === 'crates') {
