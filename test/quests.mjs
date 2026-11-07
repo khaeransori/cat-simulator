@@ -50,10 +50,34 @@ check('card says all done', card.includes('Semua quest Lisa selesai'));
 check('no ! over Lisa', (await h.ev(() => window.__cat.quests.lisaMark())) === '');
 check('no arrow to Lisa', (await h.ev(() => window.__cat.quests.targetPoint())) === null);
 q = await talk();
-check('bonus fish is opt-in via talking', q.idx === 6 && q.stage === 'active');
-await h.ev(() => { for (let i = 0; i < 2; i++) window.__cat.quests.onFish('mas'); });
-q = await talk();
-check('bonus done, back to all-done', q.idx === 7 && q.stage === 'offer');
+check('bonus quest is opt-in via talking', q.idx === 6 && q.stage === 'active' && !!q.gen);
+// Walk 12 generated quests: each must be completable and differ from the last
+const kinds = [];
+for (let r = 0; r < 12; r++) {
+  if (r > 0) { q = await talk(); }
+  q = await h.ev(() => window.__cat.save.quest);
+  const g = q.gen; kinds.push(g.kind);
+  await h.ev((g) => {
+    const Q = window.__cat.quests, s = window.__cat.save;
+    if (g.type === 'fish') for (let i = 0; i < g.goal; i++) Q.onFish(g.fish || 'mas');
+    else if (g.type === 'gold') Q.onFish('emas');
+    else if (g.type === 'set') (g.set || ['gelas', 'tisu', 'laptop', 'gorden', 'koran', 'gali', 'bola']).slice(0, g.goal).forEach((m) => Q.onMischief(m));
+    else { s.quest.stage = 'ready'; s.quest.prog = { n: g.goal }; } // bring / perfect paths are covered above
+  }, g);
+  const ready = await h.ev(() => window.__cat.save.quest.stage);
+  if (ready !== 'ready') check('gen ' + g.kind + ' completable', false, JSON.stringify(g.title));
+  q = await talk();
+  if (q.stage !== 'offer' || q.gen) check('gen ' + g.kind + ' rewarded', false);
+}
+console.log('kinds:', kinds.join(', '));
+check('bonus quests vary (no repeat in a row)', kinds.every((k, i) => i === 0 || k !== kinds[i - 1]));
+check('at least 5 different kinds', new Set(kinds).size >= 5);
+check('boot does not count for normal fish quest', await h.ev(() => {
+  const Q = window.__cat.quests, s = window.__cat.save;
+  s.quest.gen = { id: 'gen_t', kind: 'fishAny', type: 'fish', goal: 2, title: { id: 'x', en: 'x' }, intro: [], remind: { id: '', en: '' }, done: [], coins: 1, items: [] };
+  s.quest.stage = 'active'; s.quest.prog = {};
+  Q.onFish('sepatu'); return Q.progress().n === 0;
+}));
 await h.shot('quests-alldone');
 await h.shot('quests-summary');
 await h.close();

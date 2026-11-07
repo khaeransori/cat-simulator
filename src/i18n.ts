@@ -155,6 +155,7 @@ const T: Record<string, Pair> = {
   questReady: { id: 'Quest selesai! Kembali ke Lisa.', en: 'Quest complete! Go back to Lisa.' },
   questFindLisa: { id: 'Temui Lisa di dekat kolam taman', en: 'Find Lisa by the park pond' },
   questDoneAll: { id: 'Semua quest Lisa selesai!', en: "All of Lisa's quests done!" },
+  questBonus: { id: 'Ngobrol ke Lisa buat tantangan baru', en: 'Talk to Lisa for a new challenge' },
   reward: { id: 'Hadiah: {r}', en: 'Reward: {r}' },
   unlockPasar: { id: 'Pasar Ikan terbuka!', en: 'Fish Market unlocked!' },
   unlockAtap: { id: 'Jalan ke atap terbuka!', en: 'Rooftop path unlocked!' },

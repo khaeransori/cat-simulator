@@ -5,6 +5,7 @@ import { sfx } from '../audio';
 import { writeSave } from '../save';
 import { addCoins, MBY, dropCarried } from './mischief';
 import { ITEMS, key, type Slot } from '../cosmetics';
+import { genQuest } from './questgen';
 
 const P = (id: string, en: string): Pair => ({ id, en });
 
@@ -21,6 +22,8 @@ export interface QDef {
   items: string[]; // slot:id
   unlock?: 'pasar' | 'atap';
   target?: string; // point name for the guide arrow
+  fish?: string; // fish quests: only this species counts
+  kind?: string; // generated bonus quests: template name
 }
 
 export const QUESTS: QDef[] = [
@@ -127,12 +130,13 @@ export const QUESTS: QDef[] = [
   },
 ];
 
+// Fallback only; after the main chain Lisa's bonus quests come from questgen.
 const REPEAT: QDef = {
   id: 'rep',
   type: 'fish',
   goal: 2,
   title: P('Bonus: mancing 2 ikan untuk Lisa', 'Bonus: catch 2 fish for Lisa'),
-  intro: [P('Aku lapar lagi... Mancingin 2 ikan lagi, ya? (bonus, boleh kok nggak)', "I'm hungry again... Catch me 2 more fish? (just a bonus)")],
+  intro: [P('Aku lapar lagi... Mancingin 2 ikan lagi, ya?', "I'm hungry again... Catch me 2 more fish?")],
   remind: P('Ikannya {n} dari {g}.', '{n} of {g} fish.'),
   done: [P('Makasih! Kamu memang sahabat terbaik.', "Thanks! You're my best friend.")],
   coins: 15,
@@ -159,7 +163,7 @@ export class Quests {
     // track progress each frame via hooks
     // Old saves: after the main chain, the bonus fish request was auto-accepted
     // and kept the HUD stuck on "Mancing 2 ikan". Put it back to optional.
-    if (this.allDone() && this.st.stage === 'active') {
+    if (this.allDone() && this.st.stage === 'active' && !this.st.gen) {
       this.st.stage = 'offer';
       this.st.prog = {};
       writeSave(ctx.save);
@@ -173,7 +177,7 @@ export class Quests {
 
   get q(): QDef {
     const i = ctx.save.quest.idx;
-    return i < QUESTS.length ? QUESTS[i] : REPEAT;
+    return i < QUESTS.length ? QUESTS[i] : this.st.gen || REPEAT;
   }
   get st() {
     return ctx.save.quest;
@@ -211,7 +215,7 @@ export class Quests {
   cardText() {
     const s = this.st.stage;
     if (!ctx.save.metLisa && s === 'offer' && this.st.idx === 0) return tr('questFindLisa');
-    if (s === 'offer' && this.allDone()) return tr('questDoneAll');
+    if (s === 'offer' && this.allDone()) return this.st.idx === QUESTS.length ? tr('questDoneAll') + ' ' + tr('questBonus') : '🎲 ' + tr('questBonus');
     if (s === 'offer') return tr('questNew');
     if (s === 'ready') return tr('questReady');
     const { n, g } = this.progress();
@@ -249,6 +253,12 @@ export class Quests {
       s.stage = 'ready';
     }
     if (s.stage === 'offer') {
+      if (this.allDone()) {
+        // a fresh, different bonus request every time
+        s.gen = genQuest(s.lastKind);
+        s.lastKind = s.gen.kind;
+        return this.talk2(s.gen);
+      }
       const lines = [...q.intro];
       if (ctx.save.metLisa && s.idx === 0) lines.shift();
       ctx.save.metLisa = true;
@@ -261,20 +271,47 @@ export class Quests {
         this.check();
       });
     } else if (s.stage === 'active') {
+      this.remindLine(q);
+    } else if (s.stage === 'ready') {
+      this.finish(q);
+    }
+  }
+
+  private talk2(q: QDef) {
+    const s = this.st;
+    this.dialog(q.intro, () => {
+      s.stage = 'active';
+      s.prog = {};
+      writeSave(ctx.save);
+      ctx.ui.toast('📜 ' + L(q.title));
+      ctx.lisaHappy = false;
+      ctx.ui.quest();
+      this.check();
+    });
+  }
+
+  private remindLine(q: QDef) {
+    {
       const { n, g } = this.progress();
       this.dialog([{ id: q.remind.id.replace('{n}', String(n)).replace('{g}', String(g)), en: q.remind.en.replace('{n}', String(n)).replace('{g}', String(g)) }], () => (ctx.lisaHappy = false));
-    } else if (s.stage === 'ready') {
+    }
+  }
+
+  private finish(q: QDef) {
+    const s = this.st;
+    {
       this.dialog(q.done, () => {
         this.reward(q);
         s.idx++;
         s.stage = 'offer';
         s.prog = {};
+        s.gen = null;
         writeSave(ctx.save);
         ctx.ui.quest();
         if (this.allDone()) {
           // main chain finished (or a bonus request done): stop here, no auto-chain
           ctx.lisaHappy = false;
-          if (q !== REPEAT) ctx.after(1.2, () => ctx.ui.toast('🏆 ' + tr('questDoneAll'), 4));
+          if (q.id === QUESTS[QUESTS.length - 1].id) ctx.after(1.2, () => ctx.ui.toast('🏆 ' + tr('questDoneAll'), 4));
           return;
         }
         // chain straight into the next request
@@ -345,6 +382,7 @@ export class Quests {
     if (s.stage !== 'active') return;
     const q = this.q;
     if (q.type === 'fish') {
+      if (q.fish ? type !== q.fish : type === 'sepatu') return;
       s.prog.n = (s.prog.n || 0) + 1;
     } else if (q.type === 'gold' && type === 'emas') {
       s.prog.n = 1;
@@ -356,7 +394,7 @@ export class Quests {
     const s = this.st;
     if (s.stage !== 'active') return;
     const q = this.q;
-    if (q.type === 'set' && q.set!.includes(id)) {
+    if (q.type === 'set' && (!q.set || q.set.includes(id))) {
       s.prog.set = s.prog.set || [];
       if (!s.prog.set.includes(id)) s.prog.set.push(id);
       this.check();
@@ -371,7 +409,7 @@ export class Quests {
       s.stage = 'ready';
       s.prog = { n: this.q.goal };
       writeSave(ctx.save);
-      return true;
+      return this.q.id === 'q6'; // only the main finale earns the "perfect day" stamp
     }
     return false;
   }

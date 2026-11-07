@@ -275,7 +275,7 @@ export class Fishing {
     if (f.coins) addCoins(f.coins);
     ctx.catHappy = true;
     ctx.after(1.5, () => (ctx.catHappy = false));
-    if (f.id !== 'sepatu') ctx.quests.onFish(f.id);
+    ctx.quests.onFish(f.id); // quests decide whether the boot counts
     writeSave(s);
   }
 }
