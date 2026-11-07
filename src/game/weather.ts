@@ -297,7 +297,7 @@ export class WeatherSystem {
   }
 
   ambience() {
-    const on = (ctx.mode === 'play' || ctx.mode === 'cutscene') && !ctx.paused;
+    const on = (ctx.mode === 'play' || ctx.mode === 'cutscene') && (!ctx.paused || !!ctx.photoMode); // photo mode: rain freezes in the shot, sound keeps going
     sfx.setAmbience(!on ? 'none' : this.kind === 'hujan' ? 'rain' : this.kind === 'malam' ? 'night' : 'none');
   }
 

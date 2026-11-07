@@ -42,6 +42,8 @@ Alternatif tanpa hosting: unduh [cat-simulator.html](https://khaeransori.github.
 - **Peringkat Kucing:** Kucing Kampung → Kucing Gang → Preman Gang → Jagoan Kompleks → Raja Kompleks → Legenda Kompleks (5, 10, 18, 28, 40 tantangan bonus/harian/teman yang beres). Tampil di HUD di sebelah koin, dengan banner + fanfare saat naik.
 - **Mancing:** tunggu pelampung, tekan saat ada yang makan, lalu tekan lagi saat penanda di bagian hijau. Bisa dapat ikan kecil, ikan mas, lele, sepatu bekas, atau Ikan Emas.
 - **Gaya Kucing:** nama sendiri, 10 warna bulu, 6 pola, 5 warna mata, topi, kacamata, kalung, dan punggung (ransel, sayap, jubah). Dibuka dengan koin ikan atau hadiah quest.
+- **Mode Foto 📸:** tombol 📸 di HUD (atau di menu jeda) membekukan permainan dan menyembunyikan HUD. Geser untuk memutar kamera mengelilingi kucing, cubit atau roda mouse untuk zoom, pilih gaya (berdiri, duduk, tidur, meong, lompat), bingkai (polaroid, kayu, hati, film), dan tempel stiker emoji yang bisa digeser, diketuk untuk ganti ukuran, atau dibuang ke 🗑️. Tombol jepret menyimpan PNG (unduh, atau Bagikan di HP). 6 foto terakhir tersimpan kecil di Album 🖼️.
+- **Rumah Kucing 🏠:** toko hiasan di tab 🏠 Rumah pada Gaya Kucing, tombol 🏠 di HUD saat di dalam rumah, atau menu jeda. 12 hiasan (20–60 koin) dengan tempat tetap di ruang tamu: bola benang (bisa ditendang), tikus mainan, mangkuk makan (ngemil), tanaman, karpet bulat, poster ikan, rumah kardus (ngumpet), lampu tidur, tiang cakar (cakar sepuasnya, bisa dipanjat ke rak dinding), kasur kucing (bobo; kalau Mama pulang saat kucing tidur di kasur, tetap dihitung tidur di rumah), rak dinding, akuarium kecil. Hiasan bisa disimpan/dipasang lagi.
 - **Buku Kenakalan** (koleksi kenakalan dan ikan) dan **peta** kompleks.
 - **Cuaca & waktu:** tiap hari baru diacak jadi ☀️ Hari Cerah (paling sering), 🌧️ Hari Hujan, atau 🌙 Malam Hari (3 hari pertama selalu cerah). Hujan: rintik hujan, genangan air yang bisa dicipratin, warga pakai payung dan jalan lebih pelan, Dimas & Putri main di dalam, merpati sembunyi, ikan lebih cepat makan umpan dan lele lebih sering muncul, bulu kucing basah lalu kering lagi di rumah. Malam: langit biru tua berbintang dan bulan, lampu jalan dan jendela menyala, kunang-kunang di taman, warga lebih sedikit dan kurang peka (lebih gampang jadi ninja), Mama pulang malam dari shift. Bisa diatur di Pengaturan: **Cuaca: Acak / Selalu cerah**. Kode: `src/game/weather.ts` (`ctx.weather`, `weatherNow()`).
 - **Bahasa Indonesia / English** bisa dipilih di Pengaturan.
@@ -79,6 +81,7 @@ npm run test:portrait   # layar portrait + joystick, kamera, dan tombol sentuh
 npm run test:weather    # cuaca: cerah/hujan/malam dipaksa satu per satu, setelan Selalu cerah
 npm run test:areas      # Sekolah, Warung, Sungai: 12 kenakalan, warga baru, jalan dari rumah, akhir hari
 npm run test:progress   # tantangan harian + streak, peringkat, tantangan spesial, Si Belang & Mpus
+npm run test:photohome  # mode foto (jeda, HUD, jepret PNG) + toko Rumah Kucing, hiasan interaktif, jalan ke sofa/pintu
 ```
 
 ### Struktur kode
@@ -98,6 +101,8 @@ npm run test:progress   # tantangan harian + streak, peringkat, tantangan spesia
 | `src/game/fishing.ts` | Mini game mancing |
 | `src/game/day.ts` | Alur satu hari, cutscene Mama, panah petunjuk |
 | `src/ui/` | HUD, menu, toko gaya, buku, peta, pengaturan |
+| `src/ui/photo.ts` | Mode Foto: kamera orbit, gaya, bingkai, stiker, jepret, album |
+| `src/game/decor.ts` | Rumah Kucing: katalog hiasan, geometri (digabung jadi satu mesh), interaksi |
 | `src/cosmetics.ts` | Katalog bulu, pola, mata, dan aksesori |
 | `src/i18n.ts` | Teks Indonesia dan Inggris |
 

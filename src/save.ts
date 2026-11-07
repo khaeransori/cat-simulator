@@ -48,6 +48,10 @@ export interface SaveData {
   rank: { n: number; lv: number };
   /** the other quest-giver cats, each with its own quest slot */
   givers: Record<'belang' | 'mpus', GiverState>;
+  /** Rumah Kucing: owned decorations (id -> true) */
+  decor: Record<string, boolean>;
+  /** owned decorations the player put away (not shown in the house) */
+  decorOff: Record<string, boolean>;
 }
 
 export interface GiverState {
@@ -84,6 +88,8 @@ export function defaultSave(): SaveData {
     daily: { date: '', list: [], streak: 0, best: 0, lastFull: '', total: 0 },
     rank: { n: 0, lv: 0 },
     givers: { belang: giver(), mpus: giver() },
+    decor: {},
+    decorOff: {},
   };
 }
 
@@ -97,7 +103,7 @@ function merge(base: any, extra: any): any {
     else if (typeof b === typeof e || b === null) base[k] = e;
   }
   // keep dynamic record keys (owned, mischief, fish, prog)
-  for (const k of ['owned', 'mischief', 'fish', 'weatherSeen']) if (extra[k] && typeof extra[k] === 'object') base[k] = { ...extra[k] };
+  for (const k of ['owned', 'mischief', 'fish', 'weatherSeen', 'decor', 'decorOff']) if (extra[k] && typeof extra[k] === 'object') base[k] = { ...extra[k] };
   if (extra.quest && extra.quest.prog) base.quest.prog = extra.quest.prog;
   if (extra.givers && typeof extra.givers === 'object')
     for (const g of Object.keys(base.givers || {})) if (extra.givers[g]?.prog && typeof extra.givers[g].prog === 'object') base.givers[g].prog = extra.givers[g].prog;

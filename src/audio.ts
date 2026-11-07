@@ -262,6 +262,14 @@ class SoundSystem {
     this.tone(520, 0.11, 'sawtooth', 0.08, 0, 380);
     this.tone(500, 0.13, 'sawtooth', 0.08, 0.16, 360);
   }
+  shutter() {
+    // mechanical "ka-chik": two short noise clicks + a tiny whir
+    this.noise(0.04, 0.45, 'highpass', 2500, 1);
+    this.tone(1400, 0.03, 'square', 0.08, 0, 600);
+    this.noise(0.06, 0.35, 'bandpass', 1800, 1.5, 0.09);
+    this.tone(900, 0.05, 'square', 0.06, 0.09, 500);
+    this.noise(0.18, 0.08, 'bandpass', 4000, 3, 0.16, 2500);
+  }
   door() {
     this.tone(200, 0.3, 'triangle', 0.15, 0, 160);
   }
