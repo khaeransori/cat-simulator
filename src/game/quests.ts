@@ -250,6 +250,7 @@ export class Quests {
     if (q.target === 'pasar') return ctx.save.unlocked.pasar ? W.pts.pasarIn : W.pts.pasarGate;
     if (q.target === 'dock') return W.pts.dock;
     if (q.target === 'parkCenter') return W.pts.flowerBed;
+    if (q.target === 'sekolah' || q.target === 'warung' || q.target === 'sungai') return W.pts[q.target];
     if (q.target === 'crates') {
       const cb = ctx.cat.body;
       return cb.y > 3.2 ? W.pts.jemuran : W.pts.crates;

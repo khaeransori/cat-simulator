@@ -110,6 +110,8 @@ const T: Record<string, Pair> = {
   a_eat: { id: 'Makan', en: 'Eat' },
   a_give: { id: 'Kasih', en: 'Give' },
   a_sofa: { id: 'Pura-pura tidur', en: 'Fake sleep' },
+  a_chase: { id: 'Kejar', en: 'Chase' },
+  a_splash: { id: 'Cebur', en: 'Splash' },
 
   // Sofa confirm
   sofaConfirm: { id: 'Pura-pura tidur sekarang? Hari ini akan selesai.', en: 'Fake-sleep now? The day will end.' },
@@ -182,6 +184,9 @@ const T: Record<string, Pair> = {
   ar_pasar: { id: 'Pasar Ikan', en: 'Fish Market' },
   ar_atap: { id: 'Atap Tetangga', en: 'Rooftops' },
   ar_gang: { id: 'Gang Sempit', en: 'Narrow Alley' },
+  ar_sekolah: { id: 'Sekolah', en: 'School' },
+  ar_warung: { id: 'Warung', en: 'Corner Shop' },
+  ar_sungai: { id: 'Sungai', en: 'River' },
 };
 
 export function tr(key: string, vars?: Record<string, any>): string {

@@ -25,6 +25,9 @@ const AREA: Record<string, { name: Pair; target?: string }> = {
   jalan: { name: P('di jalan kompleks', 'on the street') },
   pasar: { name: P('di Pasar Ikan', 'in the Fish Market'), target: 'pasar' },
   atap: { name: P('di atap', 'on the rooftops'), target: 'crates' },
+  sekolah: { name: P('di Sekolah', 'at the School'), target: 'sekolah' },
+  warung: { name: P('di Warung', 'at the Corner Shop'), target: 'warung' },
+  sungai: { name: P('di Sungai', 'by the River'), target: 'sungai' },
 };
 
 const THANKS: Pair[] = [
@@ -154,8 +157,13 @@ const SPOTS: { pt: string; name: Pair; need?: 'pasar' | 'atap' }[] = [
   { pt: 'tini', name: P('🍅 lapak Bu Tini', "🍅 Mrs. Tini's stall"), need: 'pasar' },
   { pt: 'jemuran', name: P('👕 jemuran di atap', '👕 the rooftop laundry'), need: 'atap' },
   { pt: 'pigeonRoof', name: P('🐦 merpati atap', '🐦 the roof pigeons'), need: 'atap' },
+  { pt: 'flagpole', name: P('🚩 tiang bendera sekolah', '🚩 the school flagpole') },
+  { pt: 'bell', name: P('🔔 bel sekolah', '🔔 the school bell') },
+  { pt: 'warung', name: P('🍘 Warung', '🍘 the Corner Shop') },
+  { pt: 'bridge', name: P('🎋 jembatan bambu', '🎋 the bamboo bridge') },
+  { pt: 'riverStones', name: P('🪨 batu loncatan sungai', '🪨 the river stepping stones') },
 ];
-const PEOPLE: Pair = P('Bu Siti, Pak Ujang, Bu Tini, Dimas, atau Putri', 'Mrs. Siti, Mr. Ujang, Mrs. Tini, Dimas, or Putri');
+const PEOPLE: Pair = P('Bu Siti, Pak Ujang, Bu Tini, Pak Satpam, Bu Warung, Dimas, atau Putri', 'Mrs. Siti, Mr. Ujang, Mrs. Tini, the Guard, the Shopkeeper, Dimas, or Putri');
 
 const MORE: Record<string, Gen> = {
   // a burst of mischief in a short time
@@ -171,7 +179,7 @@ const MORE: Record<string, Gen> = {
   eat: () => {
     const g = up(2, 2);
     return base('eat', P(`Ngemil ${g} kali 😋`, `Snack ${g} times 😋`),
-      P(`Kucing hebat harus makan! Curi lalu makan ${g} camilan: ikan goreng di dapur, ikan pasar, atau ikan asin di atap.`, `A great cat must eat! Steal and eat ${g} snacks: fried fish in the kitchen, market fish, or salted fish on the roof.`),
+      P(`Kucing hebat harus makan! Curi lalu makan ${g} camilan: ikan goreng di dapur, kerupuk di warung, ikan pasar, atau ikan asin di atap.`, `A great cat must eat! Steal and eat ${g} snacks: fried fish in the kitchen, crackers at the shop, market fish, or salted fish on the roof.`),
       P('Camilan dimakan: {n} dari {g}. Ikan goreng ada di dapur rumah!', 'Snacks eaten: {n} of {g}. Fried fish is in the home kitchen!'), 12 + g * 6,
       { type: 'event', ev: 'eat', goal: g });
   },

@@ -3,7 +3,7 @@ import { tr, L, lang } from '../i18n';
 import { sfx } from '../audio';
 import { writeSave, clearSave, defaultSave } from '../save';
 import { ITEMS, SLOTS, itemsFor, isOwned, key, furColor, type Item, type Slot } from '../cosmetics';
-import { MISCHIEF, AREA_KEY } from '../game/mischief';
+import { MISCHIEF, AREA_KEY, AREAS } from '../game/mischief';
 import { FISH } from '../game/fishing';
 import { input } from '../input';
 
@@ -524,7 +524,7 @@ export class UI {
       if (this.bookTab === 'm') {
         const found = MISCHIEF.filter((m) => s.mischief[m.id]).length;
         body += `<div class="prog">${esc(tr('bookProgress', { a: found, b: MISCHIEF.length }))}</div>`;
-        for (const area of ['rumah', 'taman', 'jalan', 'pasar', 'atap']) {
+        for (const area of AREAS) {
           const list = MISCHIEF.filter((m) => m.area === area);
           body += `<div class="area-h">${esc(tr(AREA_KEY[area]))}</div><div class="cards">`;
           for (const m of list) {
@@ -709,7 +709,7 @@ export class UI {
     this.showScreen(
       `<div class="screen-center shade"><div class="panel map-panel">
         <div class="panel-head"><h2>🗺️ ${esc(tr('map'))}</h2><button class="btn small" id="mBack">${esc(fromHud ? tr('resume') : tr('back'))}</button></div>
-        <canvas id="mapC" width="1120" height="740"></canvas>
+        <canvas id="mapC" width="1120" height="690"></canvas>
         <div class="legend"><span>🐱 ${esc(ctx.save.name)}</span><span>⭐ ${esc(tr('questTitle'))}</span><span>🏠 ${esc(tr('ar_rumah'))}</span><span>🛋️ Sofa</span></div>
       </div></div>`,
     );
@@ -722,11 +722,16 @@ export class UI {
   }
   drawMap(c: HTMLCanvasElement) {
     const g = c.getContext('2d')!;
-    const x0 = -46, z0 = -33, x1 = 66, z1 = 41;
+    const x0 = -90, z0 = -33, x1 = 68, z1 = 64;
     const sx = c.width / (x1 - x0), sz = c.height / (z1 - z0);
     const X = (x: number) => (x - x0) * sx, Z = (z: number) => (z - z0) * sz;
-    g.fillStyle = '#86cf62';
+    // outside the walls
+    g.fillStyle = '#6f8f63';
     g.fillRect(0, 0, c.width, c.height);
+    g.fillStyle = '#86cf62';
+    g.fillRect(X(-46), Z(-31), 112 * sx, 70 * sz);
+    g.fillRect(X(-88), Z(-20), 42 * sx, 50 * sz);
+    g.fillRect(X(-10), Z(39), 54 * sx, 23 * sz);
     for (const r of ctx.world.rects) {
       g.fillStyle = r.c;
       g.fillRect(X(r.x0), Z(r.z0), (r.x1 - r.x0) * sx, (r.z1 - r.z0) * sz);
@@ -735,7 +740,7 @@ export class UI {
       g.fillStyle = 'rgba(34,48,74,0.35)';
       g.fillRect(X(18), Z(5.5), 44 * sx, 33.5 * sz);
     }
-    g.font = '800 34px "Baloo 2", system-ui, sans-serif';
+    g.font = '800 28px "Baloo 2", system-ui, sans-serif';
     g.textAlign = 'center';
     g.lineWidth = 7;
     g.strokeStyle = '#22304a';
@@ -750,7 +755,10 @@ export class UI {
     lbl(tr('ar_taman'), -9, 26);
     lbl(tr('ar_pasar') + (ctx.save.unlocked.pasar ? '' : ' 🔒'), 40, 28);
     lbl(tr('ar_jalan'), 20, 1);
-    g.font = '44px system-ui, sans-serif';
+    lbl('🏫 ' + tr('ar_sekolah'), -71, 16);
+    lbl('🏪 ' + tr('ar_warung'), -56, -15.5);
+    lbl('🌊 ' + tr('ar_sungai'), 26, 46.2);
+    g.font = '38px system-ui, sans-serif';
     const icon = (t: string, x: number, z: number) => g.fillText(t, X(x), Z(z) + 15);
     icon('🛋️', ctx.world.pts.sofa.x, ctx.world.pts.sofa.z);
     icon('🐈', ctx.world.pts.lisa.x, ctx.world.pts.lisa.z);

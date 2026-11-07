@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import { ctx, damp, angleLerp, rand, clamp, pick } from '../ctx';
 import { DogModel, PigeonModel } from './animals';
+
+interface BirdModel {
+  root: THREE.Group;
+  update(dt: number, flying: boolean): void;
+}
 import { CatModel, newAnim } from './catModel';
 import { blobShadow } from './cat';
 import { Human, NPC_LINES } from './npc';
@@ -143,7 +148,7 @@ export class Dog {
 
 // ---------------- Pigeons ----------------
 interface Bird {
-  m: PigeonModel;
+  m: BirdModel;
   hx: number;
   hz: number;
   x: number;
@@ -164,11 +169,11 @@ export class Flock {
   t = 0;
   mischiefId: string;
 
-  constructor(center: THREE.Vector3, n: number, mischiefId: string) {
+  constructor(center: THREE.Vector3, n: number, mischiefId: string, mk: () => BirdModel = () => new PigeonModel()) {
     this.center = center.clone();
     this.mischiefId = mischiefId;
     for (let i = 0; i < n; i++) {
-      const m = new PigeonModel();
+      const m = mk();
       const a = (i / n) * Math.PI * 2;
       const r = 0.6 + Math.random() * 0.8;
       const b: Bird = { m, hx: center.x + Math.cos(a) * r, hz: center.z + Math.sin(a) * r, x: 0, y: center.y, z: 0, vx: 0, vy: 0, vz: 0, yaw: rand(0, 6), t: rand(0, 3), tx: 0, tz: 0 };
@@ -194,6 +199,7 @@ export class Flock {
     this.state = 'fly';
     this.t = 0;
     sfx.flap();
+    if (this.mischiefId === 'bebek') sfx.quack();
     for (const b of this.birds) {
       const a = Math.atan2(b.z - this.center.z, b.x - this.center.x) + rand(-0.4, 0.4);
       b.vx = Math.cos(a) * rand(2.5, 4);
@@ -264,6 +270,88 @@ export class Flock {
         b.z = b.hz;
       }
     }
+  }
+}
+
+// ---------------- Butterflies (river flower patch) ----------------
+interface Fly {
+  g: THREE.Group;
+  wl: THREE.Object3D;
+  wr: THREE.Object3D;
+  ph: number;
+  r: number;
+  sp: number;
+  vx: number;
+  vz: number;
+}
+export class Butterflies {
+  center: THREE.Vector3;
+  flies: Fly[] = [];
+  state: 'idle' | 'flee' | 'away' = 'idle';
+  t = 0;
+
+  constructor(center: THREE.Vector3, n = 4) {
+    this.center = center.clone();
+    const cols = [0xffb300, 0x4fc3f7, 0xff80ab, 0xffffff, 0xb388ff];
+    for (let i = 0; i < n; i++) {
+      const g = new THREE.Group();
+      g.add(mbox(0.035, 0.035, 0.14, 0x3e2723));
+      const wl = new THREE.Group();
+      wl.add(mbox(0.16, 0.01, 0.15, cols[i % cols.length], 0.08, 0, 0));
+      const wr = new THREE.Group();
+      wr.add(mbox(0.16, 0.01, 0.15, cols[i % cols.length], -0.08, 0, 0));
+      g.add(wl, wr);
+      ctx.scene.add(g);
+      this.flies.push({ g, wl, wr, ph: (i / n) * Math.PI * 2, r: rand(0.8, 1.7), sp: rand(0.6, 1.1), vx: 0, vz: 0 });
+    }
+    this.reset();
+  }
+
+  reset() {
+    this.state = 'idle';
+    this.t = 0;
+    for (const f of this.flies) f.g.visible = true;
+    this.update(0);
+  }
+
+  scare() {
+    if (this.state !== 'idle') return false;
+    this.state = 'flee';
+    this.t = 0;
+    for (const f of this.flies) {
+      const a = rand(0, Math.PI * 2);
+      f.vx = Math.cos(a) * rand(1.5, 2.5);
+      f.vz = Math.sin(a) * rand(1.5, 2.5);
+    }
+    ctx.fx.sparkle(this.center.x, this.center.y + 0.8, this.center.z, 6);
+    return true;
+  }
+
+  update(dt: number) {
+    this.t += dt;
+    const T = ctx.time;
+    for (const f of this.flies) {
+      const flap = Math.sin(T * 26 + f.ph * 3) * 0.9;
+      f.wl.rotation.z = flap;
+      f.wr.rotation.z = -flap;
+      const p = f.g.position;
+      if (this.state === 'idle') {
+        const a = T * f.sp + f.ph;
+        p.set(this.center.x + Math.cos(a) * f.r, this.center.y + 0.65 + Math.sin(T * 2.3 + f.ph) * 0.2, this.center.z + Math.sin(a * 1.3) * f.r * 0.7);
+        f.g.rotation.y = -a;
+      } else if (this.state === 'flee') {
+        p.x += f.vx * dt;
+        p.z += f.vz * dt;
+        p.y += 1.6 * dt;
+        f.g.rotation.y = Math.atan2(f.vx, f.vz);
+      }
+    }
+    if (this.state === 'flee' && this.t > 4) {
+      this.state = 'away';
+      this.t = 0;
+      for (const f of this.flies) f.g.visible = false;
+    }
+    if (this.state === 'away' && this.t > 20) this.reset();
   }
 }
 

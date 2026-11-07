@@ -13,7 +13,8 @@ import { PropSystem } from './game/props';
 import { InteractSystem } from './game/interact';
 import { Cat, CameraRig } from './entities/cat';
 import { Human, NPC_LINES } from './entities/npc';
-import { Dog, Flock, Lisa, Kids } from './entities/creatures';
+import { Dog, Flock, Lisa, Kids, Butterflies } from './entities/creatures';
+import { DuckModel } from './entities/animals';
 import { CatModel } from './entities/catModel';
 import { Quests } from './game/quests';
 import { Fishing } from './game/fishing';
@@ -76,12 +77,29 @@ function boot() {
     { id: 'Sayur! Sayur segar!', en: 'Veggies! Fresh veggies!' },
     { id: 'Tomatnya merah-merah!', en: 'Nice red tomatoes!' },
   ];
-  ctx.npcs = [siti, ujang, tini];
+  // new edge areas
+  const satpam = new Human('satpam', { skin: 0xb87a4b, shirt: 0x37474f, pants: 0x263238, hair: 'peci', mustache: true, shoes: 0x111111 }, 'adult', pts.satpamA, { x0: -86, z0: 4, x1: -58, z1: 18.4 }, 0.9);
+  satpam.path = [pts.satpamA, pts.satpamB, pts.satpamC, pts.satpamD];
+  satpam.idleLines = [
+    { id: 'Aman... aman...', en: 'All clear... all clear...' },
+    { id: 'Jangan main di sekolah, ya!', en: 'No playing at the school!' },
+  ];
+  satpam.owns = [];
+  const buWarung = new Human('buwarung', { skin: 0xd9a877, shirt: 0xffb300, pants: 0x5d4037, skirt: true, hair: 'hijab', hijabColor: 0x43a047, shoes: 0x6d4c41 }, 'adult', pts.warungCounter, { x0: -62, z0: -13.5, x1: -50, z1: -4.5 }, 1.3);
+  buWarung.yaw = buWarung.homeYaw = -0.6; // watching the counter and the shop front
+  buWarung.range = 7;
+  buWarung.idleLines = [
+    { id: 'Kerupuk! Es krim! Ada semua!', en: 'Crackers! Ice cream! We have it all!' },
+    { id: 'Mampir, mampir!', en: 'Come on in!' },
+  ];
+  buWarung.owns = ['kerupuk'];
+  ctx.npcs = [siti, ujang, tini, satpam, buWarung];
   const dimas = new Human('dimas', { skin: 0xc68e5f, shirt: 0xffca28, pants: 0x1e88e5, hair: 'cap', hijabColor: 0xe53935, kid: true }, 'kid', pts.kidA, { x0: -30, z0: 5, x1: 12, z1: 39 }, 1.8);
   const putri = new Human('putri', { skin: 0xe0ac7e, shirt: 0xec407a, pants: 0x7e57c2, skirt: true, hair: 'long', hairColor: 0x3e2723, kid: true }, 'kid', pts.kidB, { x0: -30, z0: 5, x1: 12, z1: 39 }, 2.0);
   ctx.kids = new Kids(dimas, putri);
   ctx.dog = new Dog();
-  ctx.flocks = [new Flock(pts.pigeonPark, 6, 'merpati_taman'), new Flock(pts.pigeonRoof, 5, 'merpati_atap')];
+  ctx.flocks = [new Flock(pts.pigeonPark, 6, 'merpati_taman'), new Flock(pts.pigeonRoof, 5, 'merpati_atap'), new Flock(pts.ducks, 5, 'bebek', () => new DuckModel(Math.random() < 0.4 ? 0xc8a165 : 0xfafafa))];
+  ctx.butterflies = new Butterflies(pts.butterflies, 5);
   ctx.lisa = new Lisa();
   ctx.npcHear = (x: number, z: number, r: number) => {
     for (const h of ctx.npcs as Human[]) h.hear(x, z, r);
@@ -258,6 +276,7 @@ function boot() {
       ctx.kids.update(gdt);
       ctx.dog.update(gdt);
       for (const f of ctx.flocks) f.update(gdt);
+      ctx.butterflies.update(gdt);
       ctx.lisa.update(gdt);
       ctx.props.update(gdt);
       ctx.fishing.update(gdt);

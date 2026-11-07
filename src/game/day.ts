@@ -77,6 +77,7 @@ export class Day {
     ctx.kids.reset();
     ctx.dog.reset();
     for (const f of ctx.flocks) f.reset();
+    ctx.butterflies?.reset();
     ctx.bubbles.clearAll();
     this.mama.active = false;
     this.doneToday = new Set();
