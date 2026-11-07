@@ -25,6 +25,9 @@ import { Album } from './game/album';
 import { setupMischief, dropCarried } from './game/mischief';
 import { Day } from './game/day';
 import { WeatherSystem, rollWeather, weatherNow } from './game/weather';
+import { Traffic } from './game/traffic';
+import { RoadWorks } from './game/roadworks';
+import { randomSpec, VTYPES } from './entities/vehicles';
 import { DecorSystem } from './game/decor';
 import { PhotoMode } from './ui/photo';
 import { UI, HUD_HTML } from './ui/ui';
@@ -100,7 +103,16 @@ function boot() {
     { id: 'Mampir, mampir!', en: 'Come on in!' },
   ];
   buWarung.owns = ['kerupuk'];
-  ctx.npcs = [siti, ujang, tini, satpam, buWarung];
+  // road works foreman (only out on road-works days, see game/roadworks.ts)
+  const mandor = new Human('mandor', { skin: 0xb87a4b, shirt: 0xff8f00, pants: 0x37474f, hair: 'cap', hijabColor: 0xfdd835, mustache: true, shoes: 0x4e342e }, 'adult', V(39.6, 0, -4.3), { x0: 34, z0: -5.2, x1: 62, z1: 0.6 }, 0.85);
+  mandor.path = [V(39.6, 0, -4.3), V(47, 0, -4.3), V(57.8, 0, -4.3), V(57.8, 0, -1.2), V(51, 0, -4.3)];
+  mandor.idleLines = [
+    { id: 'Hati-hati, ada perbaikan jalan!', en: 'Careful, road works!' },
+    { id: 'Pelan-pelan, Pak, Bu!', en: 'Slowly please, everyone!' },
+  ];
+  mandor.owns = [];
+  mandor.active = false;
+  ctx.npcs = [siti, ujang, tini, satpam, buWarung, mandor];
   const dimas = new Human('dimas', { skin: 0xc68e5f, shirt: 0xffca28, pants: 0x1e88e5, hair: 'cap', hijabColor: 0xe53935, kid: true }, 'kid', pts.kidA, { x0: -30, z0: 5, x1: 12, z1: 39 }, 1.8);
   const putri = new Human('putri', { skin: 0xe0ac7e, shirt: 0xec407a, pants: 0x7e57c2, skirt: true, hair: 'long', hairColor: 0x3e2723, kid: true }, 'kid', pts.kidB, { x0: -30, z0: 5, x1: 12, z1: 39 }, 2.0);
   ctx.kids = new Kids(dimas, putri);
@@ -120,6 +132,11 @@ function boot() {
   ctx.day = new Day();
   // weather & time of day: ctx.weather = 'cerah' | 'hujan' | 'malam' (see game/weather.ts)
   ctx.weatherSys = new WeatherSystem();
+  // cars & motorbikes + road works (ctx.works.stage = '' | 'gali' | 'aspal' | 'baru')
+  ctx.traffic = new Traffic();
+  ctx.works = new RoadWorks();
+  ctx.works.mandor = mandor;
+  ctx.trafficApi = { randomSpec, VTYPES };
   ctx.weatherNow = weatherNow;
   ctx.rollWeather = rollWeather;
   ctx.decor = new DecorSystem();
@@ -204,6 +221,8 @@ function boot() {
     ctx.catEarsDown = false;
     ctx.camRig.override = null;
     ctx.weatherSys.apply('cerah');
+    ctx.works.applyStage('');
+    ctx.traffic.reset(false, 'cerah');
     ctx.sky.set(kind === 'title' ? 0.25 : 0.3);
   };
   const menuCamera = (dt: number) => {
@@ -298,6 +317,8 @@ function boot() {
       ctx.lisa.update(gdt);
       ctx.progress.update(gdt);
       ctx.props.update(gdt);
+      ctx.works.update(gdt);
+      ctx.traffic.update(gdt);
       ctx.fishing.update(gdt);
       ctx.interact.update(gdt);
       for (const a of W.anim) a(gdt, ctx.time);

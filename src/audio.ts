@@ -284,6 +284,72 @@ class SoundSystem {
   }
 
   // soft splash when the cat steps in a puddle
+  // ---------- traffic & road works ----------
+  /** Car horn "tin tin!": two short beeps; cars low, motorbikes high & thin. */
+  horn(motor = false, vol = 1) {
+    if (!this.ac) return;
+    const f = motor ? 620 : 410;
+    for (const w of [0, 0.22]) {
+      this.tone(f, 0.16, 'square', 0.06 * vol, w);
+      this.tone(f * 1.26, 0.16, 'square', 0.045 * vol, w);
+    }
+  }
+  /**
+   * A short engine burst for a passing vehicle (vol = 0..1 from the distance).
+   * bensin = smooth hum, diesel = low clatter, 2-tak = buzzy "teng-teng", 4-tak = purr,
+   * listrik = soft rising whine.
+   */
+  engine(kind: string, vol: number, dur = 0.5) {
+    if (!this.ac || vol < 0.02) return;
+    const v = Math.min(1, vol);
+    if (kind === 'listrik') {
+      this.tone(900, dur, 'sine', 0.03 * v, 0, 1150, undefined, 0.08);
+      return;
+    }
+    if (kind === 'diesel') {
+      for (let i = 0; i < Math.round(dur / 0.07); i++) this.noise(0.05, 0.07 * v, 'lowpass', 260, 1, i * 0.07);
+      this.tone(55, dur, 'sawtooth', 0.05 * v, 0, 52, undefined, 0.05);
+      return;
+    }
+    if (kind === '2tak') {
+      this.tone(170, dur, 'sawtooth', 0.045 * v, 0, 210, undefined, 0.04);
+      this.noise(dur, 0.04 * v, 'bandpass', 1600, 3, 0);
+      return;
+    }
+    if (kind === '4tak') {
+      for (let i = 0; i < Math.round(dur / 0.09); i++) this.noise(0.06, 0.05 * v, 'bandpass', 420, 2, i * 0.09);
+      this.tone(95, dur, 'triangle', 0.05 * v, 0, 105, undefined, 0.05);
+      return;
+    }
+    // bensin
+    this.tone(78, dur, 'sawtooth', 0.04 * v, 0, 84, undefined, 0.06);
+    this.noise(dur, 0.035 * v, 'lowpass', 380, 1, 0);
+  }
+  /** Excavator: low diesel rumble + hydraulic whine (vol from the distance). */
+  digger(vol: number) {
+    if (!this.ac || vol < 0.02) return;
+    const v = Math.min(1, vol);
+    for (let i = 0; i < 9; i++) this.noise(0.06, 0.06 * v, 'lowpass', 220, 1, i * 0.085);
+    this.tone(480, 0.7, 'sine', 0.018 * v, 0.05, 620, undefined, 0.2);
+  }
+  /** Bucket scraping / dropping asphalt chunks. */
+  rubble(vol: number) {
+    if (!this.ac || vol < 0.02) return;
+    const v = Math.min(1, vol);
+    for (let i = 0; i < 5; i++) this.noise(0.08, 0.12 * v, 'bandpass', 500 + Math.random() * 700, 1.5, i * 0.06 + Math.random() * 0.03);
+  }
+  /** Squish into fresh soft asphalt. */
+  squish() {
+    this.noise(0.18, 0.12, 'lowpass', 600, 1, 0, 200);
+    this.tone(160, 0.14, 'sine', 0.08, 0, 80);
+  }
+  /** Plastic cone toppling. */
+  cone() {
+    this.tone(320, 0.08, 'triangle', 0.1, 0, 200);
+    this.noise(0.1, 0.08, 'bandpass', 1300, 2, 0.06);
+    this.tone(260, 0.06, 'triangle', 0.07, 0.17, 180);
+  }
+
   puddle() {
     this.noise(0.16, 0.12, 'bandpass', 1800, 1.2, 0, 700);
     this.tone(700 + Math.random() * 200, 0.08, 'sine', 0.05, 0.02, 300);

@@ -6,7 +6,7 @@ import { input } from '../input';
 import { sfx } from '../audio';
 import { tr } from '../i18n';
 
-export type CatState = 'free' | 'sleep' | 'fish' | 'act' | 'knock' | 'hugged' | 'cut';
+export type CatState = 'free' | 'sleep' | 'fish' | 'act' | 'knock' | 'hugged' | 'cut' | 'ride'; // ride = sitting in the excavator bucket
 
 export function blobShadow(size = 0.7) {
   const c = document.createElement('canvas');
@@ -204,11 +204,11 @@ export class Cat {
         b.vz = damp(b.vz, 0, 8, dt);
       }
       if (this.stateT > 0.9) this.setState('free');
-    } else if (this.state === 'hugged' || this.state === 'cut' || this.state === 'fish') {
+    } else if (this.state === 'hugged' || this.state === 'cut' || this.state === 'fish' || this.state === 'ride') {
       b.vx = b.vz = 0;
     }
 
-    if (this.state !== 'hugged' && this.state !== 'fish' && !(this.state === 'cut' && ctx.cutFreeze)) {
+    if (this.state !== 'hugged' && this.state !== 'fish' && this.state !== 'ride' && !(this.state === 'cut' && ctx.cutFreeze)) {
       if (this.state === 'sleep') {
         b.vy = 0;
       } else {
@@ -223,7 +223,7 @@ export class Cat {
     this.airTime = b.onGround ? 0 : this.airTime + dt;
     // water check
     for (const w of ctx.world.water) {
-      if (b.x > w.x0 && b.x < w.x1 && b.z > w.z0 && b.z < w.z1 && b.y < 0.12 && this.state !== 'hugged') {
+      if (b.x > w.x0 && b.x < w.x1 && b.z > w.z0 && b.z < w.z1 && b.y < 0.12 && this.state !== 'hugged' && this.state !== 'ride') {
         sfx.splash(true);
         ctx.fx.burst(b.x, 0.1, b.z, 0x8fd3ff, 16, { speed: 2.5, up: 4, size: 0.08, life: 0.8, floor: 0.05 });
         ctx.bubbles.say(this.model.root, tr('splashNo'), { ttl: 2, y: 1.0, kind: 'emote', key: 'catwater' });
@@ -251,7 +251,7 @@ export class Cat {
     a.speed = this.state === 'free' || this.state === 'knock' ? this.speed01 * 1.1 : 0;
     a.air = !b.onGround && this.state !== 'sleep' && this.state !== 'hugged' && this.airTime > 0.06;
     a.sleep = damp(a.sleep, this.state === 'sleep' ? 1 : 0, 8, dt);
-    a.sit = damp(a.sit, this.state === 'fish' || (this.state === 'cut' && ctx.catSit) ? 1 : 0, 8, dt);
+    a.sit = damp(a.sit, this.state === 'fish' || this.state === 'ride' || (this.state === 'cut' && ctx.catSit) ? 1 : 0, 8, dt);
     a.scratch = this.state === 'act' && this.actKind === 'scratch';
     a.dig = this.state === 'act' && this.actKind === 'dig';
     a.eat = this.state === 'act' && this.actKind === 'eat';

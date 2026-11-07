@@ -10,10 +10,12 @@ const P = (id: string, en: string): Pair => ({ id, en });
 
 export interface MDef {
   id: string;
-  area: 'rumah' | 'taman' | 'jalan' | 'pasar' | 'atap' | 'sekolah' | 'warung' | 'sungai';
+  area: 'rumah' | 'taman' | 'jalan' | 'pasar' | 'atap' | 'sekolah' | 'warung' | 'sungai' | 'proyek';
   icon: string;
   name: Pair;
   noise: number;
+  /** only possible on some days (road works): never asked for by quests */
+  rare?: boolean;
 }
 
 export const MISCHIEF: MDef[] = [
@@ -50,9 +52,12 @@ export const MISCHIEF: MDef[] = [
   { id: 'kupu', area: 'sungai', icon: '🦋', name: P('Kejar kupu-kupu', 'Chase the butterflies'), noise: 0 },
   { id: 'bebek', area: 'sungai', icon: '🦆', name: P('Ganggu bebek', 'Bother the ducks'), noise: 6 },
   { id: 'cebur', area: 'sungai', icon: '💦', name: P('Cebur-ceburan di batu', 'Splash on the stepping stones'), noise: 3 },
+  { id: 'numpang', area: 'jalan', icon: '🚗', name: P('Numpang mobil lewat', 'Hitch a ride on a car'), noise: 0 },
+  { id: 'ekskavator', area: 'proyek', icon: '🚜', name: P('Naik sendok ekskavator', 'Ride the excavator bucket'), noise: 0, rare: true },
+  { id: 'cap_kaki', area: 'proyek', icon: '🐾', name: P('Cap kaki di aspal baru', 'Paw prints in fresh asphalt'), noise: 0, rare: true },
 ];
 export const MBY: Record<string, MDef> = Object.fromEntries(MISCHIEF.map((m) => [m.id, m]));
-export const AREAS = ['rumah', 'taman', 'jalan', 'pasar', 'atap', 'sekolah', 'warung', 'sungai'] as const;
+export const AREAS = ['rumah', 'taman', 'jalan', 'pasar', 'atap', 'sekolah', 'warung', 'sungai', 'proyek'] as const;
 export const AREA_KEY: Record<string, string> = Object.fromEntries(AREAS.map((a) => [a, 'ar_' + a]));
 
 export function addCoins(n: number) {

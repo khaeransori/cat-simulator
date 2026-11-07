@@ -287,6 +287,15 @@ const T: Record<string, Pair> = {
   ar_sekolah: { id: 'Sekolah', en: 'School' },
   ar_warung: { id: 'Warung', en: 'Corner Shop' },
   ar_sungai: { id: 'Sungai', en: 'River' },
+  // traffic & road works
+  ar_proyek: { id: 'Proyek Jalan', en: 'Road Works' },
+  a_ride: { id: 'Naik', en: 'Ride' },
+  rideHint: { id: 'Psst... lompat ke atas mobil yang berhenti, lalu numpang jalan-jalan!', en: 'Psst... jump onto a stopped car and hitch a ride!' },
+  gateNo: { id: 'Di luar gerbang jalan raya. Kucing main di dalam kompleks saja, ya!', en: "That's the big road outside. Cats play inside the neighborhood!" },
+  pawWet: { id: 'Ihh, lengket!', en: 'Ew, sticky!' },
+  works_gali: { id: 'Ada perbaikan jalan! Ekskavator lagi mengeruk aspal lama.', en: 'Road works! The excavator is digging up the old asphalt.' },
+  works_aspal: { id: 'Aspal barunya masih basah dan lembut...', en: 'The new asphalt is still wet and soft...' },
+  works_baru: { id: 'Jalannya sudah mulus lagi!', en: 'The road is nice and smooth again!' },
 };
 
 /** the raw {id,en} pair of a key (for text built in both languages) */

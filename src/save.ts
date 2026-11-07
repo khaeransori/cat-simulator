@@ -55,6 +55,8 @@ export interface SaveData {
   decor: Record<string, boolean>;
   /** owned decorations the player put away (not shown in the house) */
   decorOff: Record<string, boolean>;
+  /** Proyek jalan: start day of the current/last project (0 = none yet), last day rolled, paw prints in the new asphalt */
+  works: { start: number; rolled: number; prints: number[][] };
 }
 
 export interface GiverState {
@@ -95,6 +97,7 @@ export function defaultSave(): SaveData {
     givers: { belang: giver(), mpus: giver() },
     decor: {},
     decorOff: {},
+    works: { start: 0, rolled: 0, prints: [] },
   };
 }
 

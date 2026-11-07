@@ -270,13 +270,16 @@ export function buildWorld(scene: THREE.Scene): World {
   // west wall: gap where the street continues to the Warung and the Sekolah
   S.mm(-48, 0, -33, -46, 4.5, -5, PW);
   S.mm(-48, 0, 5, -46, 4.5, 41, PW);
-  S.mm(66, 0, -33, 68, 4.5, 41, PW);
+  // east wall: gap at the gate, cars & motorbikes come in from the main road outside
+  S.mm(66, 0, -33, 68, 4.5, -5, PW);
+  S.mm(66, 0, 5, 68, 4.5, 41, PW);
   S.wall(-48, 4.5, -33, 68, 12, -31);
   S.wall(-48, 4.5, 39, 12.3, 12, 41);
   S.wall(17.6, 4.5, 39, 68, 12, 41);
   S.wall(-48, 4.5, -33, -46, 12, -5);
   S.wall(-48, 4.5, 5, -46, 12, 41);
-  S.wall(66, 4.5, -33, 68, 12, 41);
+  S.wall(66, 4.5, -33, 68, 12, -5);
+  S.wall(66, 4.5, 5, 68, 12, 41);
   // vines on perimeter
   for (let x = -44; x < 66; x += 7) S.mm(x, 2.5, -31.05, x + 2.5, 4.5, -30.9, 0x5aa55a, { collide: false });
 
@@ -287,12 +290,43 @@ export function buildWorld(scene: THREE.Scene): World {
   S.mm(-46, 0, 3.5, 66, 0.15, 5, C.sidewalk, { top: C.sidewalk });
   S.mm(-46, 0, -3.6, 66, 0.17, -3.45, C.curb, { collide: false });
   S.mm(-46, 0, 3.45, 66, 0.17, 3.6, C.curb, { collide: false });
-  rects.push({ x0: -46, z0: -5, x1: 66, z1: 5, c: '#8b8f96' });
+  rects.push({ x0: -46, z0: -5, x1: 68, z1: 5, c: '#8b8f96' });
   for (const x of [-34, -18, 0, 18, 36, 54]) lamp(x, 4.6);
   for (const x of [-26, 10, 44]) lamp(x, -4.6);
-  // east gate (closed)
-  S.mm(64, 0, -3.5, 65.6, 3.2, 3.5, 0x6d737c);
-  for (let z = -3.2; z < 3.5; z += 0.5) S.mm(63.85, 0, z, 64, 3.1, z + 0.12, 0x3e434b, { collide: false });
+  // east gate: open for cars (a boom barrier lifts for them, see game/traffic.ts);
+  // an invisible wall keeps cats and neighbours inside the kompleks
+  S.mm(64, 0, -5, 65.6, 3.4, -3.75, 0x6d737c);
+  S.mm(64, 0, 3.75, 65.6, 3.4, 5, 0x6d737c);
+  S.wall(63.9, 0, -3.75, 65.7, 4.5, 3.75);
+  S.mm(63.9, 0.3, 3.8, 64, 0.7, 4.7, 0x3e434b, { collide: false });
+  S.mm(63.9, 0.3, -4.7, 64, 0.7, -3.8, 0x3e434b, { collide: false });
+  // security booth next to the gate
+  S.mm(60.6, 0.15, 5.4, 63.6, 2.6, 7.8, 0xe8e2d4);
+  S.mm(60.4, 2.6, 5.2, 63.8, 2.8, 8.0, 0x2f5d45, { collide: false });
+  S.mm(62.0, 1.1, 5.38, 63.2, 2.0, 5.4, C.glass, { collide: false });
+  // ---- outside: the main road ----
+  S.mm(68, -1, -26, 96, 0, 26, 0x7fbf5c, { top: 0x7fbf5c, jitter: 0 });
+  floor(64, -3.5, 80, 3.5, C.asphalt, 0.012);
+  S.mm(68, 0, -5, 78.4, 0.15, -3.5, C.sidewalk, { top: C.sidewalk });
+  S.mm(68, 0, 3.5, 78.4, 0.15, 5, C.sidewalk, { top: C.sidewalk });
+  floor(78.4, -26, 89.6, 26, C.asphalt, 0.013);
+  for (let z = -25; z < 25; z += 4) floor(83.92, z, 84.08, z + 2, C.line, 0.022);
+  S.mm(89.6, 0, -26, 91.4, 0.15, 26, C.sidewalk, { top: C.sidewalk });
+  // zebra crossing in front of the gate
+  for (let z = -3; z < 3.2; z += 1.0) floor(79.2, z, 80.6, z + 0.5, 0xf2f2f2, 0.02);
+  // across the road: shop fronts (a backdrop, the cat can't go there)
+  {
+    const shops: [number, number, number, number][] = [[-26, -14, 0xf6c177, 0xe53935], [-14, -4, 0x9ed1b0, 0x1e88e5], [-4, 6, 0xf3b88f, 0x43a047], [6, 16, 0xc9b8e6, 0xfb8c00], [16, 26, 0xeed9a8, 0x8e24aa]];
+    for (const [z0, z1, wall, awn] of shops) {
+      S.mm(91.4, 0, z0, 95.5, 5.2 + ((z0 * 7) % 3 + 3) % 3 * 0.6, z1, wall);
+      S.mm(91.2, 0.2, z0 + 1.2, 91.45, 2.6, z1 - 1.2, 0x3e5161, { collide: false });
+      S.mm(90.2, 2.8, z0 + 0.6, 91.4, 3.0, z1 - 0.6, awn, { collide: false });
+    }
+    // side walls of the outside strip
+    S.mm(68, 0, -26.5, 96, 4.5, -26, PW);
+    S.mm(68, 0, 26, 96, 4.5, 26.5, PW);
+  }
+  for (const z of [-12, 12]) lamp(78, z);
   const gateSign = new THREE.Mesh(new THREE.PlaneGeometry(4, 0.8), new THREE.MeshBasicMaterial({ map: signTex(['GERBANG KOMPLEKS'], '#2f5d45', '#fff4d6', 512, 96, 52) }));
   gateSign.position.set(63.8, 3.7, 0);
   gateSign.rotation.y = -Math.PI / 2;

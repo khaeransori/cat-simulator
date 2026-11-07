@@ -7,6 +7,7 @@ import { Human } from '../entities/npc';
 import { resetProps, addCoins, MBY, dropCarried } from './mischief';
 import { mbox } from '../world/builder';
 import { rollWeather, WEATHER_ICON, type Weather } from './weather';
+import { WORKS } from './traffic';
 
 const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
@@ -32,6 +33,8 @@ export class Day {
   /** today's day type (also on ctx.weather) */
   weather: Weather = 'cerah';
   kidsHint = false;
+  /** bumps every day start (stale timers check it) */
+  token = 0;
 
   constructor() {
     this.mama = new Human('mama', { skin: 0xd9a877, shirt: 0x7e57c2, pants: 0x455a64, hair: 'hijab', hijabColor: 0xf06292, prop: 'tas', skirt: true, shoes: 0x5d4037 }, 'mama', ctx.world.pts.mamaStart, { x0: -30, z0: -30, x1: 30, z1: 10 }, 1.1);
@@ -100,6 +103,9 @@ export class Day {
     this.kidsHint = false;
     this.weather = rollWeather(this.n);
     ctx.weatherSys.apply(this.weather);
+    // road works + traffic come after the weather (it sets who is out today)
+    ctx.works?.setup(this.n, this.weather);
+    ctx.traffic?.reset(!!ctx.works?.lane, this.weather);
     ctx.sky.set(0);
   }
 
@@ -163,7 +169,12 @@ export class Day {
     ctx.ui.bigTitle(tr('dayStart', { n: this.n }));
     ctx.ui.weather(this.weather);
     const wx = this.weather;
-    ctx.after(1.9, () => this.running && ctx.ui.banner(WEATHER_ICON[wx], tr('wxToday'), tr('wx_' + wx), 0, tr('wxSub_' + wx)));
+    // only for this day (a quickly started next day must not get yesterday's banner)
+    const tok = ++this.token;
+    const today = () => this.running && this.token === tok;
+    ctx.after(1.9, () => today() && ctx.ui.banner(WEATHER_ICON[wx], tr('wxToday'), tr('wx_' + wx), 0, tr('wxSub_' + wx)));
+    const ws = ctx.works?.stage;
+    if (ws) ctx.after(6.5, () => today() && ctx.ui.toast((ws === 'baru' ? '✨ ' : '🚧 ') + tr('works_' + ws), 3.6));
     ctx.save.weatherSeen[wx] = (ctx.save.weatherSeen[wx] || 0) + 1;
     ctx.ui.hud(true);
     ctx.mode = 'play';
@@ -189,6 +200,7 @@ export class Day {
   }
 
   zoneAt(x: number, y: number, z: number) {
+    if (ctx.works?.lane && x > WORKS.x0 - 4 && x < WORKS.x1 + 4 && z > -5.2 && z < 0.4) return 'proyek';
     for (const zn of ctx.world.zones) if (zn.ymin !== undefined && y >= zn.ymin && x > zn.x0 && x < zn.x1 && z > zn.z0 && z < zn.z1) return zn.id;
     for (const zn of ctx.world.zones) if (zn.ymin === undefined && x > zn.x0 && x < zn.x1 && z > zn.z0 && z < zn.z1) return zn.id;
     return 'jalan';

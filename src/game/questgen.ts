@@ -101,7 +101,7 @@ const GENS: Record<string, Gen> = {
     const areas = Object.keys(AREA).filter(unlockedArea);
     if (!areas.length) return null;
     const a = pick(areas);
-    const ids = MISCHIEF.filter((m) => m.area === a).map((m) => m.id);
+    const ids = MISCHIEF.filter((m) => m.area === a && !m.rare).map((m) => m.id);
     const g = Math.min(ids.length, pick([2, 3]));
     const an = AREA[a].name;
     return base('area_' + a, P(`${g} kenakalan ${an.id}`, `${g} mischiefs ${an.en}`),
@@ -111,7 +111,7 @@ const GENS: Record<string, Gen> = {
   },
   // 2 of 3 named mischiefs from anywhere
   pickTwo: () => {
-    const pool = MISCHIEF.filter((m) => unlockedArea(m.area));
+    const pool = MISCHIEF.filter((m) => unlockedArea(m.area) && !m.rare);
     const three = shuffle(pool).slice(0, 3);
     const names = three.map((m) => m.icon + ' ' + m.name.id.toLowerCase());
     const namesEn = three.map((m) => m.icon + ' ' + lc(m.name).en);

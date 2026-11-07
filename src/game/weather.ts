@@ -85,7 +85,7 @@ const RR = 13; // rain box half size around the camera
 const RH = 16; // rain box height
 
 // spots where puddles form on rainy days (street, front path, park paths)
-const PUDDLES: [number, number, number, number][] = [
+export const PUDDLES: [number, number, number, number][] = [
   [-14, 0.024, -7.6, 0.75],
   [-25, 0.02, 1.4, 1.1],
   [-9, 0.02, -2.0, 0.9],
@@ -255,7 +255,7 @@ export class WeatherSystem {
     this.setWet(0);
     this.wetToast = false;
     // adults: umbrellas + slower in the rain; at night Bu Siti is asleep and everyone hears/sees less
-    const umb: Record<string, number> = { siti: 0xff7043, ujang: 0x1e88e5, tini: 0xfdd835, satpam: 0x455a64, buwarung: 0x43a047 };
+    const umb: Record<string, number> = { siti: 0xff7043, ujang: 0x1e88e5, tini: 0xfdd835, satpam: 0x455a64, buwarung: 0x43a047, mandor: 0xff8f00 };
     for (const h of ctx.npcs as Human[]) {
       if (!this.baseSpeed.has(h)) {
         this.baseSpeed.set(h, h.speed);
@@ -267,7 +267,7 @@ export class WeatherSystem {
       h.range = this.baseRange.get(h)! * (night ? 0.7 : 1);
       h.hearK = night ? 0.55 : 1;
       h.model.setUmbrella(rain, umb[h.name]);
-      h.active = !(night && h.name === 'siti');
+      if (h.name === 'siti') h.active = !night;
     }
     ctx.day?.mama.model.setUmbrella(rain, 0xf06292);
     // kids stay home when it rains or at night (no ball game)
