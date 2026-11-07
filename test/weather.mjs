@@ -139,7 +139,10 @@ check('cerah after malam: all back', !s.rain && !s.stars && !s.flies && s.kidsVi
 // end of a night day: summary shows the day type
 await day('malam', { keepTime: true });
 await h.ev(() => void window.__cat.day.end(true));
-await h.page.waitForFunction(() => window.__cat.mode === 'summary', null, { timeout: 120000 });
+for (let i = 0; i < 120 && (await h.ev(() => window.__cat.mode)) !== 'summary'; i++) {
+  await h.dialogs(2);
+  await h.wait(500);
+}
 const sum = await h.ev(() => document.getElementById('sumWx')?.textContent || '');
 check('summary shows the day type', sum.includes('🌙'), sum);
 await h.shot('weather-summary');
