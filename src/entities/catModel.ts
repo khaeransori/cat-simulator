@@ -296,6 +296,16 @@ export class CatModel {
         h.add(B(0.04, 0.04, 0.02, lam(0x43a047), -0.09, 0.035, 0.14));
         break;
       }
+      case 'topiNelayan': {
+        // floppy bucket hat with a little fish badge
+        const c = lam(0x7d9b4f);
+        h.add(B(0.46, 0.025, 0.42, lam(0x6b8a40), 0, 0.01, 0));
+        h.add(B(0.3, 0.12, 0.27, c, 0, 0.08, 0));
+        h.add(B(0.31, 0.03, 0.28, lam(0xc9a86a), 0, 0.04, 0));
+        h.add(B(0.08, 0.04, 0.02, lam(0xff8f00), 0.04, 0.09, 0.14));
+        h.add(B(0.03, 0.04, 0.02, lam(0xff8f00), -0.01, 0.09, 0.14));
+        break;
+      }
     }
     const f = this.faceAcc;
     switch (look.face) {
@@ -329,6 +339,16 @@ export class CatModel {
           f.add(B(0.035, 0.03, 0.02, c, x, -0.05, 0.004));
         }
         f.add(B(0.07, 0.015, 0.02, lam(0xd81b60), 0, 0.03, 0));
+        break;
+      }
+      case 'topengNakal': {
+        // little black bandit mask with eye holes
+        const c = lam(0x1d1d26);
+        f.add(B(0.38, 0.03, 0.02, c, 0, 0.045, 0.002));
+        f.add(B(0.38, 0.03, 0.02, c, 0, -0.035, 0.002));
+        for (const x of [-0.17, 0, 0.17]) f.add(B(0.05, 0.11, 0.02, c, x, 0.005, 0.002));
+        f.add(B(0.1, 0.02, 0.02, c, 0.22, 0.03, -0.03));
+        f.add(B(0.1, 0.02, 0.02, c, -0.22, 0.03, -0.03));
         break;
       }
     }
@@ -366,6 +386,16 @@ export class CatModel {
         const b = B(0.08, 0.07, 0.03, c, -0.06, 0.45, 0.29);
         b.rotation.z = -0.25;
         n.add(a, b);
+        break;
+      }
+      case 'mutiara': {
+        const pearl = lam(0xfaf6ff);
+        (pearl as any).emissive?.setHex?.(0x1a1a22);
+        for (let i = 0; i < 7; i++) {
+          const a = -1.2 + (i / 6) * 2.4;
+          n.add(B(0.045, 0.045, 0.045, pearl, Math.sin(a) * 0.16, 0.47 - Math.cos(a) * 0.03, 0.22 + Math.cos(a) * 0.07));
+        }
+        n.add(B(0.06, 0.06, 0.04, lam(0xff80ab), 0, 0.42, 0.3));
         break;
       }
     }

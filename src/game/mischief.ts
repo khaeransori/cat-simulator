@@ -78,6 +78,7 @@ export function doMischief(id: string) {
   ctx.catHappy = true;
   ctx.after(1.2, () => (ctx.catHappy = false));
   ctx.quests.onMischief(id);
+  ctx.album?.onMischief(id, first);
   writeSave(ctx.save);
 }
 

@@ -16,7 +16,9 @@ import { Human, NPC_LINES } from './entities/npc';
 import { Dog, Flock, Lisa, Kids } from './entities/creatures';
 import { CatModel } from './entities/catModel';
 import { Quests } from './game/quests';
-import { Fishing } from './game/fishing';
+import { Fishing, FBY, SPOTS, fishAvailable } from './game/fishing';
+import { genKind } from './game/questgen';
+import { Album } from './game/album';
 import { setupMischief, dropCarried } from './game/mischief';
 import { Day } from './game/day';
 import { UI, HUD_HTML } from './ui/ui';
@@ -94,6 +96,7 @@ function boot() {
   ctx.day = new Day();
   const ui = new UI();
   ctx.ui = ui;
+  ctx.album = new Album();
   ctx.quests.applyUnlocks(false);
 
   // ---- events ----
@@ -291,6 +294,7 @@ function boot() {
   requestAnimationFrame(frame);
   // expose for debugging/testing
   (window as any).__cat = ctx;
+  (window as any).__catDev = { FBY, SPOTS, fishAvailable, genKind };
   void rand;
 }
 

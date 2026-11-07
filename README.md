@@ -33,9 +33,15 @@ Alternatif tanpa hosting: unduh [cat-simulator.html](https://khaeransori.github.
   5. Pancing Ikan Emas legendaris → bulu emas
   6. Hari sempurna (8 kenakalan + pulang tepat waktu) → jubah pahlawan
 - **Tantangan bonus tanpa akhir** (`src/game/questgen.ts`): setelah tamat, tiap ngobrol ke Lisa dia bikin tantangan baru dari 16 tipe — mancing apa saja, mancing jenis tertentu, kenakalan per area, pilih 2 dari 3, N kenakalan beda, bawa ikan pasar, pulang tepat waktu, Ikan Emas, kombo cepat, ngemil, dipeluk anak-anak, diusir warga, ninja (tanpa diusir), meong ke orang berbeda, kumpulkan koin, jalan-jalan ke beberapa tempat. Tipe yang sama tidak muncul lagi dalam 5 tantangan berikutnya, angka/tempat diacak, dan target pelan-pelan naik tiap 6 tantangan.
-- **Mancing:** tunggu pelampung, tekan saat ada yang makan, lalu tekan lagi saat penanda di bagian hijau. Bisa dapat ikan kecil, ikan mas, lele, sepatu bekas, atau Ikan Emas.
+- **Mancing di 4 tempat** (`SPOTS` di `src/game/fishing.ts`): tunggu pelampung, tekan saat ada yang makan, lalu tekan lagi saat penanda di bagian hijau. Tiap tangkapan punya ukuran (cm) dan rekor terbesar disimpan.
+  - Kolam taman: ikan kecil, ikan mas, lele, sepatu bekas, Ikan Emas legendaris.
+  - Got di jalan kompleks: ikan cupang, berudu, sandal jepit, ✨ Cupang Raja Pelangi.
+  - Bak Pasar Ikan (setelah pasar terbuka): ikan nila, belut, kepiting kecil, ✨ Udang Biru Ajaib.
+  - Tong air hujan di atap (setelah atap terbuka): ikan koi, ikan guppy, ✨ Koi Pelangi.
+  - Ikan langka (✨) jarang muncul, berkilau, dan dapat banner saat pertama ditangkap.
 - **Gaya Kucing:** nama sendiri, 10 warna bulu, 6 pola, 5 warna mata, topi, kacamata, kalung, dan punggung (ransel, sayap, jubah). Dibuka dengan koin ikan atau hadiah quest.
-- **Buku Kenakalan** (koleksi kenakalan dan ikan) dan **peta** kompleks.
+- **Album Koleksi** (tombol 📖 di HUD, menu, dan jeda; titik merah kalau ada yang baru): tab Kenakalan per area, tab Ikan per tempat mancing (siluet ❔ untuk yang belum, jumlah dan ukuran terbesar), tab Stiker (21 stiker: tangkapan pertama, 10/50/100 tangkapan, ikan langka, ikan raksasa, lengkap per tempat mancing, lengkap per area kenakalan, semua kenakalan, dst.). Persen lengkap per tab dan total. Koleksi lengkap kasih koin sekali; yang besar kasih baju: topi nelayan (semua ikan), topeng si nakal (semua kenakalan), kalung mutiara (semua ikan langka).
+- **Peta** kompleks.
 - **Bahasa Indonesia / English** bisa dipilih di Pengaturan.
 - Musik dan efek suara dibuat langsung dengan WebAudio, tanpa file audio.
 
@@ -68,6 +74,7 @@ npm run test:smoke      # judul, pilih kucing, intro, jalan keluar rumah, jumlah
 npm run test:mischief   # 20 kenakalan satu per satu
 npm run test:quests     # rantai quest Lisa sampai hari sempurna
 npm run test:portrait   # layar portrait + joystick, kamera, dan tombol sentuh
+npm run test:album      # 4 tempat mancing, ikan langka, album, stiker, hadiah sekali, layar album
 ```
 
 ### Struktur kode
@@ -84,7 +91,8 @@ npm run test:portrait   # layar portrait + joystick, kamera, dan tombol sentuh
 | `src/entities/creatures.ts` | Bleki, merpati, Lisa, anak-anak dan bola |
 | `src/game/mischief.ts` | Daftar kenakalan dan efeknya |
 | `src/game/quests.ts` | Quest Lisa |
-| `src/game/fishing.ts` | Mini game mancing |
+| `src/game/fishing.ts` | Mini game mancing, daftar ikan, dan `SPOTS` (tempat mancing baru = satu entri) |
+| `src/game/album.ts` | Album koleksi: stiker, hadiah koleksi lengkap, tanda "baru" |
 | `src/game/day.ts` | Alur satu hari, cutscene Mama, panah petunjuk |
 | `src/ui/` | HUD, menu, toko gaya, buku, peta, pengaturan |
 | `src/cosmetics.ts` | Katalog bulu, pola, mata, dan aksesori |

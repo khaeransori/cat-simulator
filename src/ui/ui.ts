@@ -4,7 +4,8 @@ import { sfx } from '../audio';
 import { writeSave, clearSave, defaultSave } from '../save';
 import { ITEMS, SLOTS, itemsFor, isOwned, key, furColor, type Item, type Slot } from '../cosmetics';
 import { MISCHIEF, AREA_KEY } from '../game/mischief';
-import { FISH } from '../game/fishing';
+import { FISH, SPOTS, spotFish, spotSeat } from '../game/fishing';
+import { AREAS } from '../game/album';
 import { input } from '../input';
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -37,15 +38,18 @@ const ICON: Record<string, string> = {
   'head:koboi': '🤠',
   'head:topiPesta': '🥳',
   'head:mahkota': '👑',
+  'head:topiNelayan': '🎣',
   'face:none': '✖️',
   'face:bulat': '🤓',
   'face:hitamK': '🕶️',
   'face:hati': '😍',
+  'face:topengNakal': '🦝',
   'neck:none': '✖️',
   'neck:kalung': '⭕',
   'neck:lonceng': '🔔',
   'neck:syal': '🧣',
   'neck:dasi': '👔',
+  'neck:mutiara': '📿',
   'back:none': '✖️',
   'back:ransel': '🎒',
   'back:sayap': '👼',
@@ -64,7 +68,9 @@ export class UI {
   styleSel: Item | null = null;
   styleBackup: any = null;
   lastCoins = -1;
-  bookTab: 'm' | 'f' = 'm';
+  bookTab: 'm' | 'f' | 'b' = 'm';
+  bannerQueue: { icon: string; title: string; sub: string; coins: number; fn?: () => void }[] = [];
+  bannerBusy = false;
 
   constructor() {
     this.bindHud();
@@ -79,6 +85,12 @@ export class UI {
     $('btnMap').addEventListener('click', () => {
       sfx.click();
       this.map(true);
+    });
+    $('btnAlbum').addEventListener('click', () => {
+      sfx.click();
+      if (ctx.mode !== 'play') return;
+      ctx.paused = true;
+      this.book(true, true);
     });
     $('questCard').addEventListener('click', () => {
       sfx.click();
@@ -115,6 +127,7 @@ export class UI {
       this.coins();
       this.quest();
       this.labels();
+      this.albumDot();
     }
   }
 
@@ -197,7 +210,32 @@ export class UI {
     (el as any)._t = setTimeout(() => (el.hidden = true), 2400);
   }
 
+  /** red dot on every album button while there is something new to look at */
+  albumDot() {
+    const on = !!ctx.album?.hasNews();
+    for (const id of ['btnAlbum', 'mBook', 'pBook']) document.getElementById(id)?.classList.toggle('dot', on);
+  }
+
+  // banners queue up so a catch banner and a sticker banner don't overwrite each other
   banner(icon: string, title: string, sub: string, coins: number) {
+    this.bannerQ(icon, title, sub, coins);
+  }
+  bannerQ(icon: string, title: string, sub: string, coins: number, fn?: () => void) {
+    this.bannerQueue.push({ icon, title, sub, coins, fn });
+    if (!this.bannerBusy) this.nextBanner();
+  }
+  private nextBanner() {
+    const b = this.bannerQueue.shift();
+    if (!b) {
+      this.bannerBusy = false;
+      return;
+    }
+    this.bannerBusy = true;
+    b.fn?.();
+    this.showBanner(b.icon, b.title, b.sub, b.coins);
+    setTimeout(() => this.nextBanner(), 2700);
+  }
+  private showBanner(icon: string, title: string, sub: string, coins: number) {
     const el = $('banner');
     el.innerHTML = `<div class="bi">${icon}</div><div><div class="bt">${esc(title)}</div><div class="bs">${esc(sub)}</div></div>${coins ? `<div class="bc">+${coins} 🐟</div>` : ''}`;
     el.hidden = true;
@@ -368,11 +406,12 @@ export class UI {
         <div class="menu-col">
           <button class="btn primary" id="mPlay">▶ ${esc(d > 1 ? tr('continueDay', { n: d }) : tr('play'))}</button>
           <button class="btn" id="mStyle">🎨 ${esc(tr('style'))}</button>
-          <button class="btn" id="mBook">📖 ${esc(tr('book'))}</button>
+          <button class="btn has-dot" id="mBook">📖 ${esc(tr('book'))}</button>
           <button class="btn" id="mSet">⚙️ ${esc(tr('settings'))}</button>
         </div>
       </div>`);
     ctx.menuCam('title');
+    this.albumDot();
     $('mPlay').onclick = () => {
       sfx.unlock();
       sfx.click();
@@ -418,7 +457,7 @@ export class UI {
           if (slot === 'fur') sw = `<div class="sw" style="background:${hex(it.color!)}"></div>`;
           else if (slot === 'eyes') sw = `<div class="sw" style="background:linear-gradient(90deg, ${hex(it.color!)} 50%, ${hex(it.color2 ?? it.color!)} 50%)"></div>`;
           else sw = `<div class="sw">${ICON[key(it)] ?? '•'}</div>`;
-          const st = worn ? `<span class="st own">✓ ${esc(tr('wearing'))}</span>` : owned ? `<span class="st own">${esc(tr('wear'))}</span>` : it.quest ? `<span class="st">🔒 Lisa</span>` : `<span class="st">🐟 ${it.price}</span>`;
+          const st = worn ? `<span class="st own">✓ ${esc(tr('wearing'))}</span>` : owned ? `<span class="st own">${esc(tr('wear'))}</span>` : it.quest ? `<span class="st">🔒 Lisa</span>` : it.album ? `<span class="st">🔒 📖</span>` : `<span class="st">🐟 ${it.price}</span>`;
           return `<button class="tile ${sel ? 'sel' : ''} ${owned ? '' : 'locked'}" data-k="${key(it)}">${sw}<span>${esc(L(it.name))}</span>${st}</button>`;
         })
         .join('');
@@ -431,6 +470,7 @@ export class UI {
         if (worn) btn = `<button class="btn small" disabled>✓ ${esc(tr('wearing'))}</button>`;
         else if (owned) btn = `<button class="btn small green" id="selAct">${esc(tr('wear'))}</button>`;
         else if (sel.quest) btn = `<button class="btn small" disabled>🔒 ${esc(tr('questLock'))}</button>`;
+        else if (sel.album) btn = `<button class="btn small" disabled>🔒 ${esc(tr('albumLock'))}</button>`;
         else btn = `<button class="btn small primary" id="selAct" ${s.coins < sel.price ? 'data-poor="1"' : ''}>${esc(tr('buy'))} 🐟 ${sel.price}</button>`;
         bar = `<div class="sel-bar"><span class="nm">${esc(L(sel.name))}</span>${btn}</div>`;
       }
@@ -516,54 +556,83 @@ export class UI {
     render();
   }
 
-  // ---------- mischief book ----------
-  book(fromPause = false) {
+  // ---------- collection album (mischief, fish per spot, stickers) ----------
+  book(fromPause = false, fromHud = false) {
     const s = ctx.save;
+    const A = ctx.album;
+    const pctOf = (a: number, b: number) => (b ? Math.floor((a / b) * 100) : 0);
+    const bar = (p: number) => `<div class="pbar"><div style="width:${p}%"></div></div>`;
+    const newTag = (k: string) => (A?.isNew(k) ? `<span class="new">${esc(tr('newTag'))}</span>` : '');
     const render = () => {
+      const pc = A.pct();
       let body = '';
       if (this.bookTab === 'm') {
         const found = MISCHIEF.filter((m) => s.mischief[m.id]).length;
-        body += `<div class="prog">${esc(tr('bookProgress', { a: found, b: MISCHIEF.length }))}</div>`;
-        for (const area of ['rumah', 'taman', 'jalan', 'pasar', 'atap']) {
+        body += `<div class="prog">${esc(tr('bookProgress', { a: found, b: MISCHIEF.length }))} · ${esc(tr('albumPct', { p: pc.mischief }))}</div>${bar(pc.mischief)}`;
+        for (const area of AREAS()) {
           const list = MISCHIEF.filter((m) => m.area === area);
-          body += `<div class="area-h">${esc(tr(AREA_KEY[area]))}</div><div class="cards">`;
+          const got = list.filter((m) => s.mischief[m.id]).length;
+          const full = got === list.length;
+          body += `<div class="area-h">${esc(AREA_KEY[area] ? tr(AREA_KEY[area]) : area)} <span class="ah-n ${full ? 'full' : ''}">${full ? '⭐ ' : ''}${got}/${list.length}</span></div><div class="cards">`;
           for (const m of list) {
             const n = s.mischief[m.id] || 0;
-            if (n) body += `<div class="mcard"><span class="mi">${m.icon}</span><span>${esc(L(m.name))}</span><span class="cnt">${n}x</span></div>`;
+            if (n) body += `<div class="mcard"><span class="mi">${m.icon}</span><span>${esc(L(m.name))}</span><span class="cnt">${n}x</span>${newTag('m:' + m.id)}</div>`;
             else body += `<div class="mcard unk"><span class="mi">❔</span><span>${esc(tr('unknown'))}</span></div>`;
           }
           body += `</div>`;
         }
-      } else {
+      } else if (this.bookTab === 'f') {
         const found = FISH.filter((f) => s.fish[f.id]).length;
-        body += `<div class="prog">${esc(tr('bookProgress', { a: found, b: FISH.length }))} · ${lang() === 'id' ? 'Total tangkapan' : 'Total catches'}: ${s.stats.fishTotal}</div><div class="cards" style="margin-top:8px">`;
-        for (const f of FISH) {
-          const n = s.fish[f.id] || 0;
-          if (n) body += `<div class="mcard"><span class="mi">${f.icon}</span><span>${esc(L(f.name))}</span><span class="cnt">${n}x</span></div>`;
-          else body += `<div class="mcard unk"><span class="mi">❔</span><span>${esc(tr('unknown'))}</span></div>`;
+        body += `<div class="prog">${esc(tr('bookProgress', { a: found, b: FISH.length }))} · ${esc(tr('fishTotal', { n: s.stats.fishTotal }))}</div>${bar(pc.fish)}`;
+        for (const sp of SPOTS) {
+          const list = spotFish(sp.id);
+          const got = list.filter((f) => s.fish[f.id]).length;
+          const open = sp.unlocked();
+          const full = got === list.length;
+          body += `<div class="area-h">${sp.icon} ${esc(L(sp.name))} <span class="ah-n ${full ? 'full' : ''}">${full ? '⭐ ' : ''}${got}/${list.length}</span>${open ? '' : ` <span class="ah-lock">🔒 ${esc(tr('spotLocked'))}</span>`}</div><div class="cards">`;
+          for (const f of list) {
+            const n = s.fish[f.id] || 0;
+            const best = s.fishBest[f.id];
+            if (n)
+              body += `<div class="mcard fcard ${f.rare ? 'rare' : ''}"><span class="mi">${f.icon}</span><span class="fn"><span>${esc(L(f.name))}</span>${best && !f.junk ? `<small title="${esc(tr('fishBest', { n: best }))}">📏 ${best} cm</small>` : ''}</span><span class="cnt">${n}x</span>${newTag('f:' + f.id)}</div>`;
+            else body += `<div class="mcard unk fcard ${f.rare ? 'rare' : ''}"><span class="mi sil">${f.icon}<b>?</b></span><span>${esc(tr('unknown'))}${f.rare ? ' ✨' : ''}</span></div>`;
+          }
+          body += `</div>`;
+        }
+      } else {
+        const got = A.badges.filter((b) => s.album.badges[b.id]).length;
+        body += `<div class="prog">${esc(tr('bookProgress', { a: got, b: A.badges.length }))} · ${esc(tr('albumPct', { p: pc.badges }))}</div>${bar(pc.badges)}<div class="stickers">`;
+        for (const b of A.badges) {
+          const have = !!s.album.badges[b.id];
+          const pr = !have && b.prog ? b.prog() : null;
+          const reward = (b.coins ? `+${b.coins} 🐟` : '') + (b.item ? ` + ${ICON[b.item] ?? '🎁'}` : '');
+          body += `<div class="sticker ${have ? 'got' : ''} ${b.big ? 'big' : ''}"><div class="si">${have ? b.icon : '🔒'}</div><div class="sn">${esc(L(b.name))}</div><div class="sd">${esc(L(b.desc))}</div><div class="sr">${have ? '✓ ' + reward : pr ? `${Math.min(pr[0], pr[1])}/${pr[1]} · ${reward}` : reward}</div>${newTag('b:' + b.id)}</div>`;
         }
         body += `</div>`;
       }
+      const tab = (id: string, k: string, label: string, p: number) => `<button class="tab ${this.bookTab === k ? 'on' : ''}" id="${id}">${label} <small>${p}%</small></button>`;
       this.showScreen(
         `<div class="screen-center shade"><div class="panel book-panel">
-          <div class="panel-head"><h2>📖 ${esc(tr('book'))}</h2><button class="btn small" id="bBack">${esc(tr('back'))}</button></div>
-          <div class="tabs"><button class="tab ${this.bookTab === 'm' ? 'on' : ''}" id="tM">${esc(tr('tabMischief'))}</button><button class="tab ${this.bookTab === 'f' ? 'on' : ''}" id="tF">🎣 ${esc(tr('tabFish'))}</button></div>
+          <div class="panel-head"><h2>📖 ${esc(tr('book'))} <small class="all-pct">${esc(tr('albumAll', { p: pc.all }))}</small></h2><button class="btn small" id="bBack">${esc(tr('back'))}</button></div>
+          <div class="tabs">${tab('tM', 'm', '😼 ' + esc(tr('tabMischief')), pc.mischief)}${tab('tF', 'f', '🎣 ' + esc(tr('tabFish')), pc.fish)}${tab('tB', 'b', '⭐ ' + esc(tr('tabBadges')), pc.badges)}</div>
           <div class="book-body">${body}</div>
         </div></div>`,
       );
-      $('tM').onclick = () => {
+      // the tab is now seen: drop its "new" marks (tags stay visible until the next render)
+      A.seen(this.bookTab);
+      const go = (k: 'm' | 'f' | 'b') => () => {
         sfx.click();
-        this.bookTab = 'm';
+        this.bookTab = k;
         render();
       };
-      $('tF').onclick = () => {
-        sfx.click();
-        this.bookTab = 'f';
-        render();
-      };
+      $('tM').onclick = go('m');
+      $('tF').onclick = go('f');
+      $('tB').onclick = go('b');
       $('bBack').onclick = () => {
         sfx.click();
-        if (fromPause) this.pause();
+        this.albumDot();
+        if (fromHud) this.resume();
+        else if (fromPause) this.pause();
         else this.title();
       };
     };
@@ -665,11 +734,12 @@ export class UI {
         <h2>⏸ ${esc(tr('pause'))}</h2>
         <button class="btn primary" id="pRes">▶ ${esc(tr('resume'))}</button>
         <button class="btn" id="pMap">🗺️ ${esc(tr('map'))}</button>
-        <button class="btn" id="pBook">📖 ${esc(tr('book'))}</button>
+        <button class="btn has-dot" id="pBook">📖 ${esc(tr('book'))}</button>
         <button class="btn" id="pSet">⚙️ ${esc(tr('settings'))}</button>
         <button class="btn pink" id="pQuit">🏠 ${esc(tr('quitDay'))}</button>
       </div></div>`,
     );
+    this.albumDot();
     $('pRes').onclick = () => {
       sfx.click();
       this.resume();
@@ -710,7 +780,7 @@ export class UI {
       `<div class="screen-center shade"><div class="panel map-panel">
         <div class="panel-head"><h2>🗺️ ${esc(tr('map'))}</h2><button class="btn small" id="mBack">${esc(fromHud ? tr('resume') : tr('back'))}</button></div>
         <canvas id="mapC" width="1120" height="740"></canvas>
-        <div class="legend"><span>🐱 ${esc(ctx.save.name)}</span><span>⭐ ${esc(tr('questTitle'))}</span><span>🏠 ${esc(tr('ar_rumah'))}</span><span>🛋️ Sofa</span></div>
+        <div class="legend"><span>🐱 ${esc(ctx.save.name)}</span><span>⭐ ${esc(tr('questTitle'))}</span><span>🏠 ${esc(tr('ar_rumah'))}</span><span>🛋️ Sofa</span><span>🎣 ${esc(tr('a_fish'))}</span></div>
       </div></div>`,
     );
     this.drawMap($('mapC') as HTMLCanvasElement);
@@ -754,6 +824,13 @@ export class UI {
     const icon = (t: string, x: number, z: number) => g.fillText(t, X(x), Z(z) + 15);
     icon('🛋️', ctx.world.pts.sofa.x, ctx.world.pts.sofa.z);
     icon('🐈', ctx.world.pts.lisa.x, ctx.world.pts.lisa.z);
+    g.font = '32px system-ui, sans-serif';
+    for (const sp of SPOTS)
+      if (sp.unlocked()) {
+        const p = spotSeat(sp);
+        icon('🎣', p.x, p.z);
+      }
+    g.font = '44px system-ui, sans-serif';
     const tp = ctx.quests.targetPoint();
     if (tp) icon('⭐', tp.x, tp.z);
     // cat arrow
@@ -827,6 +904,7 @@ export const HUD_HTML = `
       <div class="daybar" id="daybar"><span class="dl" id="dayLabel"></span><div class="track"><div id="dayFill" style="position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:rgba(255,255,255,.25)"></div><div class="sun" id="daySun">☀️</div><div class="house">🏠</div></div></div>
     </div>
     <div class="hud-right">
+      <button class="icon-btn has-dot" id="btnAlbum" aria-label="Album">📖</button>
       <button class="icon-btn" id="btnMap" aria-label="Map">🗺️</button>
       <button class="icon-btn" id="btnPause" aria-label="Pause">⏸</button>
     </div>
