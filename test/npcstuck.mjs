@@ -10,7 +10,7 @@ const res = await h.page.evaluate(async (secs) => {
   const s0 = C.npcs.find((n) => n.name === 'satpam');
   const satpamStart = s0 ? [s0.body.x, s0.body.z] : null;
   let satpamMax = 0;
-  const npcs = [...C.npcs, C.kids.a, C.kids.b];
+  const npcs = [...C.npcs.filter((n) => n.active !== false), C.kids.a, C.kids.b]; // inactive = not out today (mandor without road works)
   for (let i = 0; i < secs * 4; i++) {
     await W();
     if (s0) satpamMax = Math.max(satpamMax, Math.hypot(s0.body.x - satpamStart[0], s0.body.z - satpamStart[1]));
