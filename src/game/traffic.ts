@@ -1,8 +1,9 @@
 // Traffic ("Lalu lintas"): random cars & motorbikes drive through the kompleks street.
 //
-// Vehicles enter from the main road outside the east gate (a boom barrier lifts for
-// them), drive west on the left-hand lane (Indonesia drives on the left), U-turn at
-// the west end and leave again. Every vehicle is random: type, paint, engine (sound +
+// Vehicles drive THROUGH the kompleks: they come from far down one of the outside
+// roads (the main road past the east gate, with a boom barrier, or the cross road past
+// the west end), drive along the street on the left-hand lane (Indonesia drives on the
+// left), leave at the other end and vanish far down the road, out of sight. Every vehicle is random: type, paint, engine (sound +
 // exhaust smoke), driver, passenger. Kid-safe by design: vehicles always brake for
 // the cat and for people, honk "tin tin!", and never hit anyone.
 //
@@ -164,20 +165,37 @@ export const WORKS = { x0: 40.5, x1: 56.6, seg0: 35.5, seg1: 62.5 };
 const GATE_X = 65; // boom barrier
 const zWest = (x: number) => LANE - 0.6 * bump(x, -41.6, -38.4, 3.2); // around the street cart
 const zEast = (works: boolean) => (x: number) => -LANE + 1.35 * bump(x, -34.6, -29.6, 3.6) + (works ? 2 * LANE * bump(x, WORKS.x0, WORKS.x1, 4.5) : 0);
-const vStreet = (works: boolean) => (x: number) => (x > 58 ? 3.6 : works && x > WORKS.seg0 && x < WORKS.seg1 ? 3.6 : 99);
+const vStreet = (works: boolean) => (x: number) => (x > 58 || x < -84 ? 3.6 : works && x > WORKS.seg0 && x < WORKS.seg1 ? 3.6 : 99);
+/** where trips start and end: far down the outside roads, out of sight (and culled) */
+const FAR = 78;
+/** outside road lanes (left-hand traffic): east main road x 78.4..89.6, west cross road x -101.6..-94.4 */
+const EX_S = 82.3, EX_N = 85.7; // east road: at 82.3 heading -z, at 85.7 heading +z
+const WX_N = -96.3, WX_S = -99.7; // west road: at -96.3 heading +z, at -99.7 heading -z
 
-function makePath(works: boolean, fromSouth: boolean, toNorth: boolean, uX: number, warung: boolean) {
+/**
+ * One trip through the kompleks.
+ * westbound = in through the east gate, out at the west end; else the other way.
+ * a / b = which way along the outside road the vehicle comes from / leaves to.
+ */
+function makePath(works: boolean, westbound: boolean, a: boolean, b: boolean, warung: boolean) {
   const pb = new PB();
-  // in: from the main road outside, turn into the gate road (westbound lane z = +LANE)
-  if (fromSouth) pb.at(82.3, 19, 7).lineTo(82.3, LANE + 2.5, 7).arc(79.8, LANE + 2.5, 2.5, 0, -Math.PI / 2, 3);
-  else pb.at(85.7, -19, 7).lineTo(85.7, LANE - 4, 7).arc(81.7, LANE - 4, 4, 0, Math.PI / 2, 3.6);
-  pb.road(uX, zWest, vStreet(works));
-  // U-turn at the west end (to the right, across the road: left-hand traffic)
-  pb.arc(uX, 0, LANE, Math.PI / 2, (3 * Math.PI) / 2, 2.3);
-  if (warung) pb.stopX = -56;
-  // out: east, then turn onto the main road
-  if (toNorth) pb.road(79.8, zEast(works), vStreet(works)).arc(79.8, -LANE - 2.5, 2.5, Math.PI / 2, 0, 3).lineTo(82.3, -19, 7);
-  else pb.road(81.7, zEast(works), vStreet(works)).arc(81.7, -LANE + 4, 4, -Math.PI / 2, 0, 3.6).lineTo(85.7, 19, 7);
+  const H = Math.PI / 2, PI = Math.PI;
+  if (westbound) {
+    // in from the main road (from the south = left turn, from the north = right turn)
+    if (a) pb.at(EX_S, FAR, 7).lineTo(EX_S, LANE + 2.5, 7).arc(EX_S - 2.5, LANE + 2.5, 2.5, 0, -H, 3);
+    else pb.at(EX_N, -FAR, 7).lineTo(EX_N, LANE - 4, 7).arc(EX_N - 4, LANE - 4, 4, 0, H, 3.6);
+    // along the street (westbound lane z = +LANE), out onto the cross road
+    if (b) pb.road(WX_N + 2.5, zWest, vStreet(works)).arc(WX_N + 2.5, LANE + 2.5, 2.5, -H, -PI, 3).lineTo(WX_N, FAR, 7);
+    else pb.road(WX_S + 4, zWest, vStreet(works)).arc(WX_S + 4, LANE - 4, 4, H, PI, 3.6).lineTo(WX_S, -FAR, 7);
+  } else {
+    // in from the cross road (from the south = left turn, from the north = right turn)
+    if (a) pb.at(WX_N, -FAR, 7).lineTo(WX_N, -LANE - 2.5, 7).arc(WX_N + 2.5, -LANE - 2.5, 2.5, PI, H, 3);
+    else pb.at(WX_S, FAR, 7).lineTo(WX_S, -LANE + 4, 7).arc(WX_S + 4, -LANE + 4, 4, PI, 1.5 * PI, 3.6);
+    if (warung) pb.stopX = -56;
+    // along the street (eastbound lane z = -LANE), out through the gate onto the main road
+    if (b) pb.road(EX_S - 2.5, zEast(works), vStreet(works)).arc(EX_S - 2.5, -LANE - 2.5, 2.5, H, 0, 3).lineTo(EX_S, -FAR, 7);
+    else pb.road(EX_N - 4, zEast(works), vStreet(works)).arc(EX_N - 4, -LANE + 4, 4, -H, 0, 3.6).lineTo(EX_N, FAR, 7);
+  }
   return new Path(pb);
 }
 
@@ -301,8 +319,10 @@ export class Traffic {
   vehicles: Vehicle[] = [];
   movers: Mover[] = []; // extra movers (road roller)
   spawnT = 2;
-  /** the junction with the main road outside the gate: one vehicle at a time */
-  junction: Vehicle | null = null;
+  /** the two junctions with the outside roads (east, west): one vehicle at a time each */
+  junction: (Vehicle | null)[] = [null, null];
+  /** direction of the next spawned vehicle */
+  nextWest = Math.random() < 0.5;
   /** shared lane at the road works: who drives through it now (0 = nobody) */
   seg = { dir: 0 as -1 | 0 | 1, n: 0 };
   works = false;
@@ -348,7 +368,7 @@ export class Traffic {
     this.vehicles = [];
     this.seg.dir = 0;
     this.seg.n = 0;
-    this.junction = null;
+    this.junction[0] = this.junction[1] = null;
     this.works = works;
     this.night = weather === 'malam';
     this.rain = weather === 'hujan';
@@ -388,7 +408,9 @@ export class Traffic {
       if (!spec.color && t.colors) sp.color = pick(t.colors);
       if (!spec.engine) sp.engine = pick(t.engines);
     }
-    const path = makePath(this.works, Math.random() < 0.5, Math.random() < 0.5, rand(-81, -74), Math.random() < 0.3);
+    const west = this.nextWest;
+    this.nextWest = Math.random() < 0.5;
+    const path = makePath(this.works, west, Math.random() < 0.5, Math.random() < 0.5, Math.random() < 0.3);
     const v = new Vehicle(sp, path);
     v.place(0);
     if (v.model.poncho) v.model.poncho.visible = this.rain;
@@ -413,7 +435,7 @@ export class Traffic {
       this.spawnT = rand(4, 13);
       if (this.vehicles.length < this.max) {
         // entry lanes free?
-        const busy = this.vehicles.some((v) => v.s < 14);
+        const busy = this.vehicles.some((v) => v.s < 14 && Math.abs(v.path.xs[0] - (this.nextWest ? EX_S : WX_N)) < 8);
         if (!busy) this.spawn();
         else this.spawnT = 2;
       }
@@ -431,15 +453,18 @@ export class Traffic {
         const v = this.vehicles[i];
         if (v.inSeg) this.leaveSeg(v);
         if (this.ride === v) this.ride = null;
-        if (this.junction === v) this.junction = null;
+        for (let j = 0; j < 2; j++) if (this.junction[j] === v) this.junction[j] = null;
         v.dispose();
         this.vehicles.splice(i, 1);
       }
     // movers from other systems (road roller) are moved by their owners before this
     this.resolveCat(dt, playing);
     // distance culling (fog hides far ones anyway)
+    // (cull where the fog is nearly opaque, so far-away vehicles fade out instead of popping)
     const cp = ctx.camera.position;
-    for (const v of this.vehicles) v.root.visible = (v.x - cp.x) ** 2 + (v.z - cp.z) ** 2 < 75 * 75;
+    const fog = ctx.scene.fog as THREE.Fog | null;
+    const cull = fog ? Math.min(110, fog.far * 0.95) : 90;
+    for (const v of this.vehicles) v.root.visible = (v.x - cp.x) ** 2 + (v.z - cp.z) ** 2 < cull * cull;
   }
 
   private enterSeg(v: Vehicle) {
@@ -520,9 +545,9 @@ export class Traffic {
       if (v.dir > 0 && front < GATE_X - 0.6 && Math.abs(v.z) < 4) stopAt(GATE_X - 0.9 - front);
       if (v.dir < 0 && front > GATE_X + 0.6 && Math.abs(v.z) < 4 && v.x < 79) stopAt(front - GATE_X - 0.9);
     }
-    // the cat must not ride out of the kompleks
-    if (riding && v.dir > 0 && v.x > 30) {
-      const gap = 58.5 - (v.x + v.hl);
+    // the cat must not ride out of the kompleks (either end)
+    if (riding && ((v.dir > 0 && v.x > 30) || (v.dir < 0 && v.x < -60))) {
+      const gap = v.dir > 0 ? 58.5 - (v.x + v.hl) : v.x - v.hl - -83.5;
       stopAt(gap);
       if (gap < 1.5 && v.v < 0.3) {
         v.exitT += dt;
@@ -532,7 +557,7 @@ export class Traffic {
         }
         if (v.exitT > 6 && cat.state === 'free') {
           // a gentle nudge off the back
-          cat.knock(v.x + v.hl, v.z, 3, 4);
+          cat.knock(v.x + v.dir * v.hl, v.z, 3, 4);
           this.ride = null;
           v.exitT = 0;
         }
@@ -552,15 +577,17 @@ export class Traffic {
       const rear = v.x - v.dir * v.hl;
       if ((v.dir > 0 && rear > WORKS.seg1) || (v.dir < 0 && rear < WORKS.seg0) || Math.abs(v.z) > 4) this.leaveSeg(v);
     }
-    // junction outside the gate (in/out paths cross there): one at a time
-    const inJ = (x: number, z: number) => x > 77.2 && x < 88.5 && z > -6.2 && z < 6.2;
-    if (this.junction === v && !inJ(v.x, v.z) && v.s > 20) this.junction = null;
-    if (this.junction !== v) {
+    // junctions with the outside roads (in/out paths cross there): one at a time
+    for (let j = 0; j < 2; j++) {
+      const inJ = j === 0 ? (x: number, z: number) => x > 77.2 && x < 88.5 && z > -6.2 && z < 6.2 : (x: number, z: number) => x > -102.8 && x < -91.4 && z > -6.2 && z < 6.2;
+      if (this.junction[j] === v && !inJ(v.x, v.z) && v.s > 20) this.junction[j] = null;
+      if (this.junction[j] === v) continue;
       for (let k = 0; k <= 14; k += 0.5) {
         const i = path.idx(v.s + v.hl + k, v.pi);
         if (!inJ(path.xs[i], path.zs[i])) continue;
-        if (this.junction && this.junction !== v && !this.junction.done) stopAt(k - 0.6);
-        else if (k < 2.5) this.junction = v;
+        const o = this.junction[j];
+        if (o && o !== v && !o.done) stopAt(k - 0.6);
+        else if (k < 2.5) this.junction[j] = v;
         break;
       }
     }
@@ -756,8 +783,12 @@ export class Traffic {
       b.x = 63.6;
       if (this.ride) this.ride = null;
     }
+    if (b.x < -87.6 && Math.abs(b.z) < 5) {
+      b.x = -87.6;
+      if (this.ride) this.ride = null;
+    }
     this.gateToastT -= dt;
-    if (playing && b.x > 62.4 && Math.abs(b.z) < 3.6 && this.gateToastT <= 0) {
+    if (playing && (b.x > 62.4 || b.x < -86.6) && Math.abs(b.z) < 3.6 && this.gateToastT <= 0) {
       this.gateToastT = 12;
       ctx.ui?.toast('🚧 ' + tr('gateNo'), 2.8);
     }

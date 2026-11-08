@@ -66,6 +66,25 @@ check('random vehicles: many paint colours', mix.colors >= 12);
 check('random vehicles: cars and motorbikes', mix.kinds && mix.kinds.car > 100 && mix.kinds.motor > 100);
 check('random vehicles: some motorbikes carry a passenger', mix.pass > 10);
 
+// ---------------- trips go THROUGH: in at one end, out at the other, vanish far away ----------------
+const trips = await h.ev(() => {
+  const T = window.__cat.traffic; const r = { through: 0, uturn: 0, farStart: 0, farEnd: 0, west: 0, east: 0 };
+  for (let i = 0; i < 40; i++) {
+    const v = T.spawn(); if (!v) { for (const o of T.vehicles) o.dispose(); T.vehicles = []; continue; }
+    const p = v.path, n = p.xs.length - 1;
+    if (Math.sign(p.xs[0]) !== Math.sign(p.xs[n])) r.through++; else r.uturn++;
+    if (Math.abs(p.zs[0]) > 70) r.farStart++;
+    if (Math.abs(p.zs[n]) > 70) r.farEnd++;
+    if (p.xs[0] > 0) r.west++; else r.east++;
+    v.dispose(); T.vehicles.splice(T.vehicles.indexOf(v), 1);
+  }
+  return r;
+});
+console.log('trips', JSON.stringify(trips));
+check('every trip goes through (no U-turn)', trips.uturn === 0 && trips.through === 40, JSON.stringify(trips));
+check('trips start and end far away, out of sight', trips.farStart === 40 && trips.farEnd === 40);
+check('both directions', trips.west > 5 && trips.east > 5);
+
 // ---------------- traffic on a normal day ----------------
 await day();
 const t0 = await h.ev(() => {
@@ -151,7 +170,7 @@ check('mischief "Numpang mobil lewat" done', rode.done);
 await h.ev(() => { const C = window.__cat; C.timeScale = 4; });
 await gw(40);
 const edge = await h.ev(() => { const C = window.__cat; return { x: C.cat.body.x, ride: !!C.traffic.ride }; });
-check('cat never rides out of the gate', edge.x < 63.7, JSON.stringify(edge));
+check('cat never rides out of the kompleks', edge.x < 63.7 && edge.x > -87.7, JSON.stringify(edge));
 await h.ev(() => { const C = window.__cat; C.timeScale = 3; });
 
 // ---------------- road works: dig day ----------------
@@ -272,6 +291,7 @@ await gw(3);
 const nt = await h.ev(() => window.__cat.traffic.vehicles.map((v) => v.pool.visible));
 await view('traffic-night', [6, 3, 7], [-6, 0.5, 0]);
 await view('traffic-gate', [56, 4, 6], [74, 1, -1]);
+await view('traffic-west', [-78, 4.5, 7], [-98, 1, -2]);
 check('headlights shine at night', nt.length >= 1 && nt.every(Boolean), JSON.stringify(nt));
 await day({ w: 'hujan' });
 await h.ev(() => { const T = window.__cat.traffic; for (const v of T.vehicles) v.dispose(); T.vehicles = []; T.testCar({ type: 'matic' }, 10); });

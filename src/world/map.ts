@@ -305,28 +305,31 @@ export function buildWorld(scene: THREE.Scene): World {
   S.mm(60.4, 2.6, 5.2, 63.8, 2.8, 8.0, 0x2f5d45, { collide: false });
   S.mm(62.0, 1.1, 5.38, 63.2, 2.0, 5.4, C.glass, { collide: false });
   // ---- outside: the main road ----
-  S.mm(68, -1, -26, 96, 0, 26, 0x7fbf5c, { top: 0x7fbf5c, jitter: 0 });
+  S.mm(68, -1, -82, 98, 0, 82, 0x7fbf5c, { top: 0x7fbf5c, jitter: 0 });
   floor(64, -3.5, 80, 3.5, C.asphalt, 0.012);
   S.mm(68, 0, -5, 78.4, 0.15, -3.5, C.sidewalk, { top: C.sidewalk });
   S.mm(68, 0, 3.5, 78.4, 0.15, 5, C.sidewalk, { top: C.sidewalk });
-  floor(78.4, -26, 89.6, 26, C.asphalt, 0.013);
-  for (let z = -25; z < 25; z += 4) floor(83.92, z, 84.08, z + 2, C.line, 0.022);
-  S.mm(89.6, 0, -26, 91.4, 0.15, 26, C.sidewalk, { top: C.sidewalk });
+  // the main road runs far both ways: vehicles come and go out of sight
+  floor(78.4, -82, 89.6, 82, C.asphalt, 0.013);
+  for (let z = -81; z < 81; z += 4) floor(83.92, z, 84.08, z + 2, C.line, 0.022);
+  S.mm(89.6, 0, -82, 91.4, 0.15, 82, C.sidewalk, { top: C.sidewalk });
   // zebra crossing in front of the gate
   for (let z = -3; z < 3.2; z += 1.0) floor(79.2, z, 80.6, z + 0.5, 0xf2f2f2, 0.02);
   // across the road: shop fronts (a backdrop, the cat can't go there)
   {
-    const shops: [number, number, number, number][] = [[-26, -14, 0xf6c177, 0xe53935], [-14, -4, 0x9ed1b0, 0x1e88e5], [-4, 6, 0xf3b88f, 0x43a047], [6, 16, 0xc9b8e6, 0xfb8c00], [16, 26, 0xeed9a8, 0x8e24aa]];
+    const SW = [0xf6c177, 0x9ed1b0, 0xf3b88f, 0xc9b8e6, 0xeed9a8, 0xb8d4e8];
+    const SA = [0xe53935, 0x1e88e5, 0x43a047, 0xfb8c00, 0x8e24aa, 0x00897b];
+    const shops: [number, number, number, number][] = [];
+    for (let z = -80, i = 0; z < 80; z += 10, i++) shops.push([z, z + 10, SW[i % 6], SA[(i * 5) % 6]]);
     for (const [z0, z1, wall, awn] of shops) {
       S.mm(91.4, 0, z0, 95.5, 5.2 + ((z0 * 7) % 3 + 3) % 3 * 0.6, z1, wall);
       S.mm(91.2, 0.2, z0 + 1.2, 91.45, 2.6, z1 - 1.2, 0x3e5161, { collide: false });
       S.mm(90.2, 2.8, z0 + 0.6, 91.4, 3.0, z1 - 0.6, awn, { collide: false });
     }
-    // side walls of the outside strip
-    S.mm(68, 0, -26.5, 96, 4.5, -26, PW);
-    S.mm(68, 0, 26, 96, 4.5, 26.5, PW);
+    // across the kompleks wall: trees along the main road
+    for (let z = -76; z < 80; z += 13) if (Math.abs(z) > 40) tree(72.5, z, 0.8, ((z / 13) | 0) & 1 ? 2 : 0);
   }
-  for (const z of [-12, 12]) lamp(78, z);
+  for (const z of [-36, -12, 12, 36]) lamp(78, z);
   const gateSign = new THREE.Mesh(new THREE.PlaneGeometry(4, 0.8), new THREE.MeshBasicMaterial({ map: signTex(['GERBANG KOMPLEKS'], '#2f5d45', '#fff4d6', 512, 96, 52) }));
   gateSign.position.set(63.8, 3.7, 0);
   gateSign.rotation.y = -Math.PI / 2;
@@ -1108,10 +1111,34 @@ export function buildWorld(scene: THREE.Scene): World {
     S.mm(-90, -1, -22, -48, 0, 32, C.grass, { top: C.grass, jitter: 0 });
     S.mm(-90, 0, -22, -48, 4.5, -20, PW);
     S.mm(-90, 0, 30, -48, 4.5, 32, PW);
-    S.mm(-90, 0, -22, -88, 4.5, 32, PW);
+    // west wall: open where the street goes out to the cross road (cats stay inside)
+    S.mm(-90, 0, -22, -88, 4.5, -5, PW);
+    S.mm(-90, 0, 5, -88, 4.5, 32, PW);
+    S.wall(-90, 0, -5, -88, 4.5, 5);
     S.wall(-90, 4.5, -22, -48, 12, -20);
     S.wall(-90, 4.5, 30, -48, 12, 32);
     S.wall(-90, 4.5, -22, -88, 12, 32);
+    // ---- outside the west end: a cross road, vehicles come and go out of sight ----
+    S.mm(-118, -1, -82, -90, 0, 82, C.grass, { top: C.grass, jitter: 0 });
+    floor(-94.4, -3.5, -88, 3.5, C.asphalt, 0.012);
+    floor(-101.6, -82, -94.4, 82, C.asphalt, 0.013);
+    for (let z = -81; z < 81; z += 4) if (Math.abs(z + 1) > 5) floor(-98.08, z, -97.92, z + 2, C.line, 0.022);
+    S.mm(-103.4, 0, -82, -101.6, 0.15, 82, C.sidewalk, { top: C.sidewalk });
+    S.mm(-94.4, 0, -82, -92.6, 0.15, -5, C.sidewalk, { top: C.sidewalk });
+    S.mm(-94.4, 0, 5, -92.6, 0.15, 82, C.sidewalk, { top: C.sidewalk });
+    // houses across the cross road (a backdrop)
+    {
+      const HW = [0xf3e0c0, 0xd7e8d0, 0xf0d0c8, 0xd8d8ee, 0xf6e6a8];
+      const HR = [0xc0583a, 0x5d7f99, 0x8d5a3b, 0xb24a3a, 0x4f7a5a];
+      for (let z = -80, i = 0; z < 80; z += 12, i++) {
+        S.mm(-112, 0, z + 1, -104.5, 3.6, z + 11, HW[i % 5]);
+        S.mm(-112.4, 3.6, z + 0.6, -104.1, 4.6, z + 11.4, HR[(i * 3) % 5], { collide: false });
+        S.mm(-104.55, 0.2, z + 4.5, -104.45, 2.3, z + 6, 0x8d6e63, { collide: false });
+        S.mm(-104.55, 1.3, z + 7.5, -104.45, 2.3, z + 9.5, C.glass, { collide: false });
+      }
+      for (const z of [-66, -40, -14, 14, 40, 66]) tree(-91.5, z, 0.8, z > 0 ? 1 : 0);
+    }
+    for (const z of [-30, 10, 44]) lamp(-93, z);
     for (let x = -86; x < -50; x += 7) S.mm(x, 2.5, -20.05, x + 2.5, 4.5, -19.9, 0x5aa55a, { collide: false });
     rects.push({ x0: -88, z0: -20, x1: -46, z1: 30, c: '#a8d88a' });
     floor(-88, -3.5, -46, 3.5, C.asphalt, 0.012);
@@ -1123,11 +1150,11 @@ export function buildWorld(scene: THREE.Scene): World {
     rects.push({ x0: -88, z0: -5, x1: -46, z1: 5, c: '#8b8f96' });
     for (const x of [-80, -64]) lamp(x, 4.6);
     for (const x of [-72, -64]) lamp(x, -4.6);
-    // dead end: barrier + planters
-    S.mm(-87.6, 0, -3.5, -87.2, 1.0, 3.5, 0xf5f5f5);
-    for (let z = -3.2; z < 3.4; z += 1.4) S.mm(-87.15, 0.3, z, -87.1, 0.7, z + 0.7, 0xe53935, { collide: false });
-    pottedPlant(-86.6, 0, -2.5, 1.2, 0xc86b3c);
-    pottedPlant(-86.6, 0, 2.5, 1.2, 0x5d8fc9);
+    // west gate posts: the street goes out to the cross road
+    S.box(-89, 0, -5.2, 1.2, 3.0, 0.6, 0xc9bb9b);
+    S.box(-89, 0, 5.2, 1.2, 3.0, 0.6, 0xc9bb9b);
+    pottedPlant(-86.6, 0, -6.2, 1.2, 0xc86b3c);
+    pottedPlant(-86.6, 0, 6.2, 1.2, 0x5d8fc9);
     // west wall gate posts (where the old wall opens up)
     S.box(-47, 0, -5.2, 1.2, 3.0, 0.6, 0xc9bb9b);
     S.box(-47, 0, 5.2, 1.2, 3.0, 0.6, 0xc9bb9b);

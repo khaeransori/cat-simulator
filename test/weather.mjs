@@ -98,11 +98,19 @@ check('hujan: more lele', fish.lele > 0.22, fish.lele.toFixed(2));
 await h.tp(-6, 0, 2.5, 0.6, 600);
 s = await state();
 check('hujan: rain visible outdoors', s.rain && s.puddles, JSON.stringify({ rain: s.rain, puddles: s.puddles }));
+// no random traffic here: exhaust puffs share the fx pool and a car could block the cat
+await h.ev(() => { const T = window.__cat.traffic; if (T) { for (const v of T.vehicles) v.dispose(); T.vehicles = []; T.spawnT = 999; } });
 await h.tp(-25, 0.0, 1.4, Math.PI / 2, 300);
 const parts0 = await h.ev(() => window.__cat.fx.parts.length);
 await h.page.keyboard.down('KeyW');
-await h.wait(700);
-const parts1 = await h.ev(() => window.__cat.fx.parts.length);
+// game time, not wall time: on a busy server 700 ms wall can be only a few frames
+const tw0 = await h.ev(() => window.__cat.time);
+let parts1 = parts0;
+for (let i = 0; i < 40 && parts1 <= parts0; i++) {
+  await h.wait(100);
+  parts1 = await h.ev(() => window.__cat.fx.parts.length);
+  if ((await h.ev(() => window.__cat.time)) - tw0 > 1.5) break;
+}
 await h.page.keyboard.up('KeyW');
 check('hujan: puddle splash fx', parts1 > parts0, `${parts0} -> ${parts1}`);
 await h.tp(-6, 0, 2.5, 0.6, 4000);
