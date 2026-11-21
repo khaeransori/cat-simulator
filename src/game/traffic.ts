@@ -15,7 +15,8 @@ import { ctx, clamp, rand, pick } from '../ctx';
 import { L, tr, type Pair } from '../i18n';
 import { sfx } from '../audio';
 import { buildVehicle, randomSpec, VTYPE, ENGINE_NAME, VMAT, type VSpec, type VehicleModel, type Top } from '../entities/vehicles';
-import { buildBoomBarrier } from '../entities/vehicles';
+import { buildBoomBarrier, buildExcavator, buildRoller, ADULT, KID } from '../entities/vehicles';
+import { buildBlocky } from '../entities/blocky';
 import { doMischief } from './mischief';
 import { blobShadow } from '../entities/cat';
 import { PUDDLES } from './weather';
@@ -294,7 +295,7 @@ export class Vehicle implements Mover {
 
   say(p: Pair | Pair[], ttl = 2, kind: 'speech' | 'shout' = 'speech') {
     const line = Array.isArray(p) ? pick(p) : p;
-    ctx.bubbles.say(this.root, L(line), { ttl, y: (this.motor ? 1.9 : 1.6) + 0.5, kind, key: 'veh-' + this.id });
+    ctx.bubbles.say(this.root, L(line), { ttl, y: (this.motor ? 2.1 : VTYPE[this.spec.type].h) + 0.5, kind, key: 'veh-' + this.id });
   }
 
   honk() {
@@ -309,6 +310,7 @@ export class Vehicle implements Mover {
     this.model.body.geometry.dispose();
     this.model.lamps.geometry.dispose();
     this.model.poncho?.geometry.dispose();
+    this.model.glass?.geometry.dispose(); // riders' skin meshes share cached geometry: not disposed
   }
 }
 
@@ -339,6 +341,8 @@ export class Traffic {
   /** debug/test: number of times a vehicle had to brake for the cat */
   stats = { braked: 0, honks: 0, spawned: 0, bumps: 0, closest: 99 };
   enabled = true;
+  /** debug/test hooks: build any vehicle / machine / a standing Blocky person (test/vehicles.mjs) */
+  api = { buildVehicle, buildExcavator, buildRoller, buildBlocky, ADULT, KID, VTYPE };
 
   constructor() {
     const c = document.createElement('canvas');
@@ -796,15 +800,25 @@ export class Traffic {
 
   /** debug: a vehicle right in front of the cat, driving towards it */
   testCar(spec?: Partial<VSpec>, ahead = 18) {
-    const v = this.spawn(spec || { type: 'sedan' }, 'car');
-    if (!v) return null;
     const cb = ctx.cat.body;
-    // the closest point of the path, then back off `ahead` metres
+    let v: Vehicle | null = null;
     let best = 0, bd = 1e9;
-    for (let i = 0; i < v.path.xs.length; i += 2) {
-      const d = (v.path.xs[i] - cb.x) ** 2 + (v.path.zs[i] - cb.z) ** 2;
-      if (d < bd) (bd = d), (best = v.path.ss[i]);
+    // a route whose lane passes right over the cat (the direction is random: retry a few times)
+    for (let tries = 0; tries < 8; tries++) {
+      v = this.spawn(spec || { type: 'sedan' }, 'car');
+      if (!v) return null;
+      // the closest point of the path, then back off `ahead` metres
+      best = 0;
+      bd = 1e9;
+      for (let i = 0; i < v.path.xs.length; i += 2) {
+        const d = (v.path.xs[i] - cb.x) ** 2 + (v.path.zs[i] - cb.z) ** 2;
+        if (d < bd) (bd = d), (best = v.path.ss[i]);
+      }
+      if (bd < 1.2 * 1.2 || tries === 7) break;
+      v.dispose();
+      this.vehicles.splice(this.vehicles.indexOf(v), 1);
     }
+    if (!v) return null;
     v.place(Math.max(0, best - ahead));
     v.v = v.cruise;
     v.stopS = -1;

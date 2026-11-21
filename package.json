@@ -20,7 +20,8 @@
     "test:photohome": "node test/photo-home.mjs",
     "test:album": "node test/album.mjs",
     "test:traffic": "node test/traffic.mjs",
-    "test:animals": "node test/animals.mjs && node test/animals-game.mjs"
+    "test:animals": "node test/animals.mjs && node test/animals-game.mjs",
+    "test:vehicles": "node test/vehicles.mjs"
   },
   "dependencies": {
     "@fontsource/baloo-2": "^5.3.0",
