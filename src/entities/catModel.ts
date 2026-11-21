@@ -3,6 +3,7 @@ import { boxGeo, lam } from '../world/builder';
 import type { Look } from '../save';
 import { getItem, furColor } from '../cosmetics';
 import { rand } from '../ctx';
+import { Atlas, uvBox, merged, mesh, joint, eyeMat, plane, lum, PZ, PY, PX, NX, NY, NZ } from './blockyAnimal';
 
 export function shade(hex: number, k: number) {
   const c = new THREE.Color(hex);
@@ -40,9 +41,24 @@ export function newAnim(): CatAnim {
   return { speed: 0, air: false, sleep: 0, sit: 0, paw: 0, scratch: false, dig: false, eat: false, earsDown: 0, happy: 0, hugged: false, lookYaw: 0 };
 }
 
-// Blocky Roblox-style cat, +z is forward, origin at the feet.
+// Blocky cat in the Kenney-Blocky style: cuboid parts sharing ONE pixel-painted atlas
+// (face, muzzle, whiskers, blush and every fur pattern are painted, not extra boxes).
+// +z is forward, origin at the feet. Part coordinates are in "cat units"; the whole cat is
+// scaled by CAT_SCALE so it stands about knee-high next to a 1.7 m adult.
+export const CAT_SCALE = 0.8;
+
+// cuboid sizes (cat units)
+const BODY = [0.34, 0.26, 0.58] as const, BODY_P = [0, 0.39, -0.01] as const;
+const HEAD = [0.38, 0.32, 0.3] as const, HEAD_P = [0, 0.1, 0.1] as const;
+const LEG = [0.1, 0.19, 0.1] as const, PAW = [0.11, 0.08, 0.12] as const;
+const EAR = [0.12, 0.14, 0.06] as const;
+const TSEG = [0.065, 0.065, 0.17] as const;
+const PINK = 0xf5a3b5;
+
 export class CatModel {
   root = new THREE.Group();
+  /** uniform size group between root and pose (root.scale stays free for callers) */
+  sizeG = new THREE.Group();
   pose = new THREE.Group();
   inner = new THREE.Group();
   headG = new THREE.Group();
@@ -53,20 +69,13 @@ export class CatModel {
   tailSeg: THREE.Mesh[] = [];
   ears: THREE.Group[] = [];
   eyes: THREE.Group[] = [];
-  bodyPat = new THREE.Group();
-  headPat = new THREE.Group();
+  eyeMesh: THREE.Mesh[] = [];
   headAcc = new THREE.Group();
   faceAcc = new THREE.Group();
   neckAcc = new THREE.Group();
   backAcc = new THREE.Group();
   carry = new THREE.Group();
-  furMat = new THREE.MeshLambertMaterial({ color: 0xf2a044 });
-  lightMat = new THREE.MeshLambertMaterial({ color: 0xffe0b0 });
-  pawMat = new THREE.MeshLambertMaterial({ color: 0xf2a044 });
-  tailTipMat = new THREE.MeshLambertMaterial({ color: 0xf2a044 });
-  tailMidMat = new THREE.MeshLambertMaterial({ color: 0xf2a044 });
-  eyeMatL = new THREE.MeshLambertMaterial({ color: 0x6fcf5a });
-  eyeMatR = new THREE.MeshLambertMaterial({ color: 0x6fcf5a });
+  atlas = new Atlas(256, 100);
   wings: THREE.Group[] = [];
   cape: THREE.Group | null = null;
   phase = 0;
@@ -78,71 +87,65 @@ export class CatModel {
   look: Look | null = null;
 
   constructor() {
-    this.root.add(this.pose);
+    const A = this.atlas, M = A.mat;
+    const cB = A.box('body', ...BODY), cH = A.box('head', ...HEAD);
+    const cL = A.box('leg', ...LEG), cP = A.box('paw', ...PAW), cE = A.box('ear', ...EAR);
+    const cT = [A.box('t0', ...TSEG), A.box('t1', ...TSEG), A.box('t2', ...TSEG)];
+
+    this.root.add(this.sizeG);
+    this.sizeG.scale.setScalar(CAT_SCALE);
+    this.sizeG.add(this.pose);
     this.pose.position.set(0, 0.27, -0.19);
     this.pose.add(this.inner);
     this.inner.position.set(0, -0.27, 0.19);
     const I = this.inner;
 
     // torso
-    I.add(B(0.34, 0.26, 0.58, this.furMat, 0, 0.39, -0.01));
-    I.add(this.bodyPat);
-    // legs
-    const legPos = [
+    I.add(mesh(uvBox(A, cB, ...BODY), M, ...BODY_P));
+    // legs: pivot at the hip/shoulder, column + paw hang down (one merged mesh per leg)
+    const legGeo = merged('catleg', [uvBox(A, cL, ...LEG, 0, -0.095, 0), uvBox(A, cP, ...PAW, 0, -0.23, 0.01)]);
+    for (const [x, z] of [
       [0.1, 0.17],
       [-0.1, 0.17],
       [0.1, -0.19],
       [-0.1, -0.19],
-    ];
-    for (const [x, z] of legPos) {
-      const g = new THREE.Group();
-      g.position.set(x, 0.27, z);
-      const up = B(0.1, 0.19, 0.1, this.furMat, 0, -0.095, 0);
-      const paw = B(0.11, 0.08, 0.12, this.pawMat, 0, -0.23, 0.01);
-      g.add(up, paw);
-      I.add(g);
+    ]) {
+      const g = joint(I, x, 0.27, z);
+      const m = mesh(legGeo, M);
+      g.add(m);
       this.legs.push(g);
-      this.legUpper.push(up);
-      this.paws.push(paw);
+      this.legUpper.push(m);
+      this.paws.push(m);
     }
-    // head
+    // head: pivot at the neck; the face (muzzle, nose, mouth, whiskers, blush) is painted on +z
     this.headG.position.set(0, 0.5, 0.26);
     I.add(this.headG);
     const H = this.headG;
-    H.add(B(0.38, 0.32, 0.3, this.furMat, 0, 0.1, 0.1));
-    H.add(B(0.17, 0.1, 0.06, this.lightMat, 0, 0.01, 0.27));
-    H.add(B(0.06, 0.04, 0.02, lam(0xf27a9a), 0, 0.055, 0.305));
-    H.add(B(0.03, 0.012, 0.01, lam(0x4a2f2a), -0.02, -0.02, 0.301));
-    H.add(B(0.03, 0.012, 0.01, lam(0x4a2f2a), 0.02, -0.02, 0.301));
-    H.add(this.headPat);
+    H.add(mesh(uvBox(A, cH, ...HEAD), M, ...HEAD_P));
+    const eg = plane(0.075, 0.09);
     for (const sx of [1, -1]) {
       const e = new THREE.Group();
-      e.position.set(0.09 * sx, 0.13, 0.255);
-      e.add(B(0.085, 0.095, 0.02, sx > 0 ? this.eyeMatL : this.eyeMatR, 0, 0, 0));
-      e.add(B(0.035, 0.078, 0.012, lam(0x15151c), 0, -0.004, 0.012));
-      e.add(B(0.024, 0.024, 0.01, lam(0xffffff), 0.02 * sx, 0.024, 0.02));
+      e.position.set(0.085 * sx, 0.135, 0.2515);
+      const em = new THREE.Mesh(eg, eyeMat(0x6fcf5a));
+      e.add(em);
       H.add(e);
       this.eyes.push(e);
-      const ear = new THREE.Group();
-      ear.position.set(0.12 * sx, 0.25, 0.08);
+      this.eyeMesh.push(em);
+      const ear = joint(H, 0.12 * sx, 0.25, 0.08);
       ear.rotation.z = -0.22 * sx;
-      ear.add(B(0.12, 0.14, 0.06, this.furMat, 0, 0.07, 0));
-      ear.add(B(0.07, 0.08, 0.012, lam(0xf5a3b5), 0, 0.06, 0.031));
-      H.add(ear);
+      ear.add(mesh(uvBox(A, cE, ...EAR), M, 0, 0.07, 0));
       this.ears.push(ear);
-      for (const r of [0.14, -0.1]) {
-        const w = B(0.15, 0.01, 0.01, lam(0xf8f8f8), 0.14 * sx, 0.005 + r * 0.1, 0.285);
-        w.rotation.z = r * sx;
-        H.add(w);
-      }
     }
     H.add(this.headAcc, this.faceAcc, this.carry);
     this.headAcc.position.set(0, 0.26, 0.1);
     this.faceAcc.position.set(0, 0.13, 0.268);
     this.carry.position.set(0, -0.03, 0.33);
     I.add(this.neckAcc, this.backAcc);
+    // collars sit just under the blocky head, wrapped round the chest top
+    this.neckAcc.position.set(0, -0.01, 0.035);
+    this.neckAcc.scale.set(1.05, 1, 1);
 
-    // tail
+    // tail: pivot at the rump, three segments
     let parent: THREE.Object3D = I;
     for (let i = 0; i < 3; i++) {
       const g = new THREE.Group();
@@ -153,7 +156,7 @@ export class CatModel {
         g.position.set(0, 0, -0.15);
         g.rotation.x = 0.35;
       }
-      const seg = B(0.065, 0.065, 0.17, i === 2 ? this.tailTipMat : i === 1 ? this.tailMidMat : this.furMat, 0, 0, -0.075);
+      const seg = mesh(uvBox(A, cT[i], ...TSEG), M, 0, 0, -0.075);
       g.add(seg);
       parent.add(g);
       parent = g;
@@ -167,63 +170,102 @@ export class CatModel {
     this.look = { ...look };
     const fur = furColor(look.fur);
     const isGold = look.fur === 'emas';
-    this.furMat.color.setHex(fur);
-    this.furMat.emissive.setHex(isGold ? 0x3a2a00 : 0x000000);
-    const light = mix(fur, 0xffffff, 0.45);
-    this.lightMat.color.setHex(light);
-    this.pawMat.color.setHex(fur);
-    this.tailTipMat.color.setHex(fur);
-    this.tailMidMat.color.setHex(fur);
+    this.atlas.mat.emissive.setHex(isGold ? 0x3a2a00 : 0x000000);
     const eye = getItem('eyes', look.eyes);
-    this.eyeMatL.color.setHex(eye?.color ?? 0x6fcf5a);
-    this.eyeMatR.color.setHex(eye?.color2 ?? eye?.color ?? 0x6fcf5a);
-
-    // pattern
-    this.bodyPat.clear();
-    this.headPat.clear();
-    const dark = look.fur === 'hitam' ? 0x6b6a78 : shade(fur, 0.68);
-    const dm = lam(dark);
-    const white = lam(0xfbfaf6);
-    const p = look.pattern;
-    if (p === 'belang') {
-      for (const z of [-0.22, -0.09, 0.04, 0.17]) this.bodyPat.add(B(0.352, 0.19, 0.045, dm, 0, 0.44, z));
-      for (const x of [-0.07, 0, 0.07]) this.headPat.add(B(0.035, 0.012, 0.14, dm, x, 0.262, 0.14));
-      for (const x of [-0.06, 0, 0.06]) this.headPat.add(B(0.028, 0.06, 0.012, dm, x, 0.22, 0.252));
-      this.tailMidMat.color.setHex(dark);
-    } else if (p === 'tuxedo') {
-      this.bodyPat.add(B(0.24, 0.2, 0.02, white, 0, 0.37, 0.286));
-      this.bodyPat.add(B(0.26, 0.02, 0.4, white, 0, 0.255, 0.02));
-      this.lightMat.color.setHex(0xfbfaf6);
-      this.pawMat.color.setHex(0xfbfaf6);
-      this.tailTipMat.color.setHex(0xfbfaf6);
-    } else if (p === 'kauskaki') {
-      this.pawMat.color.setHex(0xfbfaf6);
-      this.tailTipMat.color.setHex(0xfbfaf6);
-    } else if (p === 'calico') {
-      const a = look.fur === 'oranye' ? 0x3b3a45 : 0xf2a044;
-      const b2 = look.fur === 'hitam' ? 0xfbfaf6 : 0x3b3a45;
-      this.bodyPat.add(B(0.2, 0.03, 0.24, lam(a), 0.07, 0.51, -0.12));
-      this.bodyPat.add(B(0.02, 0.14, 0.2, lam(b2), -0.172, 0.42, 0.06));
-      this.bodyPat.add(B(0.14, 0.03, 0.16, lam(b2), -0.08, 0.515, 0.12));
-      this.headPat.add(B(0.18, 0.02, 0.2, lam(a), 0.09, 0.262, 0.1));
-      this.headPat.add(B(0.02, 0.16, 0.16, lam(a), 0.191, 0.12, 0.1));
-      this.tailTipMat.color.setHex(a);
-    } else if (p === 'tutul') {
-      const spots = [
-        [0.08, 0.525, -0.18, 0.08, 0.02, 0.08],
-        [-0.07, 0.525, -0.02, 0.07, 0.02, 0.07],
-        [0.06, 0.525, 0.14, 0.06, 0.02, 0.06],
-        [0.172, 0.42, -0.1, 0.02, 0.06, 0.07],
-        [-0.172, 0.4, 0.1, 0.02, 0.07, 0.06],
-        [-0.172, 0.45, -0.18, 0.02, 0.05, 0.05],
-      ];
-      for (const s of spots) this.bodyPat.add(B(s[3], s[4], s[5], dm, s[0], s[1], s[2]));
-      this.headPat.add(B(0.06, 0.02, 0.06, dm, -0.08, 0.262, 0.05));
-      this.headPat.add(B(0.05, 0.02, 0.05, dm, 0.1, 0.262, 0.16));
-    }
-
+    this.eyeMesh[0].material = eyeMat(eye?.color ?? 0x6fcf5a);
+    this.eyeMesh[1].material = eyeMat(eye?.color2 ?? eye?.color ?? 0x6fcf5a);
+    this.paint(look, fur);
     this.buildAccessories(look);
   }
+
+  /** paint fur, pattern and face into the atlas */
+  private paint(look: Look, fur: number) {
+    const A = this.atlas, C = A.cells, g = A.g;
+    g.clearRect(0, 0, A.S, A.S);
+    const p = look.pattern;
+    const white = 0xfbfaf6;
+    const dark = look.fur === 'hitam' ? 0x6b6a78 : shade(fur, 0.68);
+    let light = mix(fur, 0xffffff, 0.45);
+    let paw = fur, tip = fur, mid = fur;
+    if (p === 'tuxedo' || p === 'kauskaki') paw = tip = white;
+    if (p === 'tuxedo') light = white;
+    if (p === 'belang') mid = dark;
+    const calA = look.fur === 'oranye' ? 0x3b3a45 : 0xf2a044;
+    const calB = look.fur === 'hitam' ? white : 0x3b3a45;
+    if (p === 'calico') tip = calA;
+
+    for (const k of ['body', 'head', 'leg', 'ear', 't0']) A.paintBox(C[k], fur);
+    A.paintBox(C.paw, paw);
+    A.paintBox(C.t1, mid);
+    A.paintBox(C.t2, tip);
+    // belly a little lighter; inner ear pink
+    A.fill(C.body[NY], shade(light, 0.95));
+    A.frac(C.ear[PZ], 0.25, 0.2, 0.5, 0.6, PINK);
+
+    const B_ = C.body, Hd = C.head;
+    // body helpers: z in cat units (body spans z -0.30..0.28), y from top (0) to bottom (1)
+    const zMin = BODY_P[2] - BODY[2] / 2, zLen = BODY[2];
+    const topZ = (z: number) => (z - zMin) / zLen; // +y face: row 0 = back
+    const sideZ = (z: number, sx: number) => (sx > 0 ? (zMin + zLen - z) / zLen : (z - zMin) / zLen);
+    if (p === 'belang') {
+      for (const z of [-0.22, -0.09, 0.04, 0.17]) {
+        A.frac(B_[PY], 0, topZ(z) - 0.04, 1, 0.08, dark);
+        for (const sx of [1, -1]) A.frac(B_[sx > 0 ? PX : NX], sideZ(z, sx) - 0.04, 0, 0.08, 0.7, dark);
+      }
+      A.frac(B_[NZ], 0.2, 0, 0.6, 0.15, dark);
+      for (const x of [0.3, 0.47, 0.64]) A.frac(Hd[PY], x, 0.1, 0.08, 0.8, dark);
+      for (const x of [0.32, 0.46, 0.6]) A.frac(Hd[PZ], x, 0, 0.08, 0.17, dark);
+      for (const s of [PX, NX]) A.frac(Hd[s], 0.3, 0.15, 0.4, 0.08, dark);
+    } else if (p === 'tuxedo') {
+      A.frac(B_[PZ], 0.15, 0.25, 0.7, 0.75, white);
+      A.fill(B_[NY], white);
+    } else if (p === 'calico') {
+      A.frac(B_[PY], 0.5, topZ(-0.24), 0.5, 0.42, calA);
+      A.frac(B_[PY], 0.05, topZ(0.05), 0.4, 0.3, calB);
+      A.frac(B_[NX], sideZ(0.16, -1) - 0.3, 0.1, 0.35, 0.6, calB);
+      A.frac(B_[PX], sideZ(-0.05, 1) - 0.1, 0.0, 0.25, 0.45, calA);
+      A.frac(Hd[PY], 0.5, 0.0, 0.5, 0.75, calA);
+      A.frac(Hd[PX], 0.15, 0.0, 0.6, 0.55, calA);
+      A.frac(Hd[PZ], 0.72, 0, 0.28, 0.3, calA);
+      A.paintBox(C.ear, fur);
+      A.frac(C.ear[PZ], 0.25, 0.2, 0.5, 0.6, PINK);
+    } else if (p === 'tutul') {
+      const spots: [number, number, number, number][] = [
+        // face, fx, fy, size
+        [PY, 0.6, topZ(-0.18), 0.2],
+        [PY, 0.2, topZ(-0.02), 0.18],
+        [PY, 0.55, topZ(0.14), 0.16],
+        [PX, sideZ(-0.1, 1), 0.25, 0.12],
+        [NX, sideZ(0.1, -1), 0.35, 0.11],
+        [NX, sideZ(-0.18, -1), 0.15, 0.1],
+      ];
+      for (const [f, x, y, s] of spots) A.frac(B_[f], x - s / 2, y - s / 2, s, s * (f === PY ? 1.6 : 2.2), dark);
+      A.frac(Hd[PY], 0.2, 0.2, 0.15, 0.2, dark);
+      A.frac(Hd[PY], 0.7, 0.55, 0.13, 0.18, dark);
+      A.frac(Hd[PX], 0.4, 0.2, 0.15, 0.18, dark);
+    }
+
+    // ---- face (+z of the head, 38×32 px; x: left→right is -x→+x, y: top→bottom) ----
+    const F = Hd[PZ];
+    A.frac(F, 0.29, 0.56, 0.42, 0.44, light); // muzzle
+    if (p === 'tuxedo') A.frac(F, 0.42, 0.3, 0.16, 0.3, white); // blaze
+    A.frac(F, 0.42, 0.56, 0.16, 0.1, 0xf27a9a); // nose
+    const ink = 0x4a2f2a;
+    A.frac(F, 0.487, 0.66, 0.026, 0.1, ink); // philtrum
+    A.frac(F, 0.39, 0.76, 0.1, 0.035, ink); // mouth "w"
+    A.frac(F, 0.51, 0.76, 0.1, 0.035, ink);
+    A.frac(F, 0.37, 0.72, 0.03, 0.05, ink);
+    A.frac(F, 0.6, 0.72, 0.03, 0.05, ink);
+    const wh = lum(light) > 0.78 ? 'rgba(60,45,40,.6)' : 'rgba(255,255,255,.9)';
+    for (const y of [0.66, 0.76]) {
+      A.frac(F, 0.0, y, 0.24, 0.032, wh);
+      A.frac(F, 0.76, y, 0.24, 0.032, wh);
+    }
+    A.frac(F, 0.08, 0.56, 0.13, 0.06, 'rgba(255,110,130,.45)'); // blush
+    A.frac(F, 0.79, 0.56, 0.13, 0.06, 'rgba(255,110,130,.45)');
+    A.done();
+  }
+
 
   private buildAccessories(look: Look) {
     this.headAcc.clear();

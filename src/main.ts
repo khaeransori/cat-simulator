@@ -391,8 +391,9 @@ fontsReady.then(boot, boot);
   for (const e of m.eyes) e.scale.y = 1;
   sc.add(m.root);
   const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-  cam.position.set(0.1, 0.76, 1.85);
-  cam.lookAt(0, 0.66, 0.3);
+  // the blocky cat is scaled by CAT_SCALE (0.8): frame its head the same way
+  cam.position.set(0.08, 0.608, 1.48);
+  cam.lookAt(0, 0.528, 0.24);
   r.render(sc, cam);
   return r.domElement.toDataURL('image/png');
 };
