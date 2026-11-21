@@ -27,7 +27,10 @@ const spots = [
 ];
 for (const [id, x, y, z, yaw, w, drop] of spots) {
   const cur = await h.tp(x, y, z, yaw, 400);
-  await h.key('KeyE', w);
+  // wait in GAME time (timeScale 3): the server may run the game far below real time
+  const t0 = await h.ev(() => window.__cat.time);
+  await h.key('KeyE', 100);
+  await h.page.waitForFunction(([id, t0, gs]) => window.__cat.day.doneToday.has?.(id) || [...window.__cat.day.doneToday].includes(id) || window.__cat.time > t0 + gs, [id, t0, (3 * w) / 1000 + 1.5], { timeout: 120000 }).catch(() => {});
   const ok = (await h.done()).includes(id);
   check(id, ok, `nearest=${cur}`);
   if (drop) await h.key('KeyE', 1400); // eat / drop what we carry
