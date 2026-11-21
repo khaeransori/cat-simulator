@@ -111,6 +111,26 @@ export function buildWorld(scene: THREE.Scene): World {
   };
 
   // ---------- helpers ----------
+
+  // ---------- LOW-POLY helpers (mockup) ----------
+  const lpGround = (x0: number, z0: number, x1: number, z1: number) => {
+    S.mm(x0, -1, z0, x1, 0, z1, C.grass, { visible: false });
+    const w = x1 - x0, d = z1 - z0;
+    const g = new THREE.PlaneGeometry(w, d, Math.ceil(w / 2.2), Math.ceil(d / 2.2));
+    g.rotateX(-Math.PI / 2);
+    const pp = g.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < pp.count; i++) {
+      const ex = Math.abs(Math.abs(pp.getX(i)) - w / 2) < 0.01, ez = Math.abs(Math.abs(pp.getZ(i)) - d / 2) < 0.01;
+      pp.setXYZ(i, pp.getX(i) + (ex ? 0 : (Math.random() - 0.5) * 0.9), -0.005 - Math.random() * 0.06, pp.getZ(i) + (ez ? 0 : (Math.random() - 0.5) * 0.9));
+    }
+    S.poly(g, C.grass, (x0 + x1) / 2, 0, (z0 + z1) / 2, { vary: 0.09 });
+  };
+  const ICO = new THREE.IcosahedronGeometry(1, 0);
+  const DOD = new THREE.DodecahedronGeometry(1, 0);
+  const rock = (x: number, z: number, w: number, h: number, d: number, color = 0x9ea4a6, collide = true) => {
+    if (collide) S.box(x, 0, z, w, h, d, 0, { visible: false });
+    S.poly(DOD, color, x, h * 0.45, z, { sx: w * 0.62, sy: h * 0.75, sz: d * 0.62, jit: 0.18, ry: Math.random() * 3, vary: 0.1 });
+  };
   const floor = (x0: number, z0: number, x1: number, z1: number, color: number, y = 0.012, top?: number) => S.mm(x0, y - 0.05, z0, x1, y, z1, color, { collide: false, top, jitter: 0.02 });
   const checker = (x0: number, z0: number, x1: number, z1: number, c1: number, c2: number, s = 1, y = 0.014) => {
     for (let x = x0, i = 0; x < x1 - 0.001; x += s, i++)
@@ -200,19 +220,23 @@ export function buildWorld(scene: THREE.Scene): World {
     }
   };
   const tree = (x: number, z: number, s = 1, kind = 0) => {
-    S.box(x, 0, z, 0.45 * s, 2.1 * s, 0.45 * s, 0x7a4f2a, { cam: false });
+    S.box(x, 0, z, 0.45 * s, 2.1 * s, 0.45 * s, 0x7a4f2a, { cam: false, visible: false });
+    S.poly(new THREE.CylinderGeometry(0.14 * s, 0.26 * s, 2.3 * s, 6), 0x7a4f2a, x, 1.15 * s, z, { jit: 0.03 });
     const leaf = kind === 1 ? 0x4fae54 : kind === 2 ? 0x6cc05a : 0x3f9a4a;
-    S.box(x, 1.7 * s, z, 2.4 * s, 1.1 * s, 2.4 * s, leaf, { collide: false });
-    S.box(x, 2.7 * s, z, 1.8 * s, 0.9 * s, 1.8 * s, leaf + 0x080808, { collide: false });
-    S.box(x, 3.5 * s, z, 1.0 * s, 0.6 * s, 1.0 * s, leaf + 0x101010, { collide: false });
-    if (kind === 1) for (let i = 0; i < 4; i++) S.box(x + Math.cos(i * 1.7) * 0.9 * s, 1.6 * s, z + Math.sin(i * 1.7) * 0.9 * s, 0.22, 0.28, 0.22, 0xf1a73a, { collide: false });
+    const r = Math.random() * 6;
+    S.poly(ICO, leaf, x, 2.4 * s, z, { sx: 1.45 * s, sy: 1.2 * s, sz: 1.45 * s, jit: 0.2, ry: r, vary: 0.1 });
+    S.poly(ICO, leaf + 0x080808, x + 0.55 * s, 3.25 * s, z - 0.25 * s, { sx: 0.95 * s, sy: 0.85 * s, sz: 0.95 * s, jit: 0.15, ry: r + 1, vary: 0.1 });
+    if (kind !== 2) S.poly(ICO, leaf + 0x101010, x - 0.6 * s, 3.0 * s, z + 0.35 * s, { sx: 0.8 * s, sy: 0.7 * s, sz: 0.8 * s, jit: 0.12, ry: r + 2, vary: 0.1 });
+    if (kind === 1) for (let i = 0; i < 5; i++) S.poly(new THREE.OctahedronGeometry(0.16, 0), 0xf1a73a, x + Math.cos(i * 1.7) * 1.25 * s, 2.0 * s + (i % 2) * 0.5, z + Math.sin(i * 1.7) * 1.25 * s);
   };
   const palm = (x: number, z: number) => {
-    for (let i = 0; i < 6; i++) S.box(x + i * 0.05, i * 0.7, z, 0.35, 0.7, 0.35, 0x8c6a45, { cam: false });
-    for (let i = 0; i < 5; i++) {
-      const a = (i / 5) * Math.PI * 2;
-      S.rot(x + 0.3 + Math.cos(a) * 1.1, 4.1, z + Math.sin(a) * 1.1, 2.2, 0.12, 0.6, -a, 0x4c9f3c, 0, 0.35);
+    S.box(x, 0, z, 0.35, 4.2, 0.35, 0, { cam: false, visible: false });
+    for (let i = 0; i < 6; i++) S.poly(new THREE.CylinderGeometry(0.15, 0.2, 0.72, 6), i % 2 ? 0x8c6a45 : 0x7d5e3c, x + i * 0.06, i * 0.7 + 0.36, z);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      S.poly(new THREE.ConeGeometry(0.35, 2.4, 4), i % 2 ? 0x4c9f3c : 0x5cb048, x + 0.3 + Math.cos(a) * 1.0, 4.05, z + Math.sin(a) * 1.0, { rz: Math.PI / 2 + 0.35, ry: -a, sy: 1, sz: 0.35 });
     }
+    S.poly(ICO, 0x6b4a2a, x + 0.3, 4.1, z, { sx: 0.3, sy: 0.3, sz: 0.3 });
   };
   const bench = (x: number, z: number, alongX = true) => {
     if (alongX) {
@@ -228,21 +252,39 @@ export function buildWorld(scene: THREE.Scene): World {
   };
   const lamp = (x: number, z: number) => {
     glow.lamps.push(V(x, 3.66, z));
-    S.box(x, 0, z, 0.16, 3.8, 0.16, 0x44474d, { cam: false });
+    S.box(x, 0, z, 0.16, 3.8, 0.16, 0x44474d, { cam: false, visible: false });
+    S.poly(new THREE.CylinderGeometry(0.07, 0.11, 3.8, 6), 0x44474d, x, 1.9, z);
     S.box(x, 3.8, z, 0.6, 0.12, 0.3, 0x44474d, { collide: false });
     S.box(x, 3.66, z, 0.4, 0.14, 0.22, 0xfff3c4, { collide: false });
   };
-  const bush = (x: number, z: number, w: number, d: number, h = 0.8) => S.box(x, 0, z, w, h, d, C.hedge, { top: 0x4aa955, cam: false });
+  const bush = (x: number, z: number, w: number, d: number, h = 0.8) => {
+    S.box(x, 0, z, w, h, d, C.hedge, { cam: false, visible: false });
+    const along = w >= d, L = Math.max(w, d), T = Math.min(w, d), n = Math.max(1, Math.round(L / 0.9));
+    for (let i = 0; i < n; i++) {
+      const t = (i + 0.5) / n - 0.5;
+      S.poly(ICO, i % 2 ? C.hedge : 0x4aa955, x + (along ? t * L : 0), h * 0.5, z + (along ? 0 : t * L), { sx: (along ? L / n : T) * 0.72, sy: h * 0.62, sz: (along ? T : L / n) * 0.72, jit: 0.08, ry: i, vary: 0.1 });
+    }
+  };
   const pottedPlant = (x: number, y: number, z: number, s = 1, color = 0xc86b3c) => {
-    S.box(x, y, z, 0.4 * s, 0.35 * s, 0.4 * s, color);
-    S.box(x, y + 0.35 * s, z, 0.5 * s, 0.4 * s, 0.5 * s, 0x4caf50, { collide: false });
-    S.box(x, y + 0.7 * s, z, 0.3 * s, 0.25 * s, 0.3 * s, 0x5fbf5a, { collide: false });
+    S.box(x, y, z, 0.4 * s, 0.35 * s, 0.4 * s, color, { visible: false });
+    S.poly(new THREE.CylinderGeometry(0.24 * s, 0.17 * s, 0.35 * s, 7), color, x, y + 0.175 * s, z);
+    S.poly(ICO, 0x4caf50, x, y + 0.55 * s, z, { sx: 0.3 * s, sy: 0.3 * s, sz: 0.3 * s, jit: 0.05 });
+    S.poly(ICO, 0x5fbf5a, x + 0.06, y + 0.8 * s, z, { sx: 0.18 * s, sy: 0.2 * s, sz: 0.18 * s });
   };
   // pitched stepped roof (ridge along x)
   const pitchedRoof = (x0: number, z0: number, x1: number, z1: number, y: number, color: number, layers = 5) => {
-    S.mm(x0 - 0.5, y, z0 - 0.5, x1 + 0.5, y + 0.22, z1 + 0.5, color);
+    S.mm(x0 - 0.5, y, z0 - 0.5, x1 + 0.5, y + 0.22, z1 + 0.5, color, { visible: false });
     const d = (z1 - z0 + 1) / 2 / (layers + 0.5);
-    for (let i = 1; i <= layers; i++) S.mm(x0 - 0.5, y + 0.22 + (i - 1) * 0.42, z0 - 0.5 + d * i, x1 + 0.5, y + 0.22 + i * 0.42, z1 + 0.5 - d * i, i % 2 ? color : color - 0x080808);
+    for (let i = 1; i <= layers; i++) S.mm(x0 - 0.5, y + 0.22 + (i - 1) * 0.42, z0 - 0.5 + d * i, x1 + 0.5, y + 0.22 + i * 0.42, z1 + 0.5 - d * i, color, { visible: false });
+    const H = 0.22 + layers * 0.42 + 0.1, hw = (z1 - z0) / 2 + 0.7, L = x1 - x0 + 1.1;
+    const sh = new THREE.Shape();
+    sh.moveTo(-hw, 0); sh.lineTo(hw, 0); sh.lineTo(0, H); sh.lineTo(-hw, 0);
+    const g = new THREE.ExtrudeGeometry(sh, { depth: L, bevelEnabled: false });
+    g.translate(0, 0, -L / 2);
+    S.poly(g, color, (x0 + x1) / 2, y, (z0 + z1) / 2, { ry: Math.PI / 2, vary: 0.05 });
+    // ridge cap + tile bands
+    S.poly(new THREE.CylinderGeometry(0.12, 0.12, L + 0.1, 4), color - 0x181818, (x0 + x1) / 2, y + H, (z0 + z1) / 2, { rz: Math.PI / 2 });
+    S.mm(x0 - 0.55, y - 0.12, z0 - 0.7, x1 + 0.55, y + 0.02, z1 + 0.7, color - 0x202020, { collide: false, jitter: 0 });
   };
   // solid decorative house block with details
   const solidHouse = (x0: number, z0: number, x1: number, z1: number, wall: number, roofColor: number, flat: boolean, doorX: number) => {
@@ -260,7 +302,7 @@ export function buildWorld(scene: THREE.Scene): World {
   };
 
   // ---------- ground & perimeter ----------
-  S.mm(-48, -1, -34, 68, 0, 42, C.grass, { top: C.grass, jitter: 0 });
+  lpGround(-48, -34, 68, 42);
   // perimeter walls (tall, with invisible extension)
   const PW = 0xd9cdb1;
   S.mm(-48, 0, -33, 68, 4.5, -31, PW);
@@ -881,8 +923,8 @@ export function buildWorld(scene: THREE.Scene): World {
     }
   });
   // Lisa's rock
-  S.mm(-13.9, 0, 21.9, -12.5, 0.5, 23.1, 0x9e9e9e, { top: 0xb5b5ad });
-  S.mm(-13.7, 0.5, 22.1, -12.8, 0.6, 22.9, 0xa8a8a0, { collide: false });
+  S.mm(-13.9, 0, 21.9, -12.5, 0.6, 23.1, 0x9e9e9e, { visible: false });
+  S.poly(DOD, 0xa3a7a6, -13.2, 0.3, 22.5, { sx: 0.9, sy: 0.42, sz: 0.85, jit: 0.08 });
   pts.lisa = V(-13.25, 0.6, 22.5);
   // flower bed (dig)
   S.mm(-6, 0, 9, -1, 0.22, 12, 0x6d4c41, { top: 0x7b5436 });
@@ -1108,7 +1150,7 @@ export function buildWorld(scene: THREE.Scene): World {
   // ================= NEW EDGE AREAS: WARUNG + SEKOLAH (west), SUNGAI (south) =================
   function buildEdgeAreas() {
     // ---- west extension: the street continues through a gap in the west wall ----
-    S.mm(-90, -1, -22, -48, 0, 32, C.grass, { top: C.grass, jitter: 0 });
+    lpGround(-90, -22, -48, 32);
     S.mm(-90, 0, -22, -48, 4.5, -20, PW);
     S.mm(-90, 0, 30, -48, 4.5, 32, PW);
     // west wall: open where the street goes out to the cross road (cats stay inside)
@@ -1119,7 +1161,7 @@ export function buildWorld(scene: THREE.Scene): World {
     S.wall(-90, 4.5, 30, -48, 12, 32);
     S.wall(-90, 4.5, -22, -88, 12, 32);
     // ---- outside the west end: a cross road, vehicles come and go out of sight ----
-    S.mm(-118, -1, -82, -90, 0, 82, C.grass, { top: C.grass, jitter: 0 });
+    lpGround(-118, -82, -90, 82);
     floor(-94.4, -3.5, -88, 3.5, C.asphalt, 0.012);
     floor(-101.6, -82, -94.4, 82, C.asphalt, 0.013);
     for (let z = -81; z < 81; z += 4) if (Math.abs(z + 1) > 5) floor(-98.08, z, -97.92, z + 2, C.line, 0.022);
@@ -1411,7 +1453,7 @@ export function buildWorld(scene: THREE.Scene): World {
     // reached through a gap in the south wall at the end of the park/market lane
     const RX0 = -10, RX1 = 44, RZ1 = 62;
     const W0 = 50, W1 = 56; // water band
-    S.mm(-12, -1, 42, 46, 0, 64, C.grass, { top: C.grass, jitter: 0 });
+    lpGround(-12, 42, 46, 64);
     S.mm(-12, 0, 41, -10, 4.5, 64, PW);
     S.mm(44, 0, 41, 46, 4.5, 64, PW);
     S.mm(-12, 0, 62, 46, 4.5, 64, PW);
@@ -1510,10 +1552,13 @@ export function buildWorld(scene: THREE.Scene): World {
     for (let i = 0; i < 14; i++) S.box(RX0 + 1 + i * 3.7, 0, W1 + 0.7 + (i % 2) * 0.3, 0.08, 0.9 + (i % 3) * 0.25, 0.08, 0x558b2f, { collide: false });
     for (let i = 0; i < 10; i++) S.box(RX0 + 2.3 + i * 5.3, 0, W0 - 0.75, 0.07, 0.7 + (i % 3) * 0.2, 0.07, 0x689f38, { collide: false });
     const bamboo = (x: number, z: number) => {
-      for (let i = 0; i < 5; i++) S.box(x + Math.cos(i * 1.3) * 0.4, 0, z + Math.sin(i * 1.3) * 0.4, 0.14, 3.5 + (i % 3) * 0.7, 0.14, 0x8bc34a, { collide: false });
+      for (let i = 0; i < 6; i++) {
+        const hh = 3.5 + (i % 3) * 0.7;
+        S.poly(new THREE.CylinderGeometry(0.07, 0.08, hh, 5), i % 2 ? 0x8bc34a : 0x9ccc65, x + Math.cos(i * 1.3) * 0.4, hh / 2, z + Math.sin(i * 1.3) * 0.4, { rz: (i - 2.5) * 0.04 });
+      }
       S.box(x, 0, z, 0.8, 3.2, 0.8, 0, { visible: false });
-      S.box(x, 3.2, z, 2.0, 0.8, 2.0, 0x7cb342, { collide: false });
-      S.box(x, 4.0, z, 1.2, 0.6, 1.2, 0x8bc34a, { collide: false });
+      S.poly(ICO, 0x7cb342, x, 3.9, z, { sx: 1.2, sy: 0.7, sz: 1.2, jit: 0.15 });
+      S.poly(ICO, 0x8bc34a, x + 0.3, 4.6, z - 0.2, { sx: 0.8, sy: 0.6, sz: 0.8, jit: 0.12 });
     };
     bamboo(-8.5, 48.5);
     bamboo(42.5, 48.5);
@@ -1522,7 +1567,7 @@ export function buildWorld(scene: THREE.Scene): World {
     for (const x of [-4, 9, 17, 30, 38]) tree(x, 59.5, 0.9 + (x % 3) * 0.05, x % 2 ? 2 : 0);
     tree(-8, 44.2, 0.8, 1);
     tree(26, 43.5, 0.9, 0);
-    for (const [x, z, s] of [[3, 44, 0.6], [24, 45.5, 0.5], [40, 44.5, 0.7], [33, 58, 0.6]] as [number, number, number][]) S.box(x, 0, z, s * 1.4, s * 0.6, s, 0x9e9e9e, { top: 0xb5b5ad });
+    for (const [x, z, s] of [[3, 44, 0.6], [24, 45.5, 0.5], [40, 44.5, 0.7], [33, 58, 0.6]] as [number, number, number][]) rock(x, z, s * 1.4, s * 0.6, s);
     bench(28, 43.2, true);
     lamp(10, 46);
     lamp(32, 46);
@@ -1543,6 +1588,19 @@ export function buildWorld(scene: THREE.Scene): World {
     }
   }
 
+  // LOW-POLY backdrop: a ring of faceted hills that follows the camera (like a skybox), never fogged/clipped
+  {
+    const HB = new StaticBuilder();
+    for (let i = 0; i < 30; i++) {
+      const a = (i / 30) * Math.PI * 2 + Math.random() * 0.1, R = 118 + Math.random() * 10;
+      HB.poly(new THREE.ConeGeometry(1, 1, 7), i % 3 ? 0x8fbf72 : 0x7fb066, Math.cos(a) * R, 6, Math.sin(a) * R, { sx: 18 + Math.random() * 10, sy: 16 + Math.random() * 18, sz: 16, jit: 0.12, ry: Math.random() * 3, vary: 0.12 });
+    }
+    const hills = HB.build(new THREE.MeshLambertMaterial({ vertexColors: true, fog: false }));
+    hills.frustumCulled = false;
+    hills.matrixAutoUpdate = true;
+    hills.onBeforeRender = (_r, _s, cam) => { hills.position.set(cam.position.x, -8, cam.position.z); hills.updateMatrixWorld(true); };
+    scene.add(hills);
+  }
   // Build
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
   const mesh = S.build(mat);

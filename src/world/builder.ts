@@ -110,6 +110,42 @@ export class StaticBuilder {
     this.geom(-w / 2, -h / 2, -d / 2, w / 2, h / 2, d / 2, color, undefined, 0.04, m);
   }
 
+  /** LOW-POLY: add any geometry flat-shaded (per-face normals) with a per-face colour wobble. */
+  poly(g: THREE.BufferGeometry, color: number, x: number, y: number, z: number, o: { jit?: number; sy?: number; sx?: number; sz?: number; ry?: number; rx?: number; rz?: number; vary?: number } = {}) {
+    let q = g.index ? g.toNonIndexed() : g.clone();
+    if (o.jit) {
+      const p = q.getAttribute('position') as THREE.BufferAttribute;
+      const seen = new Map<string, number[]>();
+      for (let i = 0; i < p.count; i++) {
+        const k = p.getX(i).toFixed(3) + ',' + p.getY(i).toFixed(3) + ',' + p.getZ(i).toFixed(3);
+        let d = seen.get(k);
+        if (!d) seen.set(k, (d = [(Math.random() * 2 - 1) * o.jit, (Math.random() * 2 - 1) * o.jit, (Math.random() * 2 - 1) * o.jit]));
+        p.setXYZ(i, p.getX(i) + d[0], p.getY(i) + d[1], p.getZ(i) + d[2]);
+      }
+    }
+    const m = new THREE.Matrix4().compose(
+      new THREE.Vector3(x, y, z),
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(o.rx ?? 0, o.ry ?? 0, o.rz ?? 0, 'YXZ')),
+      new THREE.Vector3(o.sx ?? 1, o.sy ?? 1, o.sz ?? 1),
+    );
+    q.applyMatrix4(m);
+    const p = q.getAttribute('position');
+    const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3();
+    const vary = o.vary ?? 0.07;
+    for (let f = 0; f < p.count; f += 3) {
+      a.fromBufferAttribute(p, f); b.fromBufferAttribute(p, f + 1); c.fromBufferAttribute(p, f + 2);
+      n.subVectors(c, b).cross(b.clone().sub(a).negate()).normalize();
+      this.c.setHex(color).multiplyScalar(1 + (Math.random() * 2 - 1) * vary);
+      const base = this.pos.length / 3;
+      for (const v of [a, b, c]) {
+        this.pos.push(v.x, v.y, v.z);
+        this.nrm.push(n.x, n.y, n.z);
+        this.col.push(this.c.r, this.c.g, this.c.b);
+      }
+      this.idx.push(base, base + 1, base + 2);
+    }
+  }
+
   build(mat: THREE.Material) {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));

@@ -43,7 +43,7 @@ export class Sky {
     this.sun = new THREE.DirectionalLight(0xffffff, 1.6);
     scene.add(this.sun);
     scene.add(this.sun.target);
-    this.sunMesh = new THREE.Mesh(new THREE.BoxGeometry(6, 6, 6), new THREE.MeshBasicMaterial({ color: 0xfff3b0, fog: false }));
+    this.sunMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(4, 1), new THREE.MeshBasicMaterial({ color: 0xfff3b0, fog: false }));
     scene.add(this.sunMesh);
     scene.background = new THREE.Color(0xa9dcff);
     scene.fog = new THREE.Fog(0xc5e6ff, 45, 120);
@@ -51,7 +51,7 @@ export class Sky {
     for (let i = 0; i < 14; i++) {
       const c = new THREE.Group();
       const n = 2 + Math.floor(Math.random() * 3);
-      for (let j = 0; j < n; j++) c.add(mbox(3 + Math.random() * 4, 1 + Math.random() * 1, 2.5 + Math.random() * 2, 0xffffff, j * 2.2 - n, Math.random() * 0.6, Math.random() * 1.5));
+      for (let j = 0; j < n; j++) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), this.cloudMat); m.scale.set(2 + Math.random() * 1.5, 1 + Math.random() * 0.6, 1.6 + Math.random()); m.position.set(j * 2.2 - n, Math.random() * 0.6, Math.random() * 1.5); m.rotation.y = Math.random() * 3; c.add(m); }
       c.position.set(-60 + Math.random() * 140, 22 + Math.random() * 8, -50 + Math.random() * 100);
       c.traverse((o: any) => o.material && (o.material = this.cloudMat));
       this.clouds.add(c);
