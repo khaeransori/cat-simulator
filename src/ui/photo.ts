@@ -60,8 +60,8 @@ export class PhotoMode {
   stickers: Sticker[] = [];
   yaw = 0;
   pitch = 0.25;
-  dist = 2.2;
-  curDist = 2.2;
+  dist = 2.5;
+  curDist = 2.5;
   target = new THREE.Vector3();
   anim: CatAnim = newAnim();
   meowBubble: THREE.Sprite;

@@ -261,7 +261,7 @@ class BlockyBird {
 /** mockup 'Merpati' */
 export class PigeonModel extends BlockyBird {
   constructor() {
-    super({ key: 'merpati', body: 0x9aa3b5, wing: 0x7d8699, head: 0x8a93a6, beak: 0x50525a, legs: 0xe57373, neckRing: 0x5fa38a, size: 0.5 });
+    super({ key: 'merpati', body: 0x9aa3b5, wing: 0x7d8699, head: 0x8a93a6, beak: 0x50525a, legs: 0xe57373, neckRing: 0x5fa38a, size: 0.27 }); // real pigeon ~0.35 m (mockup 0.5 → 0.65 m)
   }
 }
 
@@ -269,7 +269,7 @@ export class PigeonModel extends BlockyBird {
 export class DuckModel extends BlockyBird {
   constructor(color = 0xfafafa) {
     const white = color === 0xfafafa;
-    super({ key: 'bebek:' + color, body: color, wing: white ? 0xe6e6e6 : shadeHex(color, 0.85), head: color, beak: 0xff9800, legs: 0xff9800, size: 0.66 });
+    super({ key: 'bebek:' + color, body: color, wing: white ? 0xe6e6e6 : shadeHex(color, 0.85), head: color, beak: 0xff9800, legs: 0xff9800, size: 0.385 }); // real duck ~0.5 m (mockup 0.66 → 0.86 m)
   }
   update(dt: number, flying: boolean) {
     super.update(dt, flying);
@@ -277,10 +277,13 @@ export class DuckModel extends BlockyBird {
   }
 }
 
-/** mockup 'Ayam jago'. Not placed in the world (the game has no chickens yet); ready for a drop. */
+/** mockup 'Ayam jago' (+ hens): the chicken flock in the west neighbour's front yard */
 export class ChickenModel extends BlockyBird {
-  constructor() {
-    super({ key: 'ayam', body: 0xb5482f, wing: 0x7a2e1c, head: 0xd96b2b, beak: 0xf2b134, legs: 0xf2b134, comb: 0xe53935, tailC: 0x1f5f3a, long: true, size: 0.72, tall: true });
+  constructor(kind: 'jago' | 'betina' | 'betinaPutih' = 'jago') {
+    if (kind === 'jago') super({ key: 'ayam', body: 0xb5482f, wing: 0x7a2e1c, head: 0xd96b2b, beak: 0xf2b134, legs: 0xf2b134, comb: 0xe53935, tailC: 0x1f5f3a, long: true, size: 0.39, tall: true }); // real rooster ~0.6 m (mockup 0.72 → 1.11 m)
+    // hens: same mockup recipe, small comb, short tail, a little smaller (~0.45 m)
+    else if (kind === 'betina') super({ key: 'ayam-betina', body: 0xa86b3c, wing: 0x7d4a26, head: 0xb87a45, beak: 0xf2b134, legs: 0xf2b134, comb: 0xe53935, tailC: 0x6e4122, size: 0.32 });
+    else super({ key: 'ayam-putih', body: 0xf3efe6, wing: 0xddd6c8, head: 0xf3efe6, beak: 0xf2b134, legs: 0xf2b134, comb: 0xe53935, size: 0.32 });
   }
 }
 

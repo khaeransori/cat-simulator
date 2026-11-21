@@ -804,9 +804,10 @@ export function buildWorld(scene: THREE.Scene): World {
   zones.push({ id: 'atap', x0: -1.2, z0: -28, x1: 38.6, z1: -13.5, ymin: 3.3 });
   // dog yard
   const dogYard = { x0: 19.6, z0: -14.7, x1: 39.6, z1: -5.5 };
-  S.mm(35.3, 0, -13.2, 37.1, 1.2, -11.8, 0xb5651d);
-  S.mm(35.1, 1.2, -13.4, 37.3, 1.35, -11.6, 0x8d3f14);
-  S.mm(35.9, 0, -11.78, 36.5, 0.8, -11.74, 0x3e2723, { collide: false });
+  // doghouse sized for the blocky Bleki (1.23 w × 1.18 h × 1.66 long): 2.6 × 1.7 × 2.1
+  S.mm(34.9, 0, -13.9, 37.5, 1.7, -11.8, 0xb5651d);
+  S.mm(34.7, 1.7, -14.1, 37.7, 1.88, -11.6, 0x8d3f14);
+  S.mm(35.65, 0, -11.78, 36.75, 1.3, -11.74, 0x3e2723, { collide: false });
   S.mm(33.5, 0.02, -11.2, 34.1, 0.14, -10.6, 0x9e9e9e, { collide: false });
   pts.dogBed = V(34.5, 0, -10.2);
   pts.dogFence = V(29.5, 0.15, -4.5);
@@ -820,6 +821,7 @@ export function buildWorld(scene: THREE.Scene): World {
   rects.push({ x0: -42, z0: -27, x1: -28, z1: -12, c: '#c9b8e6' });
   tree(-44, -9, 0.9, 0);
   tree(-26, -8, 0.8, 2);
+  pts.ayam = V(-35, 0, -7.9); // the chicken flock pecks in this front yard
   rects.push({ x0: 40.1, z0: -31, x1: 66, z1: -5.2, c: '#a8d88a' });
   fenceX(40.1, 66, -5.25, 1.1, C.fence, [[49, 53]]);
   solidHouse(44, -27, 60, -12, C.cream, C.roof2, false, 51);

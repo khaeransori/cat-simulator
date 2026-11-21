@@ -49,6 +49,31 @@ await h.key('KeyQ', 300).catch(() => {});
 await h.ev(() => window.__cat.cat.meow?.());
 await gw(0.2);
 await h.shot('animals-game-6-meow');
+// 6. chickens: peck in the west neighbour's yard, scatter when the cat runs through, then calm down
+const ay = await h.ev(() => window.__cat.world.pts.ayam && [window.__cat.world.pts.ayam.x, window.__cat.world.pts.ayam.z]);
+check('chicken flock exists', !!ay);
+await look(ay[0] - 3, ay[1] + 1.5, Math.PI / 2, 3.2);
+await gw(0.6);
+await h.shot('animals-game-7-ayam');
+const before = await h.ev(() => window.__cat.flocks[3].state);
+await h.ev(() => { const c = window.__cat; c.flocks[3].scare() && c.onFlockScared?.(c.flocks[3]); });
+await gw(0.5);
+await h.shot('animals-game-8-ayam-kabur');
+const mid = await h.ev(() => { const f = window.__cat.flocks[3], y = f.yard; return { st: f.state, inYard: f.birds.every((b) => b.x >= y.x0 - 0.01 && b.x <= y.x1 + 0.01 && b.z >= y.z0 - 0.01 && b.z <= y.z1 + 0.01), maxY: Math.max(...f.birds.map((b) => b.y)) }; });
+await gw(4);
+const after = await h.ev(() => ({ st: window.__cat.flocks[3].state, vis: window.__cat.flocks[3].birds.every((b) => b.m.root.visible), done: window.__cat.day.doneToday.has('ayam') }));
+check('chickens scatter, stay in their yard, then calm down', before === 'ground' && mid.st === 'fly' && mid.inYard && mid.maxY < 1.2 && after.st === 'ground' && after.vis, JSON.stringify({ before, mid, after }));
+check('spooking the chickens counts as mischief', after.done);
+// 7. Bleki fits his bigger doghouse (door taller than the dog)
+await h.ev(() => { const d = window.__cat.dog; d.reset?.(); d.state = 'sleep'; d.x = d.bed.x; d.z = d.bed.z; d._upd = d.update; d.update = function () { this.model.root.position.set(this.x, 0, this.z); this.model.update(0.016, { run: 0, sleep: true, bark: false }); }; });
+await look(33.2, -9.0, Math.PI / 2, 3.6);
+await h.ev(() => { const c = window.__cat; c.camRig._u = c.camRig.update; c.camRig.update = () => {}; c.camera.position.set(33.0, 2.0, -6.0); c.camera.lookAt(35.6, 0.7, -11.6); });
+await gw(0.4);
+await h.shot('animals-game-9-doghouse');
+await h.ev(() => { const c = window.__cat, d = c.dog; d.update = d._upd; c.camRig.update = c.camRig._u; });
+// 8. camera distance follows the bigger cat
+const cam = await h.ev(() => { const c = window.__cat; return { dist: c.camRig.dist, h: c.cat.model.height }; });
+check('follow camera pulled back for the bigger cat', cam.dist >= 2.8, JSON.stringify(cam));
 const calls = await h.ev(() => window.__cat.renderer.info.render.calls);
 check('draw calls reasonable', calls < 600, String(calls));
 check('no page errors', h.errs.length === errs0, h.errs.slice(errs0).join(' | '));

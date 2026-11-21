@@ -14,7 +14,7 @@ import { InteractSystem } from './game/interact';
 import { Cat, CameraRig } from './entities/cat';
 import { Human, NPC_LINES } from './entities/npc';
 import { Dog, Flock, Lisa, Kids, Butterflies } from './entities/creatures';
-import { DuckModel } from './entities/animals';
+import { DuckModel, ChickenModel } from './entities/animals';
 import { CatModel } from './entities/catModel';
 import { Quests } from './game/quests';
 import { Progress, dailyFor, dayBefore, RANKS, GIVERS } from './game/progress';
@@ -117,7 +117,9 @@ function boot() {
   const putri = new Human('putri', { skin: 0xe0ac7e, shirt: 0xec407a, pants: 0x7e57c2, skirt: true, hair: 'long', hairColor: 0x3e2723, kid: true }, 'kid', pts.kidB, { x0: -30, z0: 5, x1: 12, z1: 39 }, 2.0);
   ctx.kids = new Kids(dimas, putri);
   ctx.dog = new Dog();
-  ctx.flocks = [new Flock(pts.pigeonPark, 6, 'merpati_taman'), new Flock(pts.pigeonRoof, 5, 'merpati_atap'), new Flock(pts.ducks, 5, 'bebek', () => new DuckModel(Math.random() < 0.4 ? 0xc8a165 : 0xfafafa))];
+  ctx.flocks = [new Flock(pts.pigeonPark, 6, 'merpati_taman'), new Flock(pts.pigeonRoof, 5, 'merpati_atap'), new Flock(pts.ducks, 5, 'bebek', () => new DuckModel(Math.random() < 0.4 ? 0xc8a165 : 0xfafafa)),
+    // kampung chickens in the west neighbour's front yard (1 rooster + hens); scatter when the cat runs in
+    new Flock(pts.ayam, 5, 'ayam', (() => { let i = 0; return () => new ChickenModel(i++ === 0 ? 'jago' : i % 2 ? 'betina' : 'betinaPutih'); })(), { x0: -45.4, z0: -11.6, x1: -24.8, z1: -5.8 })];
   ctx.butterflies = new Butterflies(pts.butterflies, 5);
   ctx.lisa = new Lisa();
   ctx.npcHear = (x: number, z: number, r: number) => {

@@ -258,6 +258,11 @@ class SoundSystem {
       this.tone(1980, 0.25, 'sine', 0.07, i * 0.28);
     }
   }
+  cluck() {
+    // startled hen: a few quick "buk-buk-BAKOK"
+    for (let i = 0; i < 3; i++) this.tone(700 - i * 40, 0.06, 'square', 0.06, i * 0.09, 520);
+    this.tone(980, 0.16, 'sawtooth', 0.07, 0.3, 640);
+  }
   quack() {
     this.tone(520, 0.11, 'sawtooth', 0.08, 0, 380);
     this.tone(500, 0.13, 'sawtooth', 0.08, 0.16, 360);

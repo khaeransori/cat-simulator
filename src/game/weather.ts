@@ -275,6 +275,7 @@ export class WeatherSystem {
     // pigeons hide from the rain
     ctx.flocks[0].setHidden(rain);
     ctx.flocks[1].setHidden(rain);
+    ctx.flocks[3]?.setHidden(rain); // chickens shelter under the house too
   }
 
   setWet(w: number) {

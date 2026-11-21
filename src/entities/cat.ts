@@ -282,8 +282,8 @@ export class CameraRig {
   yaw = 0;
   pitch = 0.3;
   effPitch = 0.3;
-  dist = 2.5;
-  curDist = 2.5;
+  dist = 2.9; // +15% for the mockup-size blocky cat (1.03 m)
+  curDist = 2.9;
   target = new THREE.Vector3();
   override: { pos: THREE.Vector3; look: THREE.Vector3 } | null = null;
   shake = 0;
@@ -295,7 +295,7 @@ export class CameraRig {
 
   snap(cat: Cat) {
     this.yaw = cat.yaw;
-    this.target.set(cat.body.x, cat.body.y + 0.5, cat.body.z);
+    this.target.set(cat.body.x, cat.body.y + 0.6, cat.body.z);
     this.curDist = this.dist;
     this.update(0.016, cat, true);
   }
@@ -325,10 +325,10 @@ export class CameraRig {
     let dist = this.dist;
     if (cat.state === 'hugged' && cat.hugger) {
       this.yaw = angleLerp(this.yaw, cat.hugger.yaw + Math.PI, 1 - Math.exp(-4 * dt));
-      dist = 3.4;
+      dist = 3.9;
     }
     // follow target (smooth y so jumps don't jerk)
-    const ty = b.y + (cat.state === 'sleep' ? 0.35 : 0.5);
+    const ty = b.y + (cat.state === 'sleep' ? 0.42 : 0.6);
     const kx = instant ? 1 : 1 - Math.exp(-18 * dt);
     const ky = instant ? 1 : 1 - Math.exp(-(b.onGround ? 10 : 4) * dt);
     this.target.x += (b.x - this.target.x) * kx;

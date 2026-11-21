@@ -33,6 +33,7 @@ export const MISCHIEF: MDef[] = [
   { id: 'koran', area: 'jalan', icon: '📰', name: P('Sobek koran Bu Siti', "Shred Mrs. Siti's paper"), noise: 4 },
   { id: 'sandal', area: 'jalan', icon: '🩴', name: P('Curi sandal', 'Steal a sandal'), noise: 0 },
   { id: 'motor', area: 'jalan', icon: '🛵', name: P('Tidur di jok motor', 'Nap on the motorbike'), noise: 14 },
+  { id: 'ayam', area: 'jalan', icon: '🐔', name: P('Kagetin ayam tetangga', "Spook the neighbor's chickens"), noise: 6 },
   { id: 'pot_tetangga', area: 'jalan', icon: '🌻', name: P('Jatuhin pot tetangga', "Topple the neighbor's pot"), noise: 9 },
   { id: 'ikan_pasar', area: 'pasar', icon: '🐠', name: P('Curi ikan pasar', 'Steal a market fish'), noise: 0 },
   { id: 'ember', area: 'pasar', icon: '🪣', name: P('Tumpahin ember', 'Tip over a bucket'), noise: 8 },
@@ -748,6 +749,7 @@ export function setupMischief() {
     });
   flock('merpati_taman', ctx.flocks[0]);
   flock('merpati_atap', ctx.flocks[1]);
+  if (ctx.flocks[3]) flock('ayam', ctx.flocks[3]);
   ctx.onFlockScared = (fl: any) => doMischief(fl.mischiefId);
 
   // --- laundry ---

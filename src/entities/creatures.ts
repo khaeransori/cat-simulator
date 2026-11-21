@@ -170,9 +170,12 @@ export class Flock {
   t = 0;
   mischiefId: string;
 
-  constructor(center: THREE.Vector3, n: number, mischiefId: string, mk: () => BirdModel = () => new PigeonModel()) {
+  /** ground birds (chickens): scatter with a short flutter inside `yard`, then peck their way home */
+  yard: { x0: number; z0: number; x1: number; z1: number } | null;
+  constructor(center: THREE.Vector3, n: number, mischiefId: string, mk: () => BirdModel = () => new PigeonModel(), yard: { x0: number; z0: number; x1: number; z1: number } | null = null) {
     this.center = center.clone();
     this.mischiefId = mischiefId;
+    this.yard = yard;
     for (let i = 0; i < n; i++) {
       const m = mk();
       const a = (i / n) * Math.PI * 2;
@@ -208,6 +211,17 @@ export class Flock {
     this.t = 0;
     sfx.flap();
     if (this.mischiefId === 'bebek') sfx.quack();
+    if (this.yard) {
+      sfx.cluck();
+      for (const b of this.birds) {
+        const a = Math.atan2(b.z - this.center.z, b.x - this.center.x) + rand(-0.6, 0.6);
+        b.vx = Math.cos(a) * rand(2.5, 3.5);
+        b.vz = Math.sin(a) * rand(2.5, 3.5);
+        b.vy = rand(2.2, 3.2);
+      }
+      ctx.fx.burst(this.center.x, this.center.y + 0.3, this.center.z, 0xd9a066, 8, { speed: 1.5, up: 2, size: 0.05, g: 4, life: 1 });
+      return true;
+    }
     for (const b of this.birds) {
       const a = Math.atan2(b.z - this.center.z, b.x - this.center.x) + rand(-0.4, 0.4);
       b.vx = Math.cos(a) * rand(2.5, 4);
@@ -243,6 +257,25 @@ export class Flock {
         if (ctx.mode === 'play' && ctx.cat.speed01 > 0.55 && Math.hypot(cb.x - b.x, cb.z - b.z) < 1.1 && Math.abs(cb.y - b.y) < 0.8) {
           if (this.scare()) ctx.onFlockScared?.(this);
         }
+      } else if (this.state === 'fly' && this.yard) {
+        // chicken scatter: hop-flutter, land, run on, slow down (stays inside the yard)
+        const y = this.yard;
+        b.vy -= 14 * dt;
+        b.x += b.vx * dt;
+        b.z += b.vz * dt;
+        b.y += b.vy * dt;
+        const air = b.y > this.center.y + 0.01;
+        if (!air) {
+          b.y = this.center.y;
+          b.vy = 0;
+          const k = Math.exp(-2.2 * dt);
+          b.vx *= k;
+          b.vz *= k;
+        }
+        if (b.x < y.x0 || b.x > y.x1) (b.vx = -b.vx), (b.x = clamp(b.x, y.x0, y.x1));
+        if (b.z < y.z0 || b.z > y.z1) (b.vz = -b.vz), (b.z = clamp(b.z, y.z0, y.z1));
+        if (Math.hypot(b.vx, b.vz) > 0.2) b.yaw = Math.atan2(b.vx, b.vz);
+        b.m.update(dt, air);
       } else if (this.state === 'fly') {
         b.vy += 3 * dt;
         b.x += b.vx * dt;
@@ -262,6 +295,16 @@ export class Flock {
       }
       b.m.root.position.set(b.x, b.y, b.z);
       b.m.root.rotation.y = b.yaw;
+    }
+    if (this.state === 'fly' && this.yard && this.t > 3) {
+      // calm down where they landed, then wander back home pecking (ground state walks to hx/hz)
+      this.state = 'ground';
+      for (const b of this.birds) {
+        b.tx = b.x;
+        b.tz = b.z;
+        b.t = rand(1.5, 4);
+        b.y = this.center.y;
+      }
     }
     if (this.state === 'fly' && this.t > 3.5) {
       this.state = 'away';
