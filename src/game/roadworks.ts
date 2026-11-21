@@ -32,6 +32,21 @@ export const WORKS_FIRST_DAY = 3;
 const HOLE = { x0: 48.2, x1: 55.4, z0: -3.25, z1: -0.45 };
 const EXC = { x: 45.4, z: -2.15 }; // excavator (tracks along x, digs towards +x)
 const PILE = { x: 42.2, z: -2.2 };
+/**
+ * Excavator joint poses (cab yaw, boom, stick, bucket) solved for the beko arm in vehicles.ts
+ * (boom pivot 1.45 m up, bent boom 1.9 + 1.7 m, stick 1.7 m). The bucket's mouth faces the cab:
+ * abs bucket angle (boom + stick + bucket) ~ -1.6 hangs it teeth-toward-the-cab, ~ -2.5 holds
+ * the scoop open upwards (rest on the road / lift the cat level), ~ +0.4 tips it out (dump).
+ */
+const POSE = {
+  rest: { cab: -0.5, boom: 0.7, stick: -2.43, bucket: -0.76 },
+  ride: { cab: 0.3, boom: 1.54, stick: -2.3, bucket: -1.73 },
+  reach: { cab: 0, boom: 0.66, stick: -1.53, bucket: 0.67 },
+  scoop: { cab: 0, boom: 0.67, stick: -2.24, bucket: -0.03 },
+  lift: { cab: 0, boom: 1.38, stick: -2.26, bucket: -1.42 },
+  dump: { cab: 0, boom: 1.38, stick: -2.26, bucket: 1.28 },
+  back: { cab: 0, boom: 1.06, stick: -1.81, bucket: 0.16 },
+};
 const PRINTS_MAX = 28;
 
 const LINES = {
@@ -47,7 +62,7 @@ export class RoadWorks {
   stage: WorksStage = '';
   group = new THREE.Group();
   exc: Excavator;
-  roller: { root: THREE.Group; drums: THREE.Mesh[] };
+  roller: ReturnType<typeof buildRoller>;
   rollerMover: Mover;
   cones: THREE.InstancedMesh;
   coneSpots: { x: number; z: number; fall: number; dir: number; t: number }[] = [];
@@ -95,15 +110,11 @@ export class RoadWorks {
     this.roller = buildRoller();
     this.group.add(this.roller.root);
     this.rollerMover = {
-      x: 0, z: -1.85, yaw: 0, px: 0, pz: 0, pyaw: 0, hl: 1.6, hw: 0.75, solidH: 1.1, v: 0,
-      tops: [
-        { x0: -1.6, x1: -0.55, z0: -0.7, z1: 0.7, y: 1.5 }, // engine / seat deck
-        { x0: 0.45, x1: 1.6, z0: -0.7, z1: 0.7, y: 1.1 }, // front drum
-        { x0: -0.55, x1: 0.45, z0: -0.7, z1: 0.7, y: 1.1 },
-      ],
+      x: 0, z: -1.85, yaw: 0, px: 0, pz: 0, pyaw: 0, hl: this.roller.hl, hw: this.roller.hw, solidH: 1.28, v: 0,
+      tops: this.roller.tops, // drum frames + engine deck (the seat + canopy are where the operator sits)
       onBump: () => {
         this.rollBumpT = 1.6;
-        ctx.bubbles.say(this.roller.root, L(LINES.roller), { ttl: 2, y: 2.9, kind: 'speech', key: 'roller' });
+        ctx.bubbles.say(this.roller.root, L(LINES.roller), { ttl: 2, y: 3.7, kind: 'speech', key: 'roller' });
       },
     };
     // ---- cones (one instanced mesh, each can topple) ----
@@ -185,10 +196,10 @@ export class RoadWorks {
       return a;
     };
     // tracks (low: the cat hops on them) + the house on top
-    box(EXC.x - 1.5, 0, EXC.z + 0.57, EXC.x + 1.5, 0.62, EXC.z + 1.13, 'exc');
-    box(EXC.x - 1.5, 0, EXC.z - 1.13, EXC.x + 1.5, 0.62, EXC.z - 0.57, 'exc');
+    box(EXC.x - 1.55, 0, EXC.z + 0.64, EXC.x + 1.55, 0.63, EXC.z + 1.2, 'exc');
+    box(EXC.x - 1.55, 0, EXC.z - 1.2, EXC.x + 1.55, 0.63, EXC.z - 0.64, 'exc');
     box(EXC.x - 0.8, 0, EXC.z - 0.57, EXC.x + 0.8, 0.85, EXC.z + 0.57, 'exc');
-    box(EXC.x - 1.55, 0.85, EXC.z - 0.95, EXC.x + 1.55, 1.62, EXC.z + 0.95, 'exc');
+    box(EXC.x - 1.55, 0.85, EXC.z - 1.0, EXC.x + 1.55, 1.62, EXC.z + 1.0, 'exc');
     // signs (so nobody walks through the posts)
     for (const s of this.signs.children) box(s.position.x - 0.12, 0, s.position.z - 0.55, s.position.x + 0.12, 1.7, s.position.z + 0.55, 'sign');
     // cat wall inside the closed lane? no: the cat is welcome (that's the fun), people walk around the cones.
@@ -263,7 +274,7 @@ export class RoadWorks {
     this.rideK = 0;
     this.rideDone = false;
     this.exc.operator.visible = !night;
-    Object.assign(this.ang, { cab: 0, boom: 0.6, stick: -1.5, bucket: 0.6 });
+    Object.assign(this.ang, POSE.back);
     if (this.restMode) Object.assign(this.ang, this.restPose());
     Object.assign(this.goal, this.ang);
     this.pose();
@@ -302,8 +313,8 @@ export class RoadWorks {
   }
 
   private restPose() {
-    // bucket flat on the road next to the cones (abs bucket angle ~0)
-    return { cab: -0.5, boom: 0.42, stick: -2.2, bucket: 1.78 };
+    // bucket resting on the road next to the cones, scoop open upwards (hop in!)
+    return { ...POSE.rest };
   }
 
   // ---------------- excavator ----------------
@@ -329,10 +340,10 @@ export class RoadWorks {
     this.rideT = 0;
     cat.setState('ride');
     cat.body.vx = cat.body.vz = cat.body.vy = 0;
-    ctx.bubbles.say(this.exc.operator, L(LINES.op[0]), { ttl: 2.2, y: 0.9, kind: 'speech', key: 'operator' });
+    ctx.bubbles.say(this.exc.operator, L(LINES.op[0]), { ttl: 2.2, y: 1.5, kind: 'speech', key: 'operator' });
     sfx.meow(1.2);
     // lift the cat up high, bucket kept level (bucket = -(boom + stick))
-    this.goal = { cab: 0.3, boom: 0.9, stick: -1.2, bucket: 0.3 };
+    this.goal = { ...POSE.ride };
   }
 
   private updRide(dt: number) {
@@ -351,12 +362,12 @@ export class RoadWorks {
         this.rideDone = true;
         doMischief('ekskavator');
       }
-      ctx.bubbles.say(this.exc.operator, L(LINES.op[1]), { ttl: 2, y: 0.9, kind: 'speech', key: 'operator' });
+      ctx.bubbles.say(this.exc.operator, L(LINES.op[1]), { ttl: 2, y: 1.5, kind: 'speech', key: 'operator' });
     } else if (this.rideK === 2 && this.rideT > 2.2) {
       this.rideK = 3;
       this.rideT = 0;
       this.goal = this.restPose();
-      ctx.bubbles.say(this.exc.operator, L(LINES.opDown), { ttl: 2, y: 0.9, kind: 'speech', key: 'operator' });
+      ctx.bubbles.say(this.exc.operator, L(LINES.opDown), { ttl: 2, y: 1.5, kind: 'speech', key: 'operator' });
     } else if (this.rideK === 3 && this.rideT > 2.6) {
       this.rideK = 0;
       // hop out towards the open side
@@ -398,12 +409,12 @@ export class RoadWorks {
       } else {
         const T = 11;
         const k = C % T;
-        if (k < 2.2) this.goal = { cab: 0, boom: 0.1, stick: -1.0, bucket: 0.6 }; // reach out and down into the hole
-        else if (k < 3.6) this.goal = { cab: 0, boom: 0.2, stick: -1.75, bucket: 1.9 }; // drag in + curl: scoop
-        else if (k < 5.2) this.goal = { cab: 0, boom: 0.75, stick: -1.6, bucket: 1.6 }; // lift
-        else if (k < 7.4) this.goal = { cab: Math.PI, boom: 0.7, stick: -1.6, bucket: 1.6 }; // swing to the pile
-        else if (k < 8.6) this.goal = { cab: Math.PI, boom: 0.6, stick: -1.5, bucket: -0.6 }; // dump
-        else this.goal = { cab: 0, boom: 0.6, stick: -1.5, bucket: 0.6 }; // swing back
+        if (k < 2.2) this.goal = { ...POSE.reach }; // reach out and down into the hole
+        else if (k < 3.6) this.goal = { ...POSE.scoop }; // drag in toward the cab, teeth first
+        else if (k < 5.2) this.goal = { ...POSE.lift }; // curl + lift
+        else if (k < 7.4) this.goal = { ...POSE.lift, cab: Math.PI }; // swing to the pile
+        else if (k < 8.6) this.goal = { ...POSE.dump, cab: Math.PI }; // dump
+        else this.goal = { ...POSE.back }; // swing back
         const kp = (C - dt) % T;
         if (kp < 7.4 && k >= 7.4) {
           // rubble falls out of the bucket onto the pile
@@ -421,7 +432,7 @@ export class RoadWorks {
         if (this.restT <= 0 && k > 8.8) {
           this.phase = 'rest';
           this.cyc = 0;
-          if (playing && Math.hypot(ctx.cat.body.x - EXC.x, ctx.cat.body.z - EXC.z) < 16) ctx.bubbles.say(this.exc.operator, L(LINES.rest), { ttl: 2.2, y: 0.9, kind: 'speech', key: 'operator' });
+          if (playing && Math.hypot(ctx.cat.body.x - EXC.x, ctx.cat.body.z - EXC.z) < 16) ctx.bubbles.say(this.exc.operator, L(LINES.rest), { ttl: 2.2, y: 1.5, kind: 'speech', key: 'operator' });
         }
       }
     }
@@ -445,8 +456,8 @@ export class RoadWorks {
       if (playing && d < 26) sfx.digger((1 - d / 26) * (this.phase === 'rest' && !this.rideK ? 0.35 : 0.8));
       if (d < 45) {
         const c = Math.cos(A.cab), s = Math.sin(A.cab);
-        const lx = -0.85, lz = -0.55;
-        ctx.fx.burst(EXC.x + lx * c + lz * s, 2.2, EXC.z - lx * s + lz * c, 0x707070, 1, { speed: 0.3, up: 0.7, size: 0.1, life: 1.1, g: -0.5, spread: 0.05 });
+        const lx = -0.95, lz = 0.75; // exhaust stack on the house
+        ctx.fx.burst(EXC.x + lx * c + lz * s, 2.4, EXC.z - lx * s + lz * c, 0x707070, 1, { speed: 0.3, up: 0.7, size: 0.1, life: 1.1, g: -0.5, spread: 0.05 });
       }
     }
   }

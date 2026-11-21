@@ -257,8 +257,8 @@ check('mischief "Cap kaki di aspal baru" done', pr.done);
 // the roller is a solid the cat can stand on
 const rl = await h.ev(() => { const C = window.__cat, R = C.works.rollerMover, b = C.cat.body; b.x = R.x - 1.0; b.z = R.z; b.y = 1.8; b.vy = 0; b.onGround = false; return 1; });
 await gw(0.8);
-const onR = await h.ev(() => ({ y: window.__cat.cat.body.y, ride: !!window.__cat.traffic.ride }));
-check('cat can sit on the road roller', onR.ride && Math.abs(onR.y - 1.5) < 0.05, JSON.stringify(onR));
+const onR = await h.ev(() => { const R = window.__cat.works.rollerMover; const want = Math.max(...R.tops.filter((t) => t.x0 <= -1.0 && t.x1 >= -1.0).map((t) => t.y)); return { y: window.__cat.cat.body.y, want, ride: !!window.__cat.traffic.ride }; });
+check('cat can sit on the road roller', onR.ride && Math.abs(onR.y - onR.want) < 0.05, JSON.stringify(onR));
 void rl;
 
 // ---------------- the new smooth road keeps the paw prints ----------------
