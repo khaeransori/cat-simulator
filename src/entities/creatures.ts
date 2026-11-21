@@ -27,7 +27,7 @@ export class Dog {
   stateT = 0;
   barkT = 0;
   lastSeen = -99;
-  shadow = blobShadow(1.2);
+  shadow = blobShadow(1.5); // mockup-size Bleki (1.66 m long)
   yard: { x0: number; z0: number; x1: number; z1: number };
   bed: THREE.Vector3;
 
@@ -139,7 +139,7 @@ export class Dog {
         this.bark();
       }
     }
-    if (this.state === 'sleep' && Math.random() < dt * 0.5) ctx.fx.zzz(this.x, 0.9, this.z);
+    if (this.state === 'sleep' && Math.random() < dt * 0.5) ctx.fx.zzz(this.x, 1.0, this.z);
     this.model.update(dt, { run, sleep: this.state === 'sleep', bark: barking && run < 0.6 });
     this.model.root.position.set(this.x, 0, this.z);
     this.model.root.rotation.y = this.yaw;
@@ -383,7 +383,7 @@ export class Lisa {
   pos: THREE.Vector3;
   baseYaw = Math.PI / 2;
   yaw = Math.PI / 2;
-  shadow = blobShadow(0.7);
+  shadow = blobShadow(1.0);
   o: CatFriendOpts;
 
   constructor(o?: CatFriendOpts) {
@@ -433,7 +433,7 @@ export class Lisa {
     this.mark.visible = !!g;
     if (g) {
       (this.mark.material as THREE.SpriteMaterial).map = glyphTex(g, g === '?' ? '#7ad3ff' : '#ffd84a');
-      this.mark.position.set(this.pos.x, this.pos.y + 1.15 + Math.sin(ctx.time * 4) * 0.08, this.pos.z);
+      this.mark.position.set(this.pos.x, this.pos.y + this.model.height * this.model.root.scale.y + 0.3 + Math.sin(ctx.time * 4) * 0.08, this.pos.z);
     }
   }
 }

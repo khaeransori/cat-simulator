@@ -391,7 +391,7 @@ export class PhotoMode {
       cat.model.headG.rotation.x = -0.35;
       this.meowBubble.visible = true;
       const f = cat.forward();
-      this.meowBubble.position.set(b.x + f.x * 0.25, b.y + 1.05, b.z + f.z * 0.25);
+      this.meowBubble.position.set(b.x + f.x * 0.25, b.y + 1.05 + cat.model.height - 0.89, b.z + f.z * 0.25);
     } else this.meowBubble.visible = false;
     // orbit camera with collision
     const ty = b.y + (p === 'lompat' ? 0.6 : p === 'tidur' ? 0.25 : 0.35);

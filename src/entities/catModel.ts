@@ -3,7 +3,7 @@ import { boxGeo, lam } from '../world/builder';
 import type { Look } from '../save';
 import { getItem, furColor } from '../cosmetics';
 import { rand } from '../ctx';
-import { Atlas, uvBox, merged, mesh, joint, eyeMat, plane, lum, PZ, PY, PX, NX, NY, NZ } from './blockyAnimal';
+import { Atlas, uvBox, merged, mesh, joint, plane, PZ, PY, ANIMAL_SCALE, faceCanvas, mockEyeMat, paintPart, hexCss } from './blockyAnimal';
 
 export function shade(hex: number, k: number) {
   const c = new THREE.Color(hex);
@@ -41,25 +41,30 @@ export function newAnim(): CatAnim {
   return { speed: 0, air: false, sleep: 0, sit: 0, paw: 0, scratch: false, dig: false, eat: false, earsDown: 0, happy: 0, hugged: false, lookYaw: 0 };
 }
 
-// Blocky cat in the Kenney-Blocky style: cuboid parts sharing ONE pixel-painted atlas
-// (face, muzzle, whiskers, blush and every fur pattern are painted, not extra boxes).
-// +z is forward, origin at the feet. Part coordinates are in "cat units"; the whole cat is
-// scaled by CAT_SCALE so it stands about knee-high next to a 1.7 m adult.
-export const CAT_SCALE = 0.8;
-
-// cuboid sizes (cat units)
-const BODY = [0.34, 0.26, 0.58] as const, BODY_P = [0, 0.39, -0.01] as const;
-const HEAD = [0.38, 0.32, 0.3] as const, HEAD_P = [0, 0.1, 0.1] as const;
-const LEG = [0.1, 0.19, 0.1] as const, PAW = [0.11, 0.08, 0.12] as const;
-const EAR = [0.12, 0.14, 0.06] as const;
-const TSEG = [0.065, 0.065, 0.17] as const;
-const PINK = 0xf5a3b5;
+// Blocky cat = the APPROVED MOCKUP's quadruped (scratch/lowpoly/chars/animals_part.ts):
+// body 0.62×0.5×0.9 with a 64 px painted coat, legs 0.18×0.45 + paws, head 0.62×0.56×0.5 with
+// the 128 px painted face, square cat ears with pink inner, L-shaped tail, collar under the chin.
+// Built in mockup units, then sized by MOCK_S × ANIMAL_SCALE (mockup cat 0.62, adult 1.69 → game 2.0).
+// Differences from the mockup that the game needs: the eyes are separate planes (blink, cosmetic eye
+// colour) drawn exactly where the mockup paints them, and the coat/face colours follow the save look.
+const MOCK_S = 0.62;
+export const CAT_SCALE = MOCK_S * ANIMAL_SCALE;
+const BODY_LEN = 0.9;
+const HIP = 0.45; // leg joint height (mockup units)
+const LEG_Z = BODY_LEN / 2 - 0.12;
+const HEAD_J = [0, 0.78, BODY_LEN / 2 - 0.02] as const;
+/** old cat units → mockup units, for things authored against the previous cat (rod, carried items) */
+const LEGACY = 1.667;
+const PINK = 0xf2a3a3;
 
 export class CatModel {
   root = new THREE.Group();
-  /** uniform size group between root and pose (root.scale stays free for callers) */
+  /** uniform size group (root.scale stays free for callers, e.g. the bigger cat friends) */
   sizeG = new THREE.Group();
   pose = new THREE.Group();
+  /** the cat's body parts (mockup units) */
+  bodyG = new THREE.Group();
+  /** legacy mount in the previous cat's units (fishing rod); moves with the body pose */
   inner = new THREE.Group();
   headG = new THREE.Group();
   legs: THREE.Group[] = [];
@@ -75,7 +80,9 @@ export class CatModel {
   neckAcc = new THREE.Group();
   backAcc = new THREE.Group();
   carry = new THREE.Group();
-  atlas = new Atlas(256, 100);
+  atlas = new Atlas(256, 64);
+  /** ear-tip height in metres at root scale 1 */
+  height = 1.4 * CAT_SCALE;
   wings: THREE.Group[] = [];
   cape: THREE.Group | null = null;
   phase = 0;
@@ -88,181 +95,182 @@ export class CatModel {
 
   constructor() {
     const A = this.atlas, M = A.mat;
-    const cB = A.box('body', ...BODY), cH = A.box('head', ...HEAD);
-    const cL = A.box('leg', ...LEG), cP = A.box('paw', ...PAW), cE = A.box('ear', ...EAR);
-    const cT = [A.box('t0', ...TSEG), A.box('t1', ...TSEG), A.box('t2', ...TSEG)];
-
+    const c = {
+      body: A.boxPx('body', 32),
+      belly: A.boxPx('belly', 4),
+      leg: A.boxPx('leg', 4),
+      paw: A.boxPx('paw', 4),
+      head: A.boxPx('head', 4, 128),
+      ear: A.boxPx('ear', 4),
+      earIn: A.boxPx('earIn', 4),
+      tailA: A.boxPx('tailA', 4),
+      tailB: A.boxPx('tailB', 4),
+      tip: A.boxPx('tip', 4),
+    };
     this.root.add(this.sizeG);
     this.sizeG.scale.setScalar(CAT_SCALE);
     this.sizeG.add(this.pose);
-    this.pose.position.set(0, 0.27, -0.19);
-    this.pose.add(this.inner);
-    this.inner.position.set(0, -0.27, 0.19);
-    const I = this.inner;
+    // pose pivot = back hips (sit / scratch rotate around it)
+    this.pose.position.set(0, HIP, -LEG_Z);
+    this.pose.add(this.bodyG);
+    this.bodyG.position.set(0, -HIP, LEG_Z);
+    const Bd = this.bodyG;
+    this.bodyG.add(this.inner);
+    this.inner.scale.setScalar(LEGACY);
 
-    // torso
-    I.add(mesh(uvBox(A, cB, ...BODY), M, ...BODY_P));
-    // legs: pivot at the hip/shoulder, column + paw hang down (one merged mesh per leg)
-    const legGeo = merged('catleg', [uvBox(A, cL, ...LEG, 0, -0.095, 0), uvBox(A, cP, ...PAW, 0, -0.23, 0.01)]);
+    Bd.add(mesh(uvBox(A, c.body, 0.62, 0.5, BODY_LEN), M, 0, 0.62, 0));
+    Bd.add(mesh(uvBox(A, c.belly, 0.5, 0.06, BODY_LEN * 0.8), M, 0, 0.36, 0));
+    // legs: pivot at the hip, block hangs down (Kenney arm/leg nodes)
+    const legGeo = merged('mockcat-leg', [uvBox(A, c.leg, 0.18, 0.45, 0.18, 0, -0.225, 0), uvBox(A, c.paw, 0.2, 0.08, 0.22, 0, -0.41, 0.01)]);
     for (const [x, z] of [
-      [0.1, 0.17],
-      [-0.1, 0.17],
-      [0.1, -0.19],
-      [-0.1, -0.19],
+      [0.2, LEG_Z],
+      [-0.2, LEG_Z],
+      [0.2, -LEG_Z],
+      [-0.2, -LEG_Z],
     ]) {
-      const g = joint(I, x, 0.27, z);
+      const g = joint(Bd, x, HIP, z);
       const m = mesh(legGeo, M);
       g.add(m);
       this.legs.push(g);
       this.legUpper.push(m);
       this.paws.push(m);
     }
-    // head: pivot at the neck; the face (muzzle, nose, mouth, whiskers, blush) is painted on +z
-    this.headG.position.set(0, 0.5, 0.26);
-    I.add(this.headG);
+    // head: pivot at the neck
+    this.headG.position.set(...HEAD_J);
+    Bd.add(this.headG);
     const H = this.headG;
-    H.add(mesh(uvBox(A, cH, ...HEAD), M, ...HEAD_P));
-    const eg = plane(0.075, 0.09);
+    H.add(mesh(uvBox(A, c.head, 0.62, 0.56, 0.5), M, 0, 0.16, 0.2));
+    // eyes exactly where the mockup paints them (18×22 px of 128 at x 64±26, y 50)
+    const eg = plane((18 / 128) * 0.62, (22 / 128) * 0.56);
     for (const sx of [1, -1]) {
       const e = new THREE.Group();
-      e.position.set(0.085 * sx, 0.135, 0.2515);
-      const em = new THREE.Mesh(eg, eyeMat(0x6fcf5a));
+      e.position.set(((26 * sx) / 128) * 0.62, 0.16 + 0.28 - (61 / 128) * 0.56, 0.4515);
+      const em = new THREE.Mesh(eg, mockEyeMat(0x6fcf5a));
       e.add(em);
       H.add(e);
       this.eyes.push(e);
       this.eyeMesh.push(em);
-      const ear = joint(H, 0.12 * sx, 0.25, 0.08);
-      ear.rotation.z = -0.22 * sx;
-      ear.add(mesh(uvBox(A, cE, ...EAR), M, 0, 0.07, 0));
+      // ear: pivot at the base; the anim's -0.22 outward tilt is undone so it stands upright like the mockup
+      const ear = joint(H, 0.19 * sx, 0.44, 0.14);
+      const ei = new THREE.Group();
+      ei.rotation.z = 0.22 * sx;
+      ear.add(ei);
+      ei.add(mesh(uvBox(A, c.ear, 0.16, 0.18, 0.08), M, 0, 0.09, 0));
+      ei.add(mesh(uvBox(A, c.earIn, 0.08, 0.1, 0.02), M, 0, 0.08, 0.05));
       this.ears.push(ear);
     }
-    H.add(this.headAcc, this.faceAcc, this.carry);
-    this.headAcc.position.set(0, 0.26, 0.1);
-    this.faceAcc.position.set(0, 0.13, 0.268);
-    this.carry.position.set(0, -0.03, 0.33);
-    I.add(this.neckAcc, this.backAcc);
-    // collars sit just under the blocky head, wrapped round the chest top
-    this.neckAcc.position.set(0, -0.01, 0.035);
-    this.neckAcc.scale.set(1.05, 1, 1);
+    H.add(this.headAcc, this.faceAcc, this.carry, this.neckAcc);
+    // cosmetics are authored in the previous cat's units: map them onto the mockup head
+    this.headAcc.position.set(0, 0.44, 0.2); // top centre of the head
+    this.headAcc.scale.setScalar(0.62 / 0.38);
+    this.faceAcc.position.set(0, 0.173, 0.475); // eye line, just in front of the face
+    this.faceAcc.scale.setScalar(1.4);
+    this.carry.position.set(0, 0.0, 0.5); // the mouth
+    this.carry.scale.setScalar(1 / CAT_SCALE); // carried things keep their world size
+    // collars/scarves (authored on the old body, collar at y 0.47 z 0.27) → mockup collar spot
+    // under the chin (head-local 0, -0.12, 0.12), widened to the 0.64 mockup collar
+    const NK = 0.64 / 0.3;
+    this.neckAcc.scale.setScalar(NK);
+    this.neckAcc.position.set(0, -0.12 - 0.47 * NK, 0.12 - 0.27 * NK);
+    // back items (old body top y 0.52, centre z -0.01) → mockup body top 0.87
+    Bd.add(this.backAcc);
+    const BK = 1.7;
+    this.backAcc.scale.setScalar(BK);
+    this.backAcc.position.set(0, 0.87 - 0.52 * BK, 0.01 * BK);
 
-    // tail: pivot at the rump, three segments
-    let parent: THREE.Object3D = I;
-    for (let i = 0; i < 3; i++) {
-      const g = new THREE.Group();
-      if (i === 0) {
-        g.position.set(0, 0.47, -0.29);
-        g.rotation.x = 0.45;
-      } else {
-        g.position.set(0, 0, -0.15);
-        g.rotation.x = 0.35;
-      }
-      const seg = mesh(uvBox(A, cT[i], ...TSEG), M, 0, 0, -0.075);
-      g.add(seg);
-      parent.add(g);
-      parent = g;
-      this.tail.push(g);
-      this.tailSeg.push(seg);
-    }
+    // tail: pivot at the rump; low piece back, then the upright piece and its tip (mockup L shape).
+    // update() drives tail[0].rotation.x ≈ 0.45 and tail[1/2].rotation.x ≈ 0.35 at rest; the meshes
+    // are counter-rotated so the rest pose is exactly the mockup's.
+    const t0 = joint(Bd, 0, 0.78, -BODY_LEN / 2);
+    const a = mesh(uvBox(A, c.tailA, 0.1, 0.1, 0.36), M, 0, 0.06, -0.16);
+    a.position.applyAxisAngle(new THREE.Vector3(1, 0, 0), -0.45);
+    a.rotation.x = -0.5 - 0.45;
+    t0.add(a);
+    const tA = a;
+    // b: 0.1×0.32 upright at (0, 0.3, -0.3) in the mockup; split 0.2 + 0.12 tip for the colour
+    const t1 = new THREE.Group();
+    t1.position.set(0, 0.14, -0.3);
+    t1.position.applyAxisAngle(new THREE.Vector3(1, 0, 0), -0.45);
+    t0.add(t1);
+    const bg = new THREE.Group();
+    bg.rotation.x = -0.8;
+    t1.add(bg);
+    const b = mesh(uvBox(A, c.tailB, 0.1, 0.2, 0.1), M, 0, 0.1, 0);
+    bg.add(b);
+    const t2 = new THREE.Group();
+    t2.position.set(0, 0.2, 0);
+    bg.add(t2);
+    const tipG = new THREE.Group();
+    tipG.rotation.x = -0.35;
+    t2.add(tipG);
+    const tip = mesh(uvBox(A, c.tip, 0.1, 0.12, 0.1), M, 0, 0.06, 0);
+    tipG.add(tip);
+    this.tail.push(t0, t1, t2);
+    this.tailSeg.push(tA, b, tip);
     this.root.traverse((o) => ((o as any).isMesh ? ((o as THREE.Mesh).castShadow = false) : 0));
+    // speech bubbles were placed for the previous cat (ear tips at 0.89 m): lift them by the difference
+    this.root.userData.bubbleLift = this.height - 0.89;
   }
 
   setLook(look: Look) {
     this.look = { ...look };
     const fur = furColor(look.fur);
-    const isGold = look.fur === 'emas';
-    this.atlas.mat.emissive.setHex(isGold ? 0x3a2a00 : 0x000000);
+    this.atlas.mat.emissive.setHex(look.fur === 'emas' ? 0x3a2a00 : 0x000000);
     const eye = getItem('eyes', look.eyes);
-    this.eyeMesh[0].material = eyeMat(eye?.color ?? 0x6fcf5a);
-    this.eyeMesh[1].material = eyeMat(eye?.color2 ?? eye?.color ?? 0x6fcf5a);
+    this.eyeMesh[0].material = mockEyeMat(eye?.color ?? 0x6fcf5a);
+    this.eyeMesh[1].material = mockEyeMat(eye?.color2 ?? eye?.color ?? 0x6fcf5a);
     this.paint(look, fur);
     this.buildAccessories(look);
   }
 
-  /** paint fur, pattern and face into the atlas */
+  /** paint coat, pattern and face exactly the mockup way (64 px coat on every body face, 128 px face) */
   private paint(look: Look, fur: number) {
-    const A = this.atlas, C = A.cells, g = A.g;
-    g.clearRect(0, 0, A.S, A.S);
+    const A = this.atlas, C = A.cells;
+    A.g.clearRect(0, 0, A.S, A.S);
     const p = look.pattern;
-    const white = 0xfbfaf6;
-    const dark = look.fur === 'hitam' ? 0x6b6a78 : shade(fur, 0.68);
-    let light = mix(fur, 0xffffff, 0.45);
-    let paw = fur, tip = fur, mid = fur;
-    if (p === 'tuxedo' || p === 'kauskaki') paw = tip = white;
-    if (p === 'tuxedo') light = white;
-    if (p === 'belang') mid = dark;
+    const white = 0xf6f3ec;
+    const light = mix(fur, 0xffffff, 0.6);
+    const dark = look.fur === 'hitam' ? 0x6b6a78 : look.fur === 'oranye' ? 0xd9822a : shade(fur, 0.82); // mockup orange stripes 0xd9822a
+    const spot = look.fur === 'hitam' ? 0x6b6a78 : shade(fur, 0.62);
     const calA = look.fur === 'oranye' ? 0x3b3a45 : 0xf2a044;
     const calB = look.fur === 'hitam' ? white : 0x3b3a45;
-    if (p === 'calico') tip = calA;
+    const whiteBits = p === 'tuxedo' || p === 'kauskaki' || p === 'calico';
+    const lightC = p === 'tuxedo' || p === 'calico' ? white : light;
+    const pawC = whiteBits ? white : light;
+    const tipC = p === 'kauskaki' ? white : p === 'calico' ? calA : fur;
 
-    for (const k of ['body', 'head', 'leg', 'ear', 't0']) A.paintBox(C[k], fur);
-    A.paintBox(C.paw, paw);
-    A.paintBox(C.t1, mid);
-    A.paintBox(C.t2, tip);
-    // belly a little lighter; inner ear pink
-    A.fill(C.body[NY], shade(light, 0.95));
-    A.frac(C.ear[PZ], 0.25, 0.2, 0.5, 0.6, PINK);
+    // coat canvas (mockup bodyPat: 64 px, same on all six faces)
+    const coat = document.createElement('canvas');
+    coat.width = coat.height = 64;
+    const g = coat.getContext('2d')!;
+    g.fillStyle = hexCss(fur); g.fillRect(0, 0, 64, 64);
+    const R = (x: number, y: number, w: number, h: number, col: number) => { g.fillStyle = hexCss(col); g.fillRect(x, y, w, h); };
+    if (p === 'belang') for (let y = 6; y < 64; y += 16) R(0, y, 64, 6, dark);
+    if (p === 'tutul') for (const [x, y, s] of [[8, 8, 10], [36, 14, 8], [18, 34, 9], [46, 40, 10], [6, 50, 7], [30, 52, 6]]) R(x, y, s, s, spot);
+    if (p === 'calico') { R(4, 6, 24, 18, calA); R(36, 30, 22, 20, calB); R(10, 42, 14, 12, calB); R(44, 4, 14, 12, calA); }
+    for (const r of C.body) A.draw(r, coat);
+    if (p === 'tuxedo') A.frac(C.body[PZ], 0.2, 0.15, 0.6, 0.85, white); // white bib on the chest
+    paintPart(A, C.belly, lightC);
+    paintPart(A, C.leg, fur);
+    paintPart(A, C.paw, pawC);
+    paintPart(A, C.ear, fur);
+    paintPart(A, C.earIn, PINK);
+    paintPart(A, C.tailA, fur);
+    paintPart(A, C.tailB, p === 'belang' ? dark : fur);
+    paintPart(A, C.tip, tipC);
 
-    const B_ = C.body, Hd = C.head;
-    // body helpers: z in cat units (body spans z -0.30..0.28), y from top (0) to bottom (1)
-    const zMin = BODY_P[2] - BODY[2] / 2, zLen = BODY[2];
-    const topZ = (z: number) => (z - zMin) / zLen; // +y face: row 0 = back
-    const sideZ = (z: number, sx: number) => (sx > 0 ? (zMin + zLen - z) / zLen : (z - zMin) / zLen);
-    if (p === 'belang') {
-      for (const z of [-0.22, -0.09, 0.04, 0.17]) {
-        A.frac(B_[PY], 0, topZ(z) - 0.04, 1, 0.08, dark);
-        for (const sx of [1, -1]) A.frac(B_[sx > 0 ? PX : NX], sideZ(z, sx) - 0.04, 0, 0.08, 0.7, dark);
-      }
-      A.frac(B_[NZ], 0.2, 0, 0.6, 0.15, dark);
-      for (const x of [0.3, 0.47, 0.64]) A.frac(Hd[PY], x, 0.1, 0.08, 0.8, dark);
-      for (const x of [0.32, 0.46, 0.6]) A.frac(Hd[PZ], x, 0, 0.08, 0.17, dark);
-      for (const s of [PX, NX]) A.frac(Hd[s], 0.3, 0.15, 0.4, 0.08, dark);
-    } else if (p === 'tuxedo') {
-      A.frac(B_[PZ], 0.15, 0.25, 0.7, 0.75, white);
-      A.fill(B_[NY], white);
-    } else if (p === 'calico') {
-      A.frac(B_[PY], 0.5, topZ(-0.24), 0.5, 0.42, calA);
-      A.frac(B_[PY], 0.05, topZ(0.05), 0.4, 0.3, calB);
-      A.frac(B_[NX], sideZ(0.16, -1) - 0.3, 0.1, 0.35, 0.6, calB);
-      A.frac(B_[PX], sideZ(-0.05, 1) - 0.1, 0.0, 0.25, 0.45, calA);
-      A.frac(Hd[PY], 0.5, 0.0, 0.5, 0.75, calA);
-      A.frac(Hd[PX], 0.15, 0.0, 0.6, 0.55, calA);
-      A.frac(Hd[PZ], 0.72, 0, 0.28, 0.3, calA);
-      A.paintBox(C.ear, fur);
-      A.frac(C.ear[PZ], 0.25, 0.2, 0.5, 0.6, PINK);
-    } else if (p === 'tutul') {
-      const spots: [number, number, number, number][] = [
-        // face, fx, fy, size
-        [PY, 0.6, topZ(-0.18), 0.2],
-        [PY, 0.2, topZ(-0.02), 0.18],
-        [PY, 0.55, topZ(0.14), 0.16],
-        [PX, sideZ(-0.1, 1), 0.25, 0.12],
-        [NX, sideZ(0.1, -1), 0.35, 0.11],
-        [NX, sideZ(-0.18, -1), 0.15, 0.1],
-      ];
-      for (const [f, x, y, s] of spots) A.frac(B_[f], x - s / 2, y - s / 2, s, s * (f === PY ? 1.6 : 2.2), dark);
-      A.frac(Hd[PY], 0.2, 0.2, 0.15, 0.2, dark);
-      A.frac(Hd[PY], 0.7, 0.55, 0.13, 0.18, dark);
-      A.frac(Hd[PX], 0.4, 0.2, 0.15, 0.18, dark);
-    }
-
-    // ---- face (+z of the head, 38×32 px; x: left→right is -x→+x, y: top→bottom) ----
-    const F = Hd[PZ];
-    A.frac(F, 0.29, 0.56, 0.42, 0.44, light); // muzzle
-    if (p === 'tuxedo') A.frac(F, 0.42, 0.3, 0.16, 0.3, white); // blaze
-    A.frac(F, 0.42, 0.56, 0.16, 0.1, 0xf27a9a); // nose
-    const ink = 0x4a2f2a;
-    A.frac(F, 0.487, 0.66, 0.026, 0.1, ink); // philtrum
-    A.frac(F, 0.39, 0.76, 0.1, 0.035, ink); // mouth "w"
-    A.frac(F, 0.51, 0.76, 0.1, 0.035, ink);
-    A.frac(F, 0.37, 0.72, 0.03, 0.05, ink);
-    A.frac(F, 0.6, 0.72, 0.03, 0.05, ink);
-    const wh = lum(light) > 0.78 ? 'rgba(60,45,40,.6)' : 'rgba(255,255,255,.9)';
-    for (const y of [0.66, 0.76]) {
-      A.frac(F, 0.0, y, 0.24, 0.032, wh);
-      A.frac(F, 0.76, y, 0.24, 0.032, wh);
-    }
-    A.frac(F, 0.08, 0.56, 0.13, 0.06, 'rgba(255,110,130,.45)'); // blush
-    A.frac(F, 0.79, 0.56, 0.13, 0.06, 'rgba(255,110,130,.45)');
+    // face (mockup faceTex: muzzle, nose, mouth, whiskers, blush; forehead marks per pattern)
+    const mark = (fg: CanvasRenderingContext2D) => {
+      fg.fillStyle = hexCss(p === 'tutul' ? spot : dark);
+      if (p === 'belang') for (const x of [40, 58, 76]) fg.fillRect(x, 6, 10, 26);
+      if (p === 'tutul') { fg.fillRect(30, 10, 12, 12); fg.fillRect(80, 20, 10, 10); }
+      if (p === 'calico') { fg.fillStyle = hexCss(calA); fg.fillRect(70, 0, 58, 40); }
+      if (p === 'tuxedo') { fg.fillStyle = hexCss(white); fg.fillRect(54, 30, 20, 40); }
+    };
+    const face = faceCanvas(fur, { nose: 0xe58a8a, mouth: true, whisk: true, blush: true, noEyes: true }, lightC, mark);
+    paintPart(A, C.head, fur, face);
+    if (p === 'calico') A.frac(C.head[PY], 0.5, 0, 0.5, 1, calA);
+    if (p === 'belang') A.frac(C.head[PY], 0.3, 0.1, 0.4, 0.8, dark);
     A.done();
   }
 
@@ -567,7 +575,6 @@ export class CatModel {
       }
     }
   }
-
   update(dt: number, s: CatAnim) {
     this.t += dt;
     const t = this.t;
@@ -576,7 +583,8 @@ export class CatModel {
     const a = 0.85 * sp;
     const sn = Math.sin(this.phase);
     let fl = sn * a, fr = -sn * a, bl = -sn * a, br = sn * a;
-    let poseRX = 0, poseY = 0.27;
+    // vertical offsets below are the old cat's, ×1.667 into mockup units
+    let poseRX = 0, poseY = HIP;
     let headRX = Math.sin(this.phase * 2) * 0.05 * sp;
     let headRY = s.lookYaw;
     let tailRX = 0.45 + s.happy * 0.55, tailRY = 0.45 + Math.sin(t * 2.2) * 0.3;
@@ -593,11 +601,10 @@ export class CatModel {
       tailRX = -0.6;
       tailRY = Math.sin(t * 8) * 0.4;
     }
-    // sit (fishing, talking)
     if (s.sit > 0) {
       const k = s.sit;
       poseRX += -0.5 * k;
-      poseY -= 0.1 * k;
+      poseY -= 0.167 * k;
       fl = fl * (1 - k) + 0.5 * k;
       fr = fr * (1 - k) + 0.5 * k;
       bl = bl * (1 - k) + -1.1 * k;
@@ -606,10 +613,9 @@ export class CatModel {
       tailRX = tailRX * (1 - k) + -0.3 * k;
       headRX += 0.35 * k;
     }
-    // scratch / dig / paw
     if (s.scratch) {
       poseRX = -0.75;
-      poseY = 0.2;
+      poseY = HIP - 0.117;
       fl = -1.6 + Math.sin(t * 26) * 0.55;
       fr = -1.6 - Math.sin(t * 26) * 0.55;
       bl = br = 0.75;
@@ -626,10 +632,9 @@ export class CatModel {
       headRX -= 0.1;
     }
     if (s.eat) headRX = 0.45 + Math.sin(t * 22) * 0.18;
-    // sleep (sphinx pose)
     if (s.sleep > 0) {
       const k = s.sleep;
-      poseY -= 0.19 * k;
+      poseY -= 0.317 * k;
       fl = fl * (1 - k) + -1.45 * k;
       fr = fr * (1 - k) + -1.45 * k;
       bl = bl * (1 - k) + 1.45 * k;
@@ -645,7 +650,7 @@ export class CatModel {
     this.legs[3].rotation.x = br;
     this.legs[0].scale.y = this.legs[1].scale.y = frontScale;
     this.pose.rotation.x = poseRX;
-    this.pose.position.y = poseY + (s.air || s.sleep > 0.5 ? 0 : Math.abs(Math.sin(this.phase)) * 0.025 * sp);
+    this.pose.position.y = poseY + (s.air || s.sleep > 0.5 ? 0 : Math.abs(Math.sin(this.phase)) * 0.042 * sp);
     this.headG.rotation.x = headRX;
     this.headG.rotation.y = headRY;
     this.tail[0].rotation.x = tailRX;

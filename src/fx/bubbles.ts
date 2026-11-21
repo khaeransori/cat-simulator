@@ -26,7 +26,7 @@ export class Bubbles {
     el.className = 'bubble ' + (o.kind ?? 'speech');
     el.textContent = text;
     this.layer.appendChild(el);
-    const b = { el, obj, yOff: o.y ?? 2.5, ttl: o.ttl ?? 2.5, key };
+    const b = { el, obj, yOff: (o.y ?? 2.5) + (obj.userData.bubbleLift ?? 0) * obj.scale.y, ttl: o.ttl ?? 2.5, key };
     this.list.push(b);
     return b;
   }

@@ -37,7 +37,7 @@ export class Cat {
   lastSafe = new THREE.Vector3();
   coyote = 0;
   jumpBuf = 0;
-  shadow = blobShadow(0.75);
+  shadow = blobShadow(1.1); // mockup-size blocky cat (~1.1 m long)
   dizzy = 0;
   dizzyStars: THREE.Sprite[] = [];
   sleepZ = 0;
@@ -264,7 +264,7 @@ export class Cat {
     // dizzy stars orbit
     if (this.dizzy > 0) {
       this.dizzy -= dt;
-      if (Math.random() < dt * 6) ctx.fx.glyph(b.x + rand(-0.2, 0.2), b.y + 0.85, b.z + rand(-0.2, 0.2), '★', '#ffd84a', { vy: 0.2, life: 0.6, scale: 0.18 });
+      if (Math.random() < dt * 6) ctx.fx.glyph(b.x + rand(-0.2, 0.2), b.y + this.model.height - 0.04, b.z + rand(-0.2, 0.2), '★', '#ffd84a', { vy: 0.2, life: 0.6, scale: 0.18 });
     }
     // blob shadow
     const g = ctx.world.phys.groundAt(b.x, b.z, 0.1, b.y + 0.05);

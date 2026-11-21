@@ -39,7 +39,7 @@ await h.ev(() => {
   };
   const person = (kid) => {
     const n = K.buildBlocky(kid ? { kid: true, skin: 0xc68a5e, top: 'kaosBola', topC: 0xe53935, topC2: 0xffffff, long: false, bottom: 'pendek', botC: 0x1e3a8a, head: 'pendek', hair: 0x2a1d16, shoes: 0x222222 } : { skin: 0xb97a52, top: 'koko', topC: 0xf3f0e6, topC2: 0xc9a86a, headC: 0x222222, long: true, bottom: 'celana', botC: 0x3b3b44, head: 'peci', shoes: 0x3a2a20 });
-    n.root.scale.setScalar((kid ? 1.37 : 1.7) / 2.73);
+    n.root.scale.setScalar(kid ? 0.53 : 0.733); // game scale: adult 2.0 m, kid 1.45 m
     return n.root;
   };
   const still = { speed: 0, air: false, sleep: 0, sit: 0, paw: 0, scratch: false, dig: false, eat: false, earsDown: 0, happy: 0, hugged: false, lookYaw: 0 };
@@ -59,8 +59,8 @@ const lineup = await h.ev(() => {
   const { K, studio, shot, size, person, cat } = window.__an;
   const sc = studio();
   const items = [
-    ['dewasa 1.7', person(false)],
-    ['anak 1.37', person(true)],
+    ['dewasa (2.0 game)', person(false)],
+    ['anak (1.45 game)', person(true)],
     ['kucing pemain', cat({}).root],
     ['Lisa', cat({ fur: 'putih', pattern: 'calico', eyes: 'biruMata', head: 'pita', neck: 'lonceng' }).root],
     ['Si Belang x1.1', cat({ fur: 'abu', pattern: 'belang', eyes: 'kuning', face: 'hitamK' }, 1.1).root],
@@ -73,22 +73,81 @@ const lineup = await h.ev(() => {
   ];
   const out = [];
   items.forEach(([n, o], i) => {
-    o.position.set(-3.1 + i * 0.62, 0, 0);
+    o.position.set(-5.5 + i * 1.1, 0, 0);
     o.rotation.y = 0.5;
     sc.add(o);
     out.push(n + ' ' + JSON.stringify(size(o)));
   });
-  const front = shot(sc, 1400, 560, [0, 1.0, 7.2], [0, 0.7, 0], 32);
+  const front = shot(sc, 1400, 560, [0, 1.4, 11], [0, 0.9, 0], 32);
   items.forEach(([, o]) => (o.rotation.y = Math.PI / 2));
-  const side = shot(sc, 1400, 560, [0, 0.55, 7.2], [0, 0.55, 0], 32);
+  const side = shot(sc, 1400, 560, [0, 0.8, 11], [0, 0.8, 0], 32);
   return { out, front, side };
 });
 save('animals-lineup', lineup.front);
 save('animals-lineup-side', lineup.side);
+
+// ---------- 1b. the approved mockup's lineup, rebuilt from the GAME models at game scale ----------
+// mockup: animals at x = -3.15 + i*1.05, z 2.6, people at z 0.6; camera fov 40 at (0, 2.3, 10.5)
+// looking at (0, 0.6, 1.4). Everything ×(2.0/1.69) because the game adult is 2.0 m.
+const mock = await h.ev(() => {
+  const { K, T, size, person, cat } = window.__an;
+  const k = 2.0 / 1.69;
+  const sc = new T.Scene();
+  sc.background = new T.Color(0xbfe3f2);
+  sc.add(new T.HemisphereLight(0xeef8ff, 0x7a9a60, 1.3));
+  const sun = new T.DirectionalLight(0xfff1d6, 1.9);
+  sun.position.set(6 * k, 16 * k, 14 * k);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, far: 80 });
+  sc.add(sun);
+  const g = new T.Mesh(new T.PlaneGeometry(120, 120), new T.MeshStandardMaterial({ color: 0x8cc45a, flatShading: true, roughness: 0.95 }));
+  g.rotation.x = -Math.PI / 2;
+  g.receiveShadow = true;
+  sc.add(g);
+  const walk = new T.Mesh(new T.BoxGeometry(120, 0.18, 1 * k), new T.MeshStandardMaterial({ color: 0xd9d2c3 }));
+  walk.position.set(0, 0.09, 3.6 * k);
+  walk.receiveShadow = true;
+  sc.add(walk);
+  const ppl = [person(false), person(true), person(false)];
+  ppl.forEach((p, i) => { p.position.set((-1.6 + i * 1.6) * k, 0, 0.6 * k); sc.add(p); });
+  const dog = new K.DogModel(); dog.update(0.016, { run: 0, sleep: false, bark: false });
+  const A = [
+    [cat({ fur: 'oranye', pattern: 'belang', eyes: 'hijau', neck: 'kalung' }), 0.35],
+    [cat({ fur: 'hitam', pattern: 'tuxedo', eyes: 'kuning', neck: 'none' }), -0.2],
+    [dog, 0.5],
+    [new K.ChickenModel(), 0.4],
+    [new K.DuckModel(), -0.3],
+    [new K.PigeonModel(), 0.2],
+  ];
+  const out = [];
+  A.forEach(([m, ry], i) => {
+    const o = m.root;
+    o.position.set((-2.625 + i * 1.05) * k, 0, 2.6 * k);
+    o.rotation.y = ry;
+    o.traverse((q) => q.isMesh && (q.castShadow = true));
+    sc.add(o);
+    out.push(size(o)[1]);
+  });
+  const r = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  r.shadowMap.enabled = true;
+  r.shadowMap.type = T.PCFSoftShadowMap;
+  r.outputColorSpace = T.SRGBColorSpace;
+  r.setSize(1280, 592, false);
+  const cam = new T.PerspectiveCamera(40, 1280 / 592, 0.1, 200);
+  cam.position.set(0, 2.3 * k, 10.5 * k);
+  cam.lookAt(0, 0.6 * k, 1.4 * k);
+  r.render(sc, cam);
+  return { url: r.domElement.toDataURL('image/png'), h: out, adult: size(ppl[0])[1] };
+});
+save('animals-mockup-match', mock.url);
+console.log('mockup-match heights (m):', mock.h.join(' '), 'adult', mock.adult);
 console.log('sizes [w,h,d] m:\n  ' + lineup.out.join('\n  '));
 const hOf = (n) => JSON.parse(lineup.out.find((l) => l.startsWith(n + ' ')).slice(n.length + 1))[1];
-check('cat roughly knee-to-thigh height of an adult', hOf('kucing pemain') > 0.45 && hOf('kucing pemain') < 0.75, String(hOf('kucing pemain')));
-check('dog bigger than cat', hOf('Bleki') > hOf('kucing pemain'));
+// mockup ratios (adult 1.69): cat 0.87/1.69 tall, dog 0.83/1.69 to the head top
+const adult = hOf('dewasa (2.0 game)');
+check('cat/adult height ratio as in the mockup', Math.abs(hOf('kucing pemain') / adult - 0.62 * 1.4 / 1.69) < 0.06, (hOf('kucing pemain') / adult).toFixed(2));
+check('dog bulkier than the cat (longer body)', JSON.parse(lineup.out.find((l) => l.startsWith('Bleki ')).slice(6))[2] > JSON.parse(lineup.out.find((l) => l.startsWith('kucing pemain ')).slice(14))[2]);
 check('duck and pigeon smaller than cat', hOf('bebek') < hOf('kucing pemain') && hOf('merpati') < hOf('bebek'));
 
 // ---------- 2. cosmetics grid: every item on the cat ----------
@@ -103,7 +162,7 @@ const grid = await h.ev(async () => {
     const m = cat(look);
     m.root.rotation.y = it.slot === 'back' ? Math.PI * 0.8 : 0.55;
     sc.add(m.root);
-    const url = shot(sc, 200, 200, lowCam ? [0, 0.4, 1.6] : [0, 0.7, 1.6], [0, 0.42, 0], 30);
+    const url = shot(sc, 200, 200, lowCam ? [0, 0.6, 2.4] : [0, 1.05, 2.4], [0, 0.62, 0], 30);
     tiles.push({ url, label: it.slot + ':' + it.id });
   }
   const cols = 9, tw = 200, rows = Math.ceil(tiles.length / cols);
@@ -148,12 +207,12 @@ const poses = await h.ev(async () => {
     for (let i = 0; i < 8; i++) m.update(0.05, { ...still, ...a });
     m.root.rotation.y = 1.1;
     sc.add(m.root);
-    tiles.push({ label: 'kucing ' + n, url: shot(sc, 220, 200, [0, 0.75, 2.3], [0, 0.38, 0]) });
+    tiles.push({ label: 'kucing ' + n, url: shot(sc, 220, 200, [0, 1.1, 3.4], [0, 0.55, 0]) });
   }
-  const birdShot = (label, mk, fly) => { const sc = studio(); const b = mk(); for (let i = 0; i < 5; i++) b.update(0.033, fly); b.root.rotation.y = 0.9; sc.add(b.root); tiles.push({ label, url: shot(sc, 220, 200, [0, 0.5, 1.6], [0, 0.25, 0]) }); };
+  const birdShot = (label, mk, fly) => { const sc = studio(); const b = mk(); for (let i = 0; i < 5; i++) b.update(0.033, fly); b.root.rotation.y = 0.9; sc.add(b.root); tiles.push({ label, url: shot(sc, 220, 200, [0, 0.9, 2.8], [0, 0.45, 0]) }); };
   for (const [n, st] of [['lari', { run: 1, sleep: false, bark: false }], ['gonggong', { run: 0, sleep: false, bark: true }], ['tidur', { run: 0, sleep: true, bark: false }]]) {
     const sc = studio(); const d = new K.DogModel(); for (let i = 0; i < 6; i++) d.update(0.05, st); d.root.rotation.y = 1.0; sc.add(d.root);
-    tiles.push({ label: 'anjing ' + n, url: shot(sc, 220, 200, [0, 0.9, 3.0], [0, 0.42, 0]) });
+    tiles.push({ label: 'anjing ' + n, url: shot(sc, 220, 200, [0, 1.2, 4.0], [0, 0.6, 0]) });
   }
   birdShot('bebek jalan', () => new K.DuckModel(), false);
   birdShot('bebek terbang', () => new K.DuckModel(0xc8a165), true);
@@ -183,5 +242,5 @@ await h.page.waitForFunction((t) => window.__cat.time > t + 1, t0, { timeout: 60
 await h.shot('animals-ingame');
 const calls = await h.ev(() => window.__cat.renderer.info.render.calls);
 check('draw calls reasonable', calls < 600, String(calls));
-console.log('shots: ' + ['animals-lineup', 'animals-lineup-side', 'animals-cosmetics', 'animals-poses', 'animals-ingame'].map((n) => OUT + n + '.png').join(' '));
+console.log('shots: ' + ['animals-lineup', 'animals-lineup-side', 'animals-mockup-match', 'animals-cosmetics', 'animals-poses', 'animals-ingame'].map((n) => OUT + n + '.png').join(' '));
 await h.close();

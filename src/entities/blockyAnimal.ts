@@ -5,6 +5,13 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 // pixel-painted texture. Every animal paints all its parts into ONE small canvas atlas
 // (Nearest filtering), so a whole animal is a handful of meshes sharing a single material.
 
+/**
+ * The approved mockup (scratch/lowpoly/chars) was built at 1 unit = 1 m with a 1.69 m adult
+ * (Blocky raw 2.73 × 0.62). The game's adult is 2.0 m (Blocky root scale 0.733), so every animal
+ * is the mockup size × 2.0 / 1.69 to keep the approved animal-to-person proportions.
+ */
+export const ANIMAL_SCALE = 2.0 / 1.69;
+
 export type Rect = { x: number; y: number; w: number; h: number };
 /** cells in BoxGeometry face order: +x, -x, +y, -y, +z (front), -z (back) */
 export type Faces = [Rect, Rect, Rect, Rect, Rect, Rect];
@@ -35,7 +42,8 @@ export class Atlas {
     this.tex = new THREE.CanvasTexture(this.cv);
     this.tex.colorSpace = THREE.SRGBColorSpace;
     this.tex.magFilter = THREE.NearestFilter;
-    this.tex.minFilter = THREE.NearestMipmapLinearFilter;
+    this.tex.minFilter = THREE.NearestFilter; // no mipmaps: atlas cells would bleed into each other
+    this.tex.generateMipmaps = false;
     this.mat = new THREE.MeshLambertMaterial({ map: this.tex });
   }
   alloc(w: number, h: number): Rect {
@@ -62,6 +70,17 @@ export class Atlas {
   fill(r: Rect, c: number | string) {
     this.g.fillStyle = typeof c === 'number' ? hexCss(c) : c;
     this.g.fillRect(r.x - 1, r.y - 1, r.w + 2, r.h + 2); // 1px bleed into the gutter
+  }
+  /** allocate the 6 cells of a cuboid at fixed pixel sizes (side cells `px`², front cell `front`²) */
+  boxPx(name: string, px: number, front = px): Faces {
+    const f = [0, 1, 2, 3, 4, 5].map((i) => (i === PZ ? this.alloc(front, front) : this.alloc(px, px))) as Faces;
+    this.cells[name] = f;
+    return f;
+  }
+  /** stretch a canvas (or a sub-rect of it) into a cell, like a per-face texture map */
+  draw(r: Rect, src: HTMLCanvasElement, sx = 0, sy = 0, sw = src.width, sh = src.height) {
+    this.g.imageSmoothingEnabled = false;
+    this.g.drawImage(src, sx, sy, sw, sh, r.x, r.y, r.w, r.h);
   }
   /** fill a fraction of a cell (0..1 coords, top-left origin), snapped to whole pixels */
   frac(r: Rect, fx: number, fy: number, fw: number, fh: number, c: number | string) {
@@ -165,4 +184,49 @@ export function plane(w: number, h: number) {
   let g = planeCache.get(k);
   if (!g) planeCache.set(k, (g = new THREE.PlaneGeometry(w, h)));
   return g;
+}
+
+// ---- the mockup's 128 px face painter (verbatim), with an option to leave the eyes out
+// (eyes are then separate planes so they can blink) ----
+export type FaceSpec = { eye?: number; nose?: number; mouth?: boolean; blush?: boolean; eyeY?: number; eyeGap?: number; whisk?: boolean; tongue?: boolean; noEyes?: boolean };
+export function faceCanvas(base: number, f: FaceSpec, muzzle?: number, mark?: (g: CanvasRenderingContext2D) => void) {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 128;
+  const g = cv.getContext('2d')!;
+  g.fillStyle = hexCss(base); g.fillRect(0, 0, 128, 128);
+  if (mark) mark(g);
+  if (muzzle !== undefined) { g.fillStyle = hexCss(muzzle); g.fillRect(30, 66, 68, 50); }
+  const ey = f.eyeY ?? 50, gap = f.eyeGap ?? 26;
+  if (!f.noEyes) {
+    g.fillStyle = hexCss(f.eye ?? 0x2b2118);
+    g.fillRect(64 - gap - 9, ey, 18, 22); g.fillRect(64 + gap - 9, ey, 18, 22);
+    g.fillStyle = '#fff'; g.fillRect(64 - gap - 5, ey + 3, 6, 6); g.fillRect(64 + gap - 5, ey + 3, 6, 6);
+  }
+  if (f.nose !== undefined) { g.fillStyle = hexCss(f.nose); g.fillRect(56, 74, 16, 11); }
+  if (f.mouth) { g.strokeStyle = '#4a2a22'; g.lineWidth = 4; g.beginPath(); g.moveTo(64, 85); g.lineTo(64, 92); g.moveTo(52, 96); g.quadraticCurveTo(58, 100, 64, 92); g.quadraticCurveTo(70, 100, 76, 96); g.stroke(); }
+  if (f.tongue) { g.fillStyle = '#ef7a85'; g.fillRect(58, 98, 12, 12); }
+  if (f.whisk) { g.fillStyle = 'rgba(40,30,25,.55)'; for (const s of [-1, 1]) for (const dy of [0, 8]) g.fillRect(s < 0 ? 4 : 98, 82 + dy, 26, 3); }
+  if (f.blush) { g.fillStyle = 'rgba(255,120,130,.35)'; g.fillRect(64 - gap - 16, ey + 28, 18, 8); g.fillRect(64 + gap - 2, ey + 28, 18, 8); }
+  return cv;
+}
+/** the mockup's painted eye (18×22 px block + 6 px shine) as its own texture, for blinking eye planes */
+const mockEyeMats = new Map<number, THREE.MeshLambertMaterial>();
+export function mockEyeMat(c: number) {
+  let m = mockEyeMats.get(c);
+  if (!m) {
+    const cv = document.createElement('canvas');
+    cv.width = 18; cv.height = 22;
+    const g = cv.getContext('2d')!;
+    g.fillStyle = hexCss(c); g.fillRect(0, 0, 18, 22);
+    g.fillStyle = '#fff'; g.fillRect(4, 3, 6, 6);
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+    mockEyeMats.set(c, (m = new THREE.MeshLambertMaterial({ map: t })));
+  }
+  return m;
+}
+/** the mockup part() colouring: sides c, top topC, underside 0.85, front optionally a canvas */
+export function paintPart(a: Atlas, f: Faces, c: number, front?: HTMLCanvasElement, topC?: number) {
+  f.forEach((r, i) => a.fill(r, i === PY ? (topC ?? c) : i === NY ? shadeHex(c, 0.85) : c));
+  if (front) a.draw(f[PZ], front);
 }
