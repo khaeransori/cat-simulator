@@ -76,6 +76,9 @@ export const DECOR_RECTS = {
   E: { x0: 40.1, z0: -31, x1: 66, z1: -5.0 },
   W: { x0: -88, z0: -20, x1: -64, z1: -5.0 },
   backdrop: { x0: -120, z0: -90, x1: -102, z1: 90 },
+  // the parked car + gerobak on the street were rebuilt as the mockup vehicles (same spots)
+  parkir: { x0: -34.6, z0: -3.4, x1: -29.6, z1: -1.0 },
+  gerobak: { x0: -41.5, z0: 2.0, x1: -38.5, z1: 3.2 },
 };
 
 /** backdrop chunks further than this from the camera are not drawn (the fog is ~80% there) */

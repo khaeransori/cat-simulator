@@ -602,6 +602,92 @@ export function buildVehicle(s: VSpec): VehicleModel {
   return { root, body, lamps, glass: null, poncho, exhaust, tops, solidH, fit: { heads, roofIn } };
 }
 
+// ---------------- parked vehicles + street cart (scenery) ----------------
+/** a solid column of a parked vehicle in its local frame (faces +x), from the ground up to y */
+export interface ParkedCol { x0: number; x1: number; z0: number; z1: number; y: number }
+export interface Parked { root: THREE.Group; cols: ParkedCol[] }
+
+/** A parked Kenney Car Kit car exactly as the mockups build it (no driver, lamps unlit), facing +x, wheels on y = 0. */
+export function buildParkedCar(type: string, color: number): Parked {
+  const t = VTYPE[type];
+  const { bodyParts, lampParts } = kenneyCarGeo(type, color);
+  const tops = carTops(bodyParts, t.len / 2, t.wid / 2);
+  const m = new THREE.Mesh(mergeGeometries([...bodyParts, ...lampParts]), VMAT.body);
+  for (const g of [...bodyParts, ...lampParts]) g.dispose();
+  const root = new THREE.Group();
+  root.add(m);
+  // merge neighbouring columns of (almost) the same height: fewer colliders, same shape
+  const cols: ParkedCol[] = [];
+  for (const c of tops) {
+    const l = cols[cols.length - 1];
+    if (l && Math.abs(l.y - c.y) < 0.08) { l.x1 = c.x1; l.y = Math.max(l.y, c.y); } else cols.push({ ...c });
+  }
+  return { root, cols };
+}
+
+/** A parked motorbike (the mockup's motor(), no rider), facing +x. */
+export function buildParkedMotor(color: number, kind: 'matic' | 'bebek'): Parked {
+  const km = new Kit(), L = new Kit();
+  mockMotor(km, L, color, kind);
+  km.parts.push(...L.parts);
+  L.parts = [];
+  const m = km.mesh();
+  m.geometry.applyMatrix4(MOCK2GAME);
+  const root = new THREE.Group();
+  root.add(m);
+  return { root, cols: [{ x0: -0.75 * MS, x1: 0.75 * MS, z0: -0.2, z1: 0.2, y: 0.8 * MS }] };
+}
+
+/** Gerobak bakso from the approved vehicles mockup (scratch lowpoly/chars/vehicles.ts gerobakBakso), 1:1.
+ *  Mockup frame: pushed along +z, handles at -z. Returned turned to face +x. */
+export function buildGerobak(): Parked {
+  const k = new Kit();
+  const bx = (w: number, h: number, d: number, c: number, x: number, y: number, z: number) => k.box(w, h, d, c, x, y, z);
+  const wheel = (r: number, w: number, x: number, y: number, z: number, rim = 0xcfd8dc) => {
+    k.add(new THREE.CylinderGeometry(r, r, w, 10), 0x2b2b33, x, y, z, 0, 0, Math.PI / 2);
+    k.add(new THREE.CylinderGeometry(r * 0.5, r * 0.5, w + 0.01, 8), rim, x, y, z, 0, 0, Math.PI / 2);
+  };
+  wheel(0.3, 0.07, 0.46, 0.3, 0.05, 0xe0e0e0); wheel(0.3, 0.07, -0.46, 0.3, 0.05, 0xe0e0e0);
+  bx(0.04, 0.04, 0.96, 0x9e9e9e, 0, 0.3, 0.05); // axle
+  k.box(0.04, 0.04, 0.96, 0x9e9e9e, 0, 0.3, 0.05, Math.PI / 2);
+  bx(0.8, 0.55, 1.7, 0x1e88e5, 0, 0.72, 0.05); // lemari
+  bx(0.82, 0.05, 1.72, 0xeeeeee, 0, 1.0, 0.05); // meja atas
+  bx(0.04, 0.4, 1.4, 0xbbdefb, 0.41, 0.74, 0.05); bx(0.04, 0.4, 1.4, 0xbbdefb, -0.41, 0.74, 0.05); // kaca samping
+  // etalase kaca di depan: mie, bakso, mangkok
+  bx(0.76, 0.42, 0.7, 0xe3f2fd, 0, 1.24, 0.45);
+  for (let i = 0; i < 4; i++) k.add(new THREE.SphereGeometry(0.06, 6, 4), 0x8d6e63, -0.2 + i * 0.13, 1.1, 0.45);
+  for (let i = 0; i < 3; i++) bx(0.16, 0.08, 0.16, 0xfff3e0, -0.22 + i * 0.22, 1.32, 0.3);
+  // dandang (panci besar) di belakang
+  k.add(new THREE.CylinderGeometry(0.24, 0.24, 0.42, 10), 0xb0bec5, 0, 1.24, -0.42);
+  k.add(new THREE.CylinderGeometry(0.08, 0.26, 0.08, 10), 0x90a4ae, 0, 1.49, -0.42);
+  // tiang + atap
+  for (const x of [-0.38, 0.38]) for (const z of [-0.75, 0.85]) bx(0.05, 0.85, 0.05, 0x8d6e63, x, 1.45, z);
+  bx(1.0, 0.06, 1.95, 0xe53935, 0, 1.9, 0.05);
+  // pegangan dorong di belakang + kaki penyangga depan
+  for (const x of [-0.3, 0.3]) bx(0.05, 0.05, 0.5, 0x8d6e63, x, 0.7, -1.02);
+  bx(0.66, 0.05, 0.05, 0x8d6e63, 0, 0.7, -1.26);
+  bx(0.06, 0.44, 0.06, 0x8d6e63, 0, 0.22, 0.82);
+  const g = new THREE.Group();
+  g.add(k.mesh());
+  // tulisan BAKSO di kedua sisi + depan
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const c = cv.getContext('2d')!;
+  c.fillStyle = '#fff'; c.fillRect(0, 0, 256, 64); c.fillStyle = '#c62828'; c.font = 'bold 46px sans-serif'; c.textAlign = 'center'; c.fillText('BAKSO', 128, 49);
+  const st = new THREE.CanvasTexture(cv); st.colorSpace = THREE.SRGBColorSpace;
+  const sm = new THREE.MeshLambertMaterial({ map: st });
+  const pl = (w: number, h: number) => new THREE.PlaneGeometry(w, h);
+  const sg: THREE.BufferGeometry[] = [];
+  sg.push(pl(1.0, 0.25).rotateY(Math.PI / 2).translate(0.43, 0.58, 0.05));
+  sg.push(pl(1.0, 0.25).rotateY(-Math.PI / 2).translate(-0.43, 0.58, 0.05));
+  sg.push(pl(0.9, 0.22).translate(0, 1.8, 1.03));
+  g.add(new THREE.Mesh(mergeGeometries(sg), sm));
+  for (const q of sg) q.dispose();
+  const root = new THREE.Group();
+  g.rotation.y = Math.PI / 2; // mockup +z -> game +x
+  root.add(g);
+  // cart body (lemari + etalase); the roof poles/awning are see-through for the cat
+  return { root, cols: [{ x0: -0.8, x1: 0.9, z0: -0.42, z1: 0.42, y: 1.03 }, { x0: 0.1, x1: 0.8, z0: -0.38, z1: 0.38, y: 1.45 }] };
+}
+
 // ---------------- road-works machines ----------------
 export interface Excavator {
   root: THREE.Group;

@@ -3,6 +3,7 @@ import { StaticBuilder, mbox, lam, boxGeo, type AABB } from './builder';
 import { Physics } from './physics';
 import { buildHouses, DECOR_RECTS } from './houses/index';
 import { mockShot } from './houses/mock';
+import { buildParkedCar, buildParkedMotor, buildGerobak, type Parked } from '../entities/vehicles';
 
 export interface Zone {
   id: string;
@@ -379,34 +380,11 @@ export function buildWorld(scene: THREE.Scene): World {
   gateSign.rotation.y = -Math.PI / 2;
   scene.add(gateSign);
   S.mm(63.9, 3.2, -2.2, 64.2, 4.2, 2.2, 0x2f5d45, { collide: false });
-  // parked car
-  {
-    const x0 = -34, x1 = -30.2, z0 = -3.1, z1 = -1.3;
-    S.mm(x0, 0.25, z0, x1, 1.0, z1, 0xe8574a);
-    S.mm(x0 + 0.9, 1.0, z0 + 0.1, x1 - 0.6, 1.55, z1 - 0.1, 0xe8574a);
-    S.mm(x0 + 1.0, 1.05, z0 + 0.05, x1 - 0.7, 1.45, z1 - 0.05, C.glass, { collide: false });
-    for (const [x, z] of [
-      [x0 + 0.7, z0],
-      [x1 - 0.7, z0],
-      [x0 + 0.7, z1],
-      [x1 - 0.7, z1],
-    ])
-      S.box(x, 0, z, 0.6, 0.55, 0.25, 0x222222, { collide: false });
-    S.mm(x1, 0.5, z0 + 0.2, x1 + 0.05, 0.7, z0 + 0.5, 0xfff3b0, { collide: false });
-    S.mm(x1, 0.5, z1 - 0.5, x1 + 0.05, 0.7, z1 - 0.2, 0xfff3b0, { collide: false });
-  }
-  // gerobak (street cart) decoration
-  {
-    const x = -40, z = 2.6;
-    S.mm(x - 1, 0.5, z - 0.5, x + 1, 1.3, z + 0.5, 0x3d8fd9);
-    S.mm(x - 1.05, 1.3, z - 0.55, x + 1.05, 1.36, z + 0.55, 0xffffff, { collide: false });
-    S.mm(x - 0.9, 1.36, z - 0.35, x - 0.5, 1.8, z + 0.35, C.glass, { collide: false });
-    S.box(x - 0.6, 0, z + 0.45, 0.1, 0.5, 0.5, 0x222222, { collide: false });
-    S.box(x + 0.6, 0, z + 0.45, 0.1, 0.5, 0.5, 0x222222, { collide: false });
-    S.mm(x - 1, 2.4, z - 0.6, x + 1, 2.5, z + 0.6, 0xf0c24a, { collide: false });
-    S.box(x - 0.95, 0.5, z - 0.5, 0.06, 1.9, 0.06, 0x888888, { collide: false });
-    S.box(x + 0.95, 0.5, z - 0.5, 0.06, 1.9, 0.06, 0x888888, { collide: false });
-  }
+  // parked car + gerobak bakso on the street (the traffic paths bend around both): the approved vehicles mockup
+  // models (Kenney Car Kit sedan, gerobak bakso), same spots as before. More parked cars/motorbikes in the
+  // carports of the mockup houses: see placeParkedVehicles() at the end of buildWorld.
+  placeParked(S, scene, buildParkedCar('sedan', 0xe53935), -32.1, -2.2, 0);
+  placeParked(S, scene, buildGerobak(), -40, 2.6, 0);
 
   // ================= HOME (Lot A) =================
   rects.push({ x0: -24, z0: -31, x1: -4, z1: -5.2, c: '#a8d88a' });
@@ -1591,6 +1569,7 @@ export function buildWorld(scene: THREE.Scene): World {
     scene.add(H.group);
     for (const c of H.cols) S.mm(c.x0, c.y0, c.z0, c.x1, c.y1, c.z1, 0, { visible: false, cam: c.cam, tag: c.tag });
     for (const w of H.wins) glow.windows.push(w);
+    placeParkedVehicles(S, scene);
     (window as any).__houses = { tris: H.tris, cols: H.cols.length, colList: H.cols.map((c) => ({ minX: c.x0, minY: c.y0, minZ: c.z0, maxX: c.x1, maxY: c.y1, maxZ: c.z1, tag: c.tag })), wins: H.wins.length, rects: DECOR_RECTS, mockShot, chunks: H.group.children.map((m: any) => [m.name, m.geometry.getAttribute('position').count / 3, m.geometry.boundingSphere?.radius]) };
   }
   // Build
@@ -1640,3 +1619,40 @@ function crate(S: StaticBuilder, x: number, z: number, w: number, d: number, h: 
 }
 
 void lam;
+
+/** Put a parked vehicle / cart (faces +x locally) at (x, z), turned by ry (y-axis), with its solid columns as colliders. */
+function placeParked(S: StaticBuilder, scene: THREE.Scene, p: Parked, x: number, z: number, ry: number) {
+  p.root.position.set(x, 0, z);
+  p.root.rotation.y = ry;
+  p.root.updateMatrixWorld(true);
+  p.root.traverse((m) => (m.matrixAutoUpdate = false));
+  scene.add(p.root);
+  const c = Math.cos(ry), s = Math.sin(ry);
+  for (const k of p.cols) {
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+    for (const [lx, lz] of [[k.x0, k.z0], [k.x1, k.z0], [k.x0, k.z1], [k.x1, k.z1]]) {
+      // three.js rotation.y: (x, z) -> (x cos + z sin, -x sin + z cos)
+      const wx = x + lx * c + lz * s, wz = z - lx * s + lz * c;
+      x0 = Math.min(x0, wx); x1 = Math.max(x1, wx); z0 = Math.min(z0, wz); z1 = Math.max(z1, wz);
+    }
+    S.mm(x0, 0, z0, x1, k.y, z1, 0, { visible: false, tag: 'parkir' });
+  }
+}
+
+/**
+ * Parked cars and motorbikes in front of the mockup houses, exactly where the approved houses mockup
+ * (scratch lowpoly/houses/main.ts populate()) puts them. Mockup models face +z and lots sit at local z = 0;
+ * ours face +x, so ry = mockup ry - PI/2, and world z = ZN + mockup z.
+ */
+function placeParkedVehicles(S: StaticBuilder, scene: THREE.Scene) {
+  const ZN = -5.13;
+  const ry = (r: number) => r - Math.PI / 2;
+  // lot centres (houses/index.ts lotRow): D = lama -41.5, tipe45 -32.5; E = mewah 47.3, ruko 58.8; W = minimalis -68
+  const c45 = -32.5, cl = -41.5, cm = 47.3, cr = 58.8, cmi = -68;
+  placeParked(S, scene, buildParkedCar('sedan', 0xc9ced6), c45 + 3.0, ZN - 3.2, ry(Math.PI));
+  placeParked(S, scene, buildParkedCar('mpv', 0x1d1d1d), cm + 3.4, ZN - 2.6, ry(0));
+  placeParked(S, scene, buildParkedCar('mpv', 0xb71c1c), cmi + 2.2, ZN - 2.5, ry(Math.PI));
+  placeParked(S, scene, buildParkedMotor(0x1565c0, 'matic'), cr - 3.0, ZN - 1.3, ry(0.2));
+  placeParked(S, scene, buildParkedMotor(0xd32f2f, 'bebek'), cl + 2.6, ZN - 1.4, ry(-0.4));
+  placeParked(S, scene, buildParkedMotor(0x212121, 'matic'), cr + 1.2, ZN - 1.2, ry(-0.15));
+}
