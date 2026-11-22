@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 
 export interface AABB {
   minX: number;
@@ -40,6 +41,9 @@ export class StaticBuilder {
   nrm: number[] = [];
   col: number[] = [];
   idx: number[] = [];
+  /** texture coords (world-space planar mapping, 1 unit = uvScale m); filled always, used when built with a map */
+  uv: number[] = [];
+  uvScale = 1.2;
   colliders: AABB[] = [];
   private c = new THREE.Color();
   private c2 = new THREE.Color();
@@ -94,6 +98,8 @@ export class StaticBuilder {
           this.v.set(f.n[0], f.n[1], f.n[2]).applyMatrix3(this.nm).normalize();
           this.nrm.push(this.v.x, this.v.y, this.v.z);
         } else this.nrm.push(f.n[0], f.n[1], f.n[2]);
+        const L = this.pos.length;
+        this.pushUV(this.pos[L - 3], this.pos[L - 2], this.pos[L - 1], m ? this.v.x : f.n[0], m ? this.v.y : f.n[1], m ? this.v.z : f.n[2]);
         this.col.push(cc.r * shade, cc.g * shade, cc.b * shade);
       }
       this.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
@@ -108,6 +114,21 @@ export class StaticBuilder {
       new THREE.Vector3(1, 1, 1),
     );
     this.geom(-w / 2, -h / 2, -d / 2, w / 2, h / 2, d / 2, color, undefined, 0.04, m);
+  }
+
+  private pushUV(x: number, y: number, z: number, nx: number, ny: number, nz: number) {
+    const ax = Math.abs(nx), ay = Math.abs(ny), az = Math.abs(nz), k = 1 / this.uvScale;
+    if (ay >= ax && ay >= az) this.uv.push(x * k, z * k);
+    else if (ax >= az) this.uv.push(z * k, y * k);
+    else this.uv.push(x * k, y * k);
+  }
+
+  /** Chamfered (bevelled) visual box by min/max corners; r = bevel size. Optional collider like mm(). */
+  bev(x0: number, y0: number, z0: number, x1: number, y1: number, z1: number, color: number, r = 0.05, o: BoxOpts & { vary?: number } = {}) {
+    const w = Math.abs(x1 - x0), h = Math.abs(y1 - y0), d = Math.abs(z1 - z0);
+    this.poly(chamferGeo(w, h, d, Math.min(r, w * 0.45, h * 0.45, d * 0.45)), color, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, { vary: o.vary ?? 0.02 });
+    if (o.collide === true) return this.mm(x0, y0, z0, x1, y1, z1, color, { ...o, visible: false });
+    return null;
   }
 
   /** LOW-POLY: add any geometry flat-shaded (per-face normals) with a per-face colour wobble. */
@@ -140,6 +161,7 @@ export class StaticBuilder {
       for (const v of [a, b, c]) {
         this.pos.push(v.x, v.y, v.z);
         this.nrm.push(n.x, n.y, n.z);
+        this.pushUV(v.x, v.y, v.z, n.x, n.y, n.z);
         this.col.push(this.c.r, this.c.g, this.c.b);
       }
       this.idx.push(base, base + 1, base + 2);
@@ -151,12 +173,81 @@ export class StaticBuilder {
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
     g.setAttribute('normal', new THREE.Float32BufferAttribute(this.nrm, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3));
+    if ((mat as any).map) g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
     g.setIndex(this.pos.length / 3 > 65535 ?new THREE.Uint32BufferAttribute(this.idx, 1) : new THREE.Uint16BufferAttribute(this.idx, 1));
     g.computeBoundingSphere();
     const mesh = new THREE.Mesh(g, mat);
     mesh.matrixAutoUpdate = false;
     return mesh;
   }
+}
+
+// Chamfered box geometry (convex hull of the 24 bevel points), cached per size.
+const chamCache = new Map<string, THREE.BufferGeometry>();
+export function chamferGeo(w: number, h: number, d: number, r: number) {
+  const k = [w, h, d, r].map((n) => n.toFixed(3)).join(',');
+  let g = chamCache.get(k);
+  if (!g) {
+    const p: THREE.Vector3[] = [];
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+      p.push(new THREE.Vector3(sx * (w / 2), sy * (h / 2 - r), sz * (d / 2 - r)));
+      p.push(new THREE.Vector3(sx * (w / 2 - r), sy * (h / 2), sz * (d / 2 - r)));
+      p.push(new THREE.Vector3(sx * (w / 2 - r), sy * (h / 2 - r), sz * (d / 2)));
+    }
+    g = new ConvexGeometry(p);
+    chamCache.set(k, g);
+  }
+  return g;
+}
+
+/** Tiny tileable canvas textures (offline): wood grain, plaster speckle. Near-white so vertex colours tint them. */
+const texCache = new Map<string, THREE.CanvasTexture>();
+export function grainTex(kind: 'wood' | 'plaster' | 'fabric' = 'wood') {
+  let t = texCache.get(kind);
+  if (t) return t;
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, 128, 128);
+  let seed = kind.length * 977;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  if (kind === 'wood') {
+    for (let i = 0; i < 46; i++) {
+      const y = rnd() * 128, a = 0.05 + rnd() * 0.1, th = 1 + rnd() * 2.5;
+      g.strokeStyle = `rgba(120,80,40,${a})`;
+      g.lineWidth = th;
+      g.beginPath();
+      for (let x = 0; x <= 128; x += 8) g.lineTo(x, y + Math.sin(x / 19 + i) * 2.2);
+      g.stroke();
+    }
+    for (let i = 0; i < 3; i++) {
+      g.fillStyle = 'rgba(110,70,35,0.16)';
+      g.beginPath();
+      g.ellipse(rnd() * 128, rnd() * 128, 5, 2.5, 0, 0, 7);
+      g.fill();
+    }
+  } else if (kind === 'plaster') {
+    for (let i = 0; i < 900; i++) {
+      g.fillStyle = `rgba(0,0,0,${0.02 + rnd() * 0.04})`;
+      g.fillRect(rnd() * 128, rnd() * 128, 1 + rnd() * 2, 1 + rnd() * 2);
+    }
+  } else {
+    for (let y = 0; y < 128; y += 4) {
+      g.fillStyle = 'rgba(0,0,0,0.05)';
+      g.fillRect(0, y, 128, 2);
+    }
+    for (let x = 0; x < 128; x += 4) {
+      g.fillStyle = 'rgba(255,255,255,0.05)';
+      g.fillRect(x, 0, 2, 128);
+    }
+  }
+  t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  texCache.set(kind, t);
+  return t;
 }
 
 // Small helper to build separate (animated) props out of boxes.

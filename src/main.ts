@@ -119,7 +119,7 @@ function boot() {
   ctx.dog = new Dog();
   ctx.flocks = [new Flock(pts.pigeonPark, 6, 'merpati_taman'), new Flock(pts.pigeonRoof, 5, 'merpati_atap'), new Flock(pts.ducks, 5, 'bebek', () => new DuckModel(Math.random() < 0.4 ? 0xc8a165 : 0xfafafa)),
     // kampung chickens in the west neighbour's front yard (1 rooster + hens); scatter when the cat runs in
-    new Flock(pts.ayam, 5, 'ayam', (() => { let i = 0; return () => new ChickenModel(i++ === 0 ? 'jago' : i % 2 ? 'betina' : 'betinaPutih'); })(), { x0: -45.4, z0: -11.6, x1: -24.8, z1: -5.8 })];
+    new Flock(pts.ayam, 5, 'ayam', (() => { let i = 0; return () => new ChickenModel(i++ === 0 ? 'jago' : i % 2 ? 'betina' : 'betinaPutih'); })(), { x0: -35.6, z0: -8.2, x1: -31.4, z1: -5.7 })];
   ctx.butterflies = new Butterflies(pts.butterflies, 5);
   ctx.lisa = new Lisa();
   ctx.npcHear = (x: number, z: number, r: number) => {

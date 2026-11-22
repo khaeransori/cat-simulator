@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { StaticBuilder, mbox, lam, boxGeo, type AABB } from './builder';
 import { Physics } from './physics';
+import { buildHouses, DECOR_RECTS } from './houses/index';
+import { mockShot } from './houses/mock';
 
 export interface Zone {
   id: string;
@@ -815,26 +817,16 @@ export function buildWorld(scene: THREE.Scene): World {
   zones.push({ id: 'anjing', x0: 19.3, z0: -31, x1: 40.1, z1: -5.2 });
 
   // ================= HOUSE D (west) and E (east), decorative =================
+  // Indonesian houses from the approved mockup (houses/index.ts): D = rumah lama + tipe 45,
+  // E = rumah orang kaya + ruko (WARUNG BU INAH | fotokopi). Built after the rest, see the end of buildWorld.
   rects.push({ x0: -46, z0: -31, x1: -24.2, z1: -5.2, c: '#a8d88a' });
-  fenceX(-46, -24.2, -5.25, 1.1, C.fence);
-  solidHouse(-42, -27, -28, -12, C.lilac, C.roof3, false, -35);
-  rects.push({ x0: -42, z0: -27, x1: -28, z1: -12, c: '#c9b8e6' });
-  tree(-44, -9, 0.9, 0);
-  tree(-26, -8, 0.8, 2);
-  pts.ayam = V(-35, 0, -7.9); // the chicken flock pecks in this front yard
+  rects.push({ x0: -45.6, z0: -16.7, x1: -37.6, z1: -9.7, c: '#f3efe2' });
+  rects.push({ x0: -37, z0: -17, x1: -28.7, z1: -9.5, c: '#f6d77a' });
+  // the chicken flock pecks in the open front of the tipe 45 house (rest of the lot: terraces, steps, carport)
+  pts.ayam = V(-33.5, 0, -7.0);
   rects.push({ x0: 40.1, z0: -31, x1: 66, z1: -5.2, c: '#a8d88a' });
-  fenceX(40.1, 66, -5.25, 1.1, C.fence, [[49, 53]]);
-  solidHouse(44, -27, 60, -12, C.cream, C.roof2, false, 51);
-  rects.push({ x0: 44, z0: -27, x1: 60, z1: -12, c: '#eed9a8' });
-  {
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.8), new THREE.MeshBasicMaterial({ map: signTex(['WARUNG BU INAH'], '#c0392b', '#fff4d6', 512, 128, 60) }));
-    sign.position.set(51, 2.9, -11.9);
-    scene.add(sign);
-  }
-  S.mm(47, 0, -11.5, 55, 0.9, -10.5, 0x8d6e63, { top: 0xa1887f });
-  for (let i = 0; i < 6; i++) S.box(47.8 + i * 1.3, 0.9, -11, 0.4, 0.4, 0.4, [0xff7043, 0x42a5f5, 0xffee58, 0x66bb6a, 0xec407a, 0xffa726][i], { collide: false });
-  palm(62, -9);
-  palm(42, -8);
+  rects.push({ x0: 40.8, z0: -17, x1: 51, z1: -10, c: '#f7f2e8' });
+  rects.push({ x0: 54.4, z0: -17.1, x1: 63.2, z1: -7.1, c: '#b9d9ec' });
 
   // ================= PARK =================
   rects.push({ x0: -30, z0: 5.2, x1: 12, z1: 39, c: '#86cf62' });
@@ -1170,16 +1162,8 @@ export function buildWorld(scene: THREE.Scene): World {
     S.mm(-103.4, 0, -82, -101.6, 0.15, 82, C.sidewalk, { top: C.sidewalk });
     S.mm(-94.4, 0, -82, -92.6, 0.15, -5, C.sidewalk, { top: C.sidewalk });
     S.mm(-94.4, 0, 5, -92.6, 0.15, 82, C.sidewalk, { top: C.sidewalk });
-    // houses across the cross road (a backdrop)
+    // houses across the cross road (a backdrop): mockup houses facing the road, see houses/index.ts
     {
-      const HW = [0xf3e0c0, 0xd7e8d0, 0xf0d0c8, 0xd8d8ee, 0xf6e6a8];
-      const HR = [0xc0583a, 0x5d7f99, 0x8d5a3b, 0xb24a3a, 0x4f7a5a];
-      for (let z = -80, i = 0; z < 80; z += 12, i++) {
-        S.mm(-112, 0, z + 1, -104.5, 3.6, z + 11, HW[i % 5]);
-        S.mm(-112.4, 3.6, z + 0.6, -104.1, 4.6, z + 11.4, HR[(i * 3) % 5], { collide: false });
-        S.mm(-104.55, 0.2, z + 4.5, -104.45, 2.3, z + 6, 0x8d6e63, { collide: false });
-        S.mm(-104.55, 1.3, z + 7.5, -104.45, 2.3, z + 9.5, C.glass, { collide: false });
-      }
       for (const z of [-66, -40, -14, 14, 40, 66]) tree(-91.5, z, 0.8, z > 0 ? 1 : 0);
     }
     for (const z of [-30, 10, 44]) lamp(-93, z);
@@ -1197,21 +1181,18 @@ export function buildWorld(scene: THREE.Scene): World {
     // west gate posts: the street goes out to the cross road
     S.box(-89, 0, -5.2, 1.2, 3.0, 0.6, 0xc9bb9b);
     S.box(-89, 0, 5.2, 1.2, 3.0, 0.6, 0xc9bb9b);
-    pottedPlant(-86.6, 0, -6.2, 1.2, 0xc86b3c);
     pottedPlant(-86.6, 0, 6.2, 1.2, 0x5d8fc9);
     // west wall gate posts (where the old wall opens up)
     S.box(-47, 0, -5.2, 1.2, 3.0, 0.6, 0xc9bb9b);
     S.box(-47, 0, 5.2, 1.2, 3.0, 0.6, 0xc9bb9b);
     tree(-50, -17, 0.9, 2);
-    tree(-84, -16, 1, 0);
-    tree(-76, -9, 0.8, 1);
     tree(-52, 26, 0.9, 0);
     tree(-54, 12, 1, 2);
     bench(-53.5, 18, false);
-    // decorative house next to the warung
-    solidHouse(-84, -18, -68, -9, C.mint, C.roof, false, -76);
-    fenceX(-88, -64, -5.25, 1.1, C.fence, [[-77.5, -74.5]]);
-    rects.push({ x0: -84, z0: -18, x1: -68, z1: -9, c: '#9ed1b0' });
+    // decorative houses next to the warung (rumah terbengkalai, tipe 36, minimalis 2 lantai): houses/index.ts
+    rects.push({ x0: -87.6, z0: -15.8, x1: -80.4, z1: -7.9, c: '#b5ae98' });
+    rects.push({ x0: -79.6, z0: -15.8, x1: -72.4, z1: -7.9, c: '#a8dcc4' });
+    rects.push({ x0: -71.8, z0: -17, x1: -64.2, z1: -7.4, c: '#f1e4c8' });
 
     // ================= WARUNG =================
     const WX0 = -62, WX1 = -50, WZ0 = -13.5, WZ1 = -5.2;
@@ -1602,6 +1583,15 @@ export function buildWorld(scene: THREE.Scene): World {
     hills.matrixAutoUpdate = true;
     hills.onBeforeRender = (_r, _s, cam) => { hills.position.set(cam.position.x, -8, cam.position.z); hills.updateMatrixWorld(true); };
     scene.add(hills);
+  }
+  // Indonesian houses (approved mockup): decorative lots D/E/W, the backdrop row, tiang listrik and
+  // visual-only facade details on the gameplay houses A/B/C. Own merged meshes; colliders + glow windows join the world.
+  {
+    const H = buildHouses();
+    scene.add(H.group);
+    for (const c of H.cols) S.mm(c.x0, c.y0, c.z0, c.x1, c.y1, c.z1, 0, { visible: false, cam: c.cam, tag: c.tag });
+    for (const w of H.wins) glow.windows.push(w);
+    (window as any).__houses = { tris: H.tris, cols: H.cols.length, colList: H.cols.map((c) => ({ minX: c.x0, minY: c.y0, minZ: c.z0, maxX: c.x1, maxY: c.y1, maxZ: c.z1, tag: c.tag })), wins: H.wins.length, rects: DECOR_RECTS, mockShot, chunks: H.group.children.map((m: any) => [m.name, m.geometry.getAttribute('position').count / 3, m.geometry.boundingSphere?.radius]) };
   }
   // Build
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
