@@ -1,11 +1,12 @@
-// Vehicle & road-works models ("Kendaraan & proyek jalan").
-// Every vehicle is built from boxes merged into ONE vertex-coloured mesh (+ lamps, + glass),
-// with real-world proportions (1 unit ~ 1 m). Drivers and riders are seated Kenney Blocky
-// people (full adult size, baked + cached), so a car costs ~4 draw calls and a bike ~3-4.
+// Vehicle & road-works models ("Kendaraan & proyek jalan"), exactly as in the approved
+// low-poly mockup: cars are the Kenney Car Kit (CC0) models fitted to real size, motorbikes are
+// the mockup's chunky bikes with seated Kenney Blocky riders. Everything is merged into ONE
+// vertex-coloured mesh (+ glowing lamps), so a car costs 2 draw calls and a bike ~3-4.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Pair } from '../i18n';
 import { buildBlocky, poseBlocky, helmetOn, SEATED, type Outfit } from './blocky';
+import { CARKIT, CAR_GEO } from './carKit';
 
 const P = (id: string, en: string): Pair => ({ id, en });
 
@@ -86,7 +87,7 @@ const ANAK_KERUDUNG: Outfit = { kid: true, skin: 0xd9a877, top: 'tunik', topC: 0
 export const OPERATOR: Outfit = { skin: 0xb87a4b, top: 'rompi', topC: 0xff6f00, topC2: 0xe0e0e0, long: true, bottom: 'celana', botC: 0x37474f, head: 'pendek', hair: 0x1b1410, shoes: 0x5d4037 };
 export const RIDER_OUTFITS = { looks: RIDER_LOOKS, OJOL, SOPIR_TAKSI, SOPIR_ANGKOT, ANAK, ANAK_KERUDUNG, OPERATOR };
 
-type PoseName = 'drive' | 'car' | 'motor' | 'sport' | 'samping' | 'bench' | 'kidMotor';
+type PoseName = 'drive' | 'car' | 'motor' | 'sport' | 'samping' | 'bench' | 'kidMotor' | 'mockMotor' | 'mockSamping';
 const POSES: Record<PoseName, Parameters<typeof poseBlocky>[1]> = {
   drive: SEATED,
   // car seats recline a little (real drivers do), which keeps the big Blocky head under the roof
@@ -97,6 +98,9 @@ const POSES: Record<PoseName, Parameters<typeof poseBlocky>[1]> = {
   samping: { legL: -1.35, legR: -1.35, spread: 0.04, armL: -0.55, armR: -0.25, armIn: 0.12, lean: -0.03 },
   bench: { legL: -1.3, legR: -1.3, spread: 0.12, armL: -0.25, armR: -0.25, armIn: -0.05, lean: 0.0 },
   kidMotor: { legL: -1.2, legR: -1.2, spread: 0.35, armL: -1.2, armR: -1.2, armIn: 0.3, lean: 0.12 },
+  // the approved mockup's rider + ibu bonceng menyamping
+  mockMotor: { legL: -1.15, legR: -1.15, spread: 0.3, armL: -1.05, armR: -1.05, armIn: 0.12, lean: 0.02 },
+  mockSamping: { legL: -1.35, legR: -1.35, spread: 0.05, armL: -0.5, armR: -0.2, armIn: -0.25, lean: -0.05 },
 };
 
 interface Baked { skinGeo: THREE.BufferGeometry; skinMat: THREE.Material; extras: THREE.BufferGeometry | null; pattern: { geo: THREE.BufferGeometry; mat: THREE.Material }[]; headTop: number }
@@ -219,16 +223,16 @@ export interface VTypeDef {
 // real-world sizes (lebar x tinggi x panjang): sedan 1.78x1.48x4.6, angkot 1.66x1.95x4.1,
 // taksi 1.75x1.5x4.45, SUV/MPV 1.78x1.75x4.5, pickup 1.7x1.85x4.3, motor ~1.9-2.0 long
 export const VTYPES: VTypeDef[] = [
-  { id: 'sedan', kind: 'car', name: P('Sedan', 'Sedan'), len: 4.6, wid: 1.78, h: 1.48, engines: ['bensin', 'bensin', 'listrik'], speed: [6.5, 8.5] },
-  { id: 'citycar', kind: 'car', name: P('Mobil Mungil', 'City Car'), len: 3.65, wid: 1.62, h: 1.52, engines: ['bensin', 'listrik', 'listrik'], speed: [6, 8] },
-  { id: 'mpv', kind: 'car', name: P('Mobil Keluarga', 'Family Van'), len: 4.5, wid: 1.78, h: 1.75, engines: ['bensin', 'diesel', 'listrik'], speed: [6, 7.5] },
-  { id: 'pickup', kind: 'car', name: P('Mobil Bak', 'Pickup'), len: 4.3, wid: 1.7, h: 1.85, engines: ['diesel', 'diesel', 'bensin'], speed: [5.5, 7] },
-  { id: 'angkot', kind: 'car', name: P('Angkot', 'Minibus'), len: 4.1, wid: 1.66, h: 1.95, engines: ['bensin', 'diesel'], speed: [5.5, 7], colors: [0x2e9e4f, 0x1e88e5, 0xf9a825, 0xe53935] },
+  // the approved mockup's vehicles (Kenney Car Kit cars + the mockup motorbikes), real sizes
+  { id: 'sedan', kind: 'car', name: P('Sedan', 'Sedan'), len: 4.6, wid: 1.78, h: 1.48, engines: ['bensin', 'bensin', 'listrik'], speed: [6.5, 8.5], colors: [0xc9ced6, 0xc9ced6, 0xe53935, 0x1e88e5, 0xf5f5f5, 0x37474f] },
+  { id: 'mpv', kind: 'car', name: P('Mobil Keluarga', 'Family Car'), len: 4.5, wid: 1.78, h: 1.75, engines: ['bensin', 'diesel', 'listrik'], speed: [6, 7.5], colors: [0x37474f, 0x37474f, 0xc9ced6, 0xf5f5f5, 0x8d6e63, 0xc62828] },
+  { id: 'pickup', kind: 'car', name: P('Mobil Bak', 'Pickup'), len: 4.3, wid: 1.7, h: 1.85, engines: ['diesel', 'diesel', 'bensin'], speed: [5.5, 7], colors: [0xf5f5f5, 0xf5f5f5, 0x1e88e5, 0xc62828] },
+  { id: 'angkot', kind: 'car', name: P('Angkot', 'Minibus'), len: 4.1, wid: 1.66, h: 1.95, engines: ['bensin', 'diesel'], speed: [5.5, 7], colors: [0x2e9e4f, 0x2e9e4f, 0x1e88e5, 0xf9a825, 0xe53935] },
   { id: 'taksi', kind: 'car', name: P('Taksi', 'Taxi'), len: 4.45, wid: 1.75, h: 1.5, engines: ['bensin', 'listrik'], speed: [6.5, 8], colors: [0x3f8fd6] },
-  { id: 'bebek', kind: 'motor', name: P('Motor Bebek', 'Moped'), len: 1.92, wid: 0.7, h: 1.75, engines: ['4tak', '4tak', '2tak'], speed: [6.5, 9] },
-  { id: 'matic', kind: 'motor', name: P('Motor Matic', 'Scooter'), len: 1.88, wid: 0.7, h: 1.75, engines: ['4tak', 'listrik'], speed: [6, 8.5] },
-  { id: 'sport', kind: 'motor', name: P('Motor Sport', 'Sport Bike'), len: 2.0, wid: 0.74, h: 1.7, engines: ['4tak', '2tak'], speed: [7.5, 10] },
-  { id: 'ojol', kind: 'motor', name: P('Ojek Online', 'Ride-share Bike'), len: 1.88, wid: 0.7, h: 1.75, engines: ['4tak', 'listrik'], speed: [6.5, 9], colors: [0x1b5e20, 0x2e7d32] },
+  { id: 'boks', kind: 'car', name: P('Truk Boks', 'Box Truck'), len: 6.2, wid: 2.0, h: 2.85, engines: ['diesel'], speed: [5, 6.5], colors: [0xf9a825, 0xf9a825, 0xf5f5f5] },
+  { id: 'bebek', kind: 'motor', name: P('Motor Bebek', 'Moped'), len: 2.0, wid: 0.74, h: 1.75, engines: ['4tak', '4tak', '2tak'], speed: [6.5, 9], colors: [0xe53935, 0x1e88e5, 0x212121, 0xf5f5f5] },
+  { id: 'matic', kind: 'motor', name: P('Motor Matic', 'Scooter'), len: 2.0, wid: 0.74, h: 1.75, engines: ['4tak', 'listrik'], speed: [6, 8.5], colors: [0xf5f5f5, 0xe53935, 0x1e88e5, 0xfdd835, 0x8e24aa] },
+  { id: 'ojol', kind: 'motor', name: P('Ojek Online', 'Ride-share Bike'), len: 2.0, wid: 0.74, h: 1.75, engines: ['4tak', 'listrik'], speed: [6.5, 9], colors: [0x2e7d32] },
 ];
 export const VTYPE: Record<string, VTypeDef> = Object.fromEntries(VTYPES.map((t) => [t.id, t]));
 
@@ -275,10 +279,10 @@ export function randomSpec(r: () => number = Math.random, kind?: VKind): VSpec {
   const rider = person();
   if (t.id === 'ojol') rider.helmet = rider.shirt = 0x2e7d32;
   let passenger: Person | null = null;
-  if (t.kind === 'motor' && t.id !== 'sport' && r() < 0.35) {
+  if (t.kind === 'motor' && r() < 0.35) {
     passenger = person();
     if (r() < 0.25) passenger.look = -1; // a child on the back
-  } else if (t.id === 'angkot' && r() < 0.6) passenger = person();
+  }
   return {
     type: t.id,
     kind: t.kind,
@@ -304,8 +308,6 @@ function outfitOf(p: Person, role: 'rider' | 'passenger' | 'ojol' | 'taksi' | 'a
 }
 
 const GLASS = 0x9fd3f0;
-const TYRE = 0x262626;
-const RIM = 0xb0bec5;
 const DARK = 0x37474f;
 const INSIDE = 0x2b2e33;
 const HEAD = 0xfff4c8;
@@ -342,52 +344,192 @@ const shade = (c: number, k: number) => {
   return (f((c >> 16) & 255) << 16) | (f((c >> 8) & 255) << 8) | f(c & 255);
 };
 
-/** side profile prism (points in x/y) extruded across the width w, centred on z = 0 */
-function prism(pts: [number, number][], w: number) {
-  const sh = new THREE.Shape();
-  sh.moveTo(pts[0][0], pts[0][1]);
-  for (const p of pts.slice(1)) sh.lineTo(p[0], p[1]);
-  const g = new THREE.ExtrudeGeometry(sh, { depth: w, bevelEnabled: false });
-  g.translate(0, 0, -w / 2);
-  return g;
+interface CarFit {
+  kit: string; // Kenney Car Kit model
+  dims: [number, number, number]; // [lebar, tinggi, panjang] the mockup fits it to (fitCar)
 }
-/** a thin bar between two points in the x/y plane at depth z */
-function bar(k: Kit, x1: number, y1: number, x2: number, y2: number, z: number, t: number, d: number, c: number) {
-  const len = Math.hypot(x2 - x1, y2 - y1);
-  k.box(len + t, t, d, c, (x1 + x2) / 2, (y1 + y2) / 2, z, 0, 0, Math.atan2(y2 - y1, x2 - x1));
-}
-
-interface CarDef {
-  wheelR: number;
-  clear: number; // body bottom
-  belt: number; // window line
-  roofT: number;
-  /** greenhouse: base rear/front x, roof rear/front x (as offsets from the ends) */
-  gb0: number; gb1: number; gr0: number; gr1: number;
-  noseH?: number; // bonnet height drop
-  wheelX: number; // axle distance from the ends
-}
-const CARS: Record<string, CarDef> = {
-  sedan: { wheelR: 0.32, clear: 0.24, belt: 0.86, roofT: 0.07, gb0: 0.95, gb1: 1.25, gr0: 1.4, gr1: 2.0, wheelX: 0.92 },
-  taksi: { wheelR: 0.32, clear: 0.24, belt: 0.86, roofT: 0.07, gb0: 0.9, gb1: 1.2, gr0: 1.35, gr1: 1.95, wheelX: 0.9 },
-  citycar: { wheelR: 0.3, clear: 0.22, belt: 0.88, roofT: 0.07, gb0: 0.25, gb1: 0.75, gr0: 0.4, gr1: 1.35, wheelX: 0.65 },
-  mpv: { wheelR: 0.34, clear: 0.26, belt: 0.98, roofT: 0.08, gb0: 0.12, gb1: 1.0, gr0: 0.22, gr1: 1.65, wheelX: 0.85 },
-  angkot: { wheelR: 0.3, clear: 0.24, belt: 0.98, roofT: 0.08, gb0: 0.06, gb1: 0.62, gr0: 0.08, gr1: 0.95, wheelX: 0.72 },
-  pickup: { wheelR: 0.34, clear: 0.3, belt: 1.05, roofT: 0.08, gb0: 1.85, gb1: 0.95, gr0: 1.9, gr1: 1.15, wheelX: 0.8 },
+/** Exactly the approved mockup's cars: Kenney Car Kit model -> fitted to real size (scratch/lowpoly/chars/vehicles.ts). */
+const CARFIT: Record<string, CarFit> = {
+  sedan: { kit: 'sedan', dims: [1.78, 1.48, 4.6] },
+  angkot: { kit: 'van', dims: [1.66, 1.95, 4.1] },
+  taksi: { kit: 'taxi', dims: [1.75, 1.5, 4.45] },
+  mpv: { kit: 'suv', dims: [1.78, 1.75, 4.5] },
+  pickup: { kit: 'truck', dims: [1.7, 1.85, 4.3] },
+  boks: { kit: 'delivery', dims: [2.0, 2.85, 6.2] },
 };
 
-/** Build a vehicle facing +x, wheels on y = 0. Real metres; never scaled (riders stay full size). */
+// ---- decoded Kenney meshes (once) ----
+interface KGeo { pos: Float32Array; nrm: Float32Array; ci: Uint8Array; idx: Uint16Array; pal: number[][] }
+const KGEO = new Map<string, KGeo>();
+const b64 = (s: string) => {
+  const bin = atob(s);
+  const u = new Uint8Array(new ArrayBuffer(bin.length));
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u.buffer;
+};
+function kgeo(id: string): KGeo {
+  let g = KGEO.get(id);
+  if (g) return g;
+  const r = CAR_GEO[id];
+  const P = new Int16Array(b64(r.p));
+  const N = new Int8Array(b64(r.n));
+  g = {
+    pos: Float32Array.from(P, (v) => v / 4096),
+    nrm: Float32Array.from(N, (v) => v / 127),
+    ci: new Uint8Array(b64(r.c)),
+    idx: new Uint16Array(b64(r.i)),
+    pal: r.pal,
+  };
+  KGEO.set(id, g);
+  return g;
+}
+const LAMP_CELLS = new Set([51, 53]); // kit palette: yellow head lamps, red tail lamps (they glow at night)
+const tmpQ = new THREE.Quaternion();
+const tmpV = new THREE.Vector3();
+const tmpS = new THREE.Vector3();
+const lin = new THREE.Color();
+
+/**
+ * A Kenney Car Kit car exactly as the mockup builds it (kenneyCar + fitCar): body paint = the
+ * dominant coloured palette cell recoloured with paint * luminance / 160, non-uniform fit to the
+ * real size, wheels re-scaled round (k = sy * 1.05). Turned to face +x, wheels on y = 0.
+ */
+function kenneyCarGeo(type: string, paint: number) {
+  const f = CARFIT[type];
+  const nodes = CARKIT[f.kit];
+  // 1) unscaled bbox (mockup: Box3 of the scene at scale 1)
+  const bb = new THREE.Box3();
+  const mats = nodes.map((n) => new THREE.Matrix4().compose(tmpV.fromArray(n.t), tmpQ.fromArray(n.r), tmpS.fromArray(n.s)));
+  nodes.forEach((n, i) => {
+    const g = kgeo(n.geo);
+    for (let v = 0; v < g.pos.length; v += 3) bb.expandByPoint(tmpV.set(g.pos[v], g.pos[v + 1], g.pos[v + 2]).applyMatrix4(mats[i]));
+  });
+  const sx = f.dims[0] / (bb.max.x - bb.min.x), sy = f.dims[1] / (bb.max.y - bb.min.y), sz = f.dims[2] / (bb.max.z - bb.min.z);
+  const k = sy * 1.05;
+  // 2) the body paint cell (most frequent saturated cell on the body mesh)
+  const body = nodes.find((n) => n.name === 'body')!;
+  const bg = kgeo(body.geo);
+  const cnt = new Map<number, number>();
+  for (let v = 0; v < bg.ci.length; v++) {
+    const [r, g, b, cell] = bg.pal[bg.ci[v]];
+    if (Math.max(r, g, b) - Math.min(r, g, b) < 40) continue;
+    cnt.set(cell, (cnt.get(cell) || 0) + 1);
+  }
+  let best = -1, bn = 0;
+  cnt.forEach((n, c) => (n > bn ? ((bn = n), (best = c)) : 0));
+  const pr = (paint >> 16) & 255, pg = (paint >> 8) & 255, pb = paint & 255;
+  // 3) world matrices: turn (+z -> +x) * fit scale * node (wheels: uniform k)
+  const turn = new THREE.Matrix4().makeRotationY(Math.PI / 2);
+  const fit = new THREE.Matrix4().makeScale(sx, sy, sz);
+  const bodyParts: THREE.BufferGeometry[] = [];
+  const lampParts: THREE.BufferGeometry[] = [];
+  nodes.forEach((n, i) => {
+    const g = kgeo(n.geo);
+    const wheel = /wheel/i.test(n.name);
+    const local = wheel ? new THREE.Matrix4().compose(tmpV.fromArray(n.t), tmpQ.fromArray(n.r), tmpS.set(k / sx, k / sy, k / sz)) : mats[i];
+    const m = turn.clone().multiply(fit).multiply(local);
+    const col = new Float32Array(g.ci.length * 3);
+    for (let v = 0; v < g.ci.length; v++) {
+      let [r, gg, b, cell] = g.pal[g.ci[v]];
+      if (cell === best) {
+        const l = (0.3 * r + 0.59 * gg + 0.11 * b) / 160;
+        r = Math.min(255, pr * l);
+        gg = Math.min(255, pg * l);
+        b = Math.min(255, pb * l);
+      }
+      lin.setRGB(r / 255, gg / 255, b / 255, THREE.SRGBColorSpace);
+      col[v * 3] = lin.r;
+      col[v * 3 + 1] = lin.g;
+      col[v * 3 + 2] = lin.b;
+    }
+    // split lamp triangles (glow) from the body
+    const bodyIdx: number[] = [], lampIdx: number[] = [];
+    for (let t = 0; t < g.idx.length; t += 3) {
+      const a = g.idx[t], b2 = g.idx[t + 1], c = g.idx[t + 2];
+      const lamp = !wheel && LAMP_CELLS.has(g.pal[g.ci[a]][3]) && LAMP_CELLS.has(g.pal[g.ci[b2]][3]) && LAMP_CELLS.has(g.pal[g.ci[c]][3]);
+      (lamp ? lampIdx : bodyIdx).push(a, b2, c);
+    }
+    for (const [ix, out] of [[bodyIdx, bodyParts], [lampIdx, lampParts]] as const) {
+      if (!ix.length) continue;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(g.pos.slice(), 3));
+      geo.setAttribute('normal', new THREE.BufferAttribute(g.nrm.slice(), 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(col.slice(), 3));
+      geo.setIndex(ix as number[]);
+      geo.applyMatrix4(m);
+      out.push(geo.toNonIndexed());
+      geo.dispose();
+    }
+  });
+  // 4) wheels on the road
+  const all = new THREE.Box3();
+  for (const g of [...bodyParts, ...lampParts]) {
+    g.computeBoundingBox();
+    all.union(g.boundingBox!);
+  }
+  for (const g of [...bodyParts, ...lampParts]) g.translate(0, -all.min.y, 0);
+  return { bodyParts, lampParts };
+}
+
+/** column tops of a car body (the cat stands on the bonnet / roof / bed edge, is pushed out of taller columns) */
+function carTops(parts: THREE.BufferGeometry[], hl: number, hw: number): Top[] {
+  const N = 12;
+  const ys = new Array(N).fill(-1);
+  for (const g of parts) {
+    const p = g.getAttribute('position');
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+      if (Math.abs(z) > hw * 0.8) continue; // mirrors
+      const s = Math.min(N - 1, Math.max(0, Math.floor(((x + hl) / (2 * hl)) * N)));
+      if (y > ys[s]) ys[s] = y;
+    }
+  }
+  const tops: Top[] = [];
+  for (let s = 0; s < N; s++) if (ys[s] > 0) tops.push({ x0: -hl + (s * 2 * hl) / N, x1: -hl + ((s + 1) * 2 * hl) / N, z0: -hw, z1: hw, y: ys[s] });
+  return tops;
+}
+
+// ---- the mockup's motorbike (scratch/lowpoly/chars/vehicles.ts: motor(), MS = 1.12) ----
+/** motor real size vs people (the mockup scales the bike, never the rider) */
+const MS = 1.12;
+const MOTOR_TYRE = 0xcfd8dc;
+/** mockup coords: faces +z. Built 1:1, then turned to +x and scaled by MS. */
+function mockMotor(km: Kit, L: Kit, color: number, kind: 'matic' | 'bebek', box?: number) {
+  const bx = (w: number, h: number, d: number, c: number, x: number, y: number, z: number, rx = 0) => km.box(w, h, d, c, x, y, z, 0, rx);
+  const wheel = (r: number, w: number, x: number, y: number, z: number, rim = MOTOR_TYRE) => {
+    km.add(new THREE.CylinderGeometry(r, r, w, 10), 0x2b2b33, x, y, z, 0, 0, Math.PI / 2);
+    km.add(new THREE.CylinderGeometry(r * 0.5, r * 0.5, w + 0.01, 8), rim, x, y, z, 0, 0, Math.PI / 2);
+  };
+  wheel(0.26, 0.12, 0, 0.26, 0.66);
+  wheel(0.26, 0.14, 0, 0.26, -0.62);
+  bx(0.34, 0.34, 0.62, color, 0, 0.5, -0.3); // rear body
+  bx(0.36, 0.12, 0.7, 0x222228, 0, 0.74, -0.32); // seat
+  if (kind === 'matic') bx(0.3, 0.1, 0.36, 0x3a3a44, 0, 0.36, 0.18); // footboard
+  else bx(0.14, 0.14, 0.5, color, 0, 0.5, 0.15);
+  bx(0.34, 0.66, 0.16, color, 0, 0.66, 0.5, -0.25); // front shield
+  bx(0.08, 0.5, 0.08, 0x9e9e9e, 0, 0.5, 0.68, -0.35); // fork
+  bx(0.66, 0.06, 0.08, 0x2b2b33, 0, 1.02, 0.5); // handlebar
+  L.box(0.22, 0.12, 0.08, 0xfff7c2, 0, 0.92, 0.6); // headlamp
+  L.box(0.2, 0.06, 0.04, 0xe53935, 0, 0.58, -0.62); // tail lamp
+  bx(0.1, 0.1, 0.12, 0x9e9e9e, 0.0, 0.26, 0.12); // engine
+  if (box !== undefined) {
+    bx(0.5, 0.42, 0.5, box, 0, 1.0, -0.62);
+    bx(0.52, 0.06, 0.52, shade(box, 0.8), 0, 1.24, -0.62);
+  }
+}
+/** mockup coords (+z forward) -> game (+x forward), scaled by MS */
+const MOCK2GAME = new THREE.Matrix4().makeRotationY(Math.PI / 2).multiply(new THREE.Matrix4().makeScale(MS, MS, MS));
+
+/** Build a vehicle facing +x, wheels on y = 0. Real metres; the people on board are never scaled. */
 export function buildVehicle(s: VSpec): VehicleModel {
   const t = VTYPE[s.type];
   const k = new Kit();
   const L = new Kit();
-  const G = new Kit();
   const c = s.color;
-  const trim = c === 0xf5f5f5 ? 0x90a4ae : 0xf5f5f5;
   const elec = s.engine === 'listrik';
   let exhaust: THREE.Vector3 | null = null;
   let poncho: THREE.Mesh | null = null;
-  const tops: Top[] = [];
+  let tops: Top[] = [];
   let solidH = 0.9;
   const root = new THREE.Group();
   const people = new THREE.Group(); // skin meshes (shared, cached geometry)
@@ -395,208 +537,69 @@ export function buildVehicle(s: VSpec): VehicleModel {
   let roofIn = 99;
 
   if (t.kind === 'car') {
-    const d = CARS[t.id];
+    // ---------- a Kenney Car Kit car, exactly as in the mockup (dark windows, nobody visible inside) ----------
     const hl = t.len / 2, hw = t.wid / 2;
-    const H = t.h;
-    const { wheelR, clear, belt } = d;
-    const pickup = t.id === 'pickup';
-    solidH = belt;
-    // ---- lower body: one chunky slab with a slightly lower bonnet, arches cut by dark boxes
-    const noseX = hl - d.gb1; // front of the greenhouse base
-    const hoodDrop = pickup ? 0.0 : t.id === 'sedan' || t.id === 'taksi' ? 0.08 : 0.04;
-    k.box(t.len - 0.1, belt - clear, t.wid, c, -0.05 + 0.0, (clear + belt) / 2, 0);
-    k.box(0.1, belt - clear - hoodDrop - 0.06, t.wid - 0.06, c, hl - 0.05, (clear + belt - hoodDrop - 0.06) / 2, 0); // rounded nose
-    if (hoodDrop) k.box(hl - noseX + 0.02, 0.03, t.wid - 0.1, shade(c, 0.9), (hl + noseX) / 2, belt - hoodDrop / 2, 0); // bonnet crease
-    // wheel arches + wheels
-    for (const x of [hl - d.wheelX, -hl + d.wheelX]) {
-      for (const z of [hw - 0.005, -hw + 0.005]) k.box(wheelR * 2.3, 0.06, 0.04, shade(c, 0.7), x, wheelR * 2 + 0.06, z);
-      for (const z of [hw - 0.13, -hw + 0.13]) k.cyl(wheelR, 0.24, TYRE, x, wheelR, z, false, 14).cyl(wheelR * 0.55, 0.26, RIM, x, wheelR, z, false, 8).cyl(wheelR * 0.18, 0.28, DARK, x, wheelR, z, false, 6);
-    }
-    k.box(t.len - 0.6, clear - 0.08, t.wid - 0.5, INSIDE, 0, (clear + 0.08) / 2 + 0.02, 0); // underbody
-    // bumpers, grille, plates
-    k.box(0.14, 0.2, t.wid + 0.04, DARK, hl - 0.06, clear + 0.08, 0);
-    k.box(0.14, 0.2, t.wid + 0.04, DARK, -hl + 0.06, clear + 0.08, 0);
-    k.box(0.04, 0.16, t.wid * 0.5, INSIDE, hl - 0.005, belt - 0.24, 0);
-    for (const x of [hl + 0.02, -hl - 0.02]) k.box(0.02, 0.13, 0.46, 0x111111, x, clear + 0.32, 0).box(0.025, 0.08, 0.4, 0xfafafa, x, clear + 0.32, 0);
-    // side trim line + door seams + handles
-    k.box(t.len * 0.86, 0.04, t.wid + 0.012, trim, 0, belt - 0.3, 0);
-    for (const z of [hw + 0.004, -hw - 0.004]) {
-      const doors = pickup ? [noseX - 0.1] : t.id === 'citycar' ? [noseX - 0.05, noseX - 1.0] : [noseX - 0.05, noseX - 1.15, noseX - 2.2];
-      for (const x of doors) if (x > -hl + 0.5) k.box(0.025, belt - clear - 0.12, 0.01, shade(c, 0.72), x, (clear + belt) / 2 + 0.04, z);
-      for (const x of doors.slice(1)) if (x > -hl + 0.5) k.box(0.16, 0.04, 0.012, 0x9e9e9e, x + 0.22, belt - 0.12, z);
-      if (pickup) k.box(0.16, 0.04, 0.012, 0x9e9e9e, noseX - 0.4, belt - 0.12, z);
-    }
-    // mirrors
-    for (const z of [hw + 0.07, -hw - 0.07]) k.box(0.1, 0.1, 0.1, c, noseX - 0.1, belt + 0.12, z).box(0.03, 0.03, 0.12, INSIDE, noseX - 0.08, belt + 0.06, z * 0.97);
-    // electric: blue badge on the doors (no exhaust)
-    if (elec) for (const z of [hw + 0.006, -hw - 0.006]) k.box(0.28, 0.1, 0.012, 0x00b0ff, noseX - 0.6, belt - 0.42, z);
-    else {
-      exhaust = new THREE.Vector3(-hl - 0.1, clear + 0.02, -hw + 0.3);
-      k.add(new THREE.CylinderGeometry(0.04, 0.04, 0.24, 6).rotateZ(Math.PI / 2), 0x9e9e9e, -hl + 0.1, clear - 0.02, -hw + 0.3);
-    }
-    // lamps
-    for (const z of [hw - 0.22, -hw + 0.22]) {
-      L.box(0.05, 0.14, 0.34, HEAD, hl + 0.005, belt - hoodDrop - 0.16, z);
-      L.box(0.05, 0.16, 0.26, TAIL, -hl + 0.005, belt - 0.14, z);
-      L.box(0.05, 0.06, 0.12, 0xffa000, hl + 0.006, clear + 0.22, z * 1.02);
-    }
-    // ---- greenhouse: glass prism + roof + pillars
-    const x0 = -hl + d.gb0, x1 = hl - d.gb1;
-    const r0 = -hl + d.gr0, r1 = hl - d.gr1;
-    const top = H - d.roofT;
-    roofIn = top - 0.02;
-    const cw = t.wid - 0.14;
-    G.add(prism([[x0 + 0.03, belt], [x1 - 0.03, belt], [r1 - 0.02, top], [r0 + 0.02, top]], cw - 0.02), GLASS, 0, 0, 0);
-    k.box(r1 - r0 + 0.06, d.roofT, cw + 0.04, c, (r0 + r1) / 2, H - d.roofT / 2, 0);
-    for (const z of [cw / 2 - 0.02, -cw / 2 + 0.02]) {
-      bar(k, x1, belt, r1, top, z, 0.08, 0.06, c); // A pillar
-      bar(k, x0, belt, r0, top, z, pickup || t.id === 'angkot' || t.id === 'mpv' ? 0.12 : 0.14, 0.06, c); // C / D pillar
-      const bx = pickup ? (x1 + x0) / 2 : x1 - 1.12;
-      if (bx > r0 + 0.2) bar(k, bx, belt, bx + (r1 - x1) * 0.1, top, z, 0.08, 0.06, INSIDE); // B pillar
-      if (t.id === 'mpv' || t.id === 'angkot') bar(k, x1 - 2.2, belt, x1 - 2.2, top, z, 0.08, 0.06, INSIDE);
-    }
-    // windows read darker on the lower part of the doors? keep: belt strip in body colour
-    k.box(x1 - x0, 0.04, cw + 0.02, c, (x0 + x1) / 2, belt + 0.02, 0);
-    // interior: dashboard, steering wheel, seats
-    k.box(0.4, 0.2, cw - 0.1, INSIDE, x1 - 0.05, belt - 0.02, 0);
-    if (pickup) {
-      // the open bed is a lower step: the cat can sit inside it
-      tops.push({ x0: x0 - 0.08, x1: hl, z0: -hw, z1: hw, y: belt });
-      tops.push({ x0: -hl, x1: x0 - 0.08, z0: -hw, z1: hw, y: belt - 0.37 });
-      solidH = belt - 0.37;
-    } else tops.push({ x0: -hl, x1: hl, z0: -hw, z1: hw, y: belt });
-    tops.push({ x0: r0, x1: r1, z0: -cw / 2, z1: cw / 2, y: H });
-    // ---- the driver (right-hand drive: Indonesia drives on the left, driver sits on the right, +z)
-    const role = t.id === 'taksi' ? 'taksi' : t.id === 'angkot' ? 'angkot' : 'rider';
-    const dOut = outfitOf(s.rider, role);
-    const headUp = headAboveSeat(dOut, 'car');
-    // a low seat (hidden inside the body) keeps the big Blocky head under the roof
-    const seatY = Math.max(0.12, Math.min(belt - 0.3, roofIn - 0.03 - headUp));
-    const dz = hw - 0.6;
-    const dx = Math.min(r1 - 0.42, x1 - 0.75);
-    k.box(0.5, 0.1, 0.48, INSIDE, dx + 0.02, seatY - 0.05, dz); // seat
-    k.box(0.12, 0.62, 0.48, INSIDE, dx - 0.3, seatY + 0.28, dz, 0, 0, -0.15); // backrest
-    k.box(0.5, 0.1, 0.48, INSIDE, dx + 0.02, seatY - 0.05, -dz).box(0.12, 0.62, 0.48, INSIDE, dx - 0.3, seatY + 0.28, -dz, 0, 0, -0.15);
-    k.add(new THREE.CylinderGeometry(0.17, 0.17, 0.04, 10).rotateZ(Math.PI / 2 + 0.5), 0x212121, dx + 0.6, seatY + 0.5, dz); // steering wheel
-    heads.push(seat(k, people, dOut, 'car', null, dx, seatY, dz, Math.PI / 2));
-    if (t.id === 'angkot') {
-      // angkot: benches along both sides in the back, a passenger may sit sideways
-      const bx0 = x0 + 0.15, bx1 = x1 - 0.95;
-      for (const z of [hw - 0.32, -hw + 0.32]) k.box(bx1 - bx0, 0.12, 0.42, INSIDE, (bx0 + bx1) / 2, seatY - 0.06, z).box(bx1 - bx0, 0.5, 0.06, INSIDE, (bx0 + bx1) / 2, seatY + 0.3, z + Math.sign(z) * 0.2);
-      if (s.passenger) heads.push(seat(k, people, outfitOf(s.passenger, 'passenger'), 'bench', null, (bx0 + bx1) / 2 - 0.2, seatY, hw - 0.36, Math.PI));
-      // stripe + route board + roof rack
-      k.box(t.len - 0.08, 0.1, t.wid + 0.02, 0xffffff, -0.05, belt - 0.12, 0);
-      k.box(0.9, 0.22, 0.04, 0xffffff, r1 - 0.5, H - 0.25, cw / 2 + 0.03);
-      k.box(0.8, 0.12, 0.05, 0x263238, r1 - 0.5, H - 0.25, cw / 2 + 0.03);
-      k.box(0.04, 0.2, 0.9, 0xffffff, r1 + 0.04, H - 0.18, 0).box(0.05, 0.1, 0.8, 0x263238, r1 + 0.05, H - 0.18, 0);
-    }
-    if (t.id === 'taksi') {
-      k.box(0.46, 0.15, 0.24, 0xfff59d, (r0 + r1) / 2, H + 0.07, 0).box(0.47, 0.04, 0.25, 0x1565c0, (r0 + r1) / 2, H + 0.02, 0);
-      for (const z of [hw + 0.006, -hw - 0.006]) k.box(1.2, 0.08, 0.01, 0xffffff, x1 - 1.0, belt - 0.2, z);
-    }
-    if (t.id === 'mpv') for (const z of [cw / 2 - 0.12, -cw / 2 + 0.12]) k.box(r1 - r0 - 0.4, 0.05, 0.05, DARK, (r0 + r1) / 2, H + 0.04, z).box(0.05, 0.05, 0.05, DARK, r0 + 0.25, H + 0.02, z).box(0.05, 0.05, 0.05, DARK, r1 - 0.25, H + 0.02, z);
-    if (pickup) {
-      // open bed behind the cab: floor, low walls, tailgate, cargo
-      const bx0 = -hl + 0.05, bx1 = x0 - 0.06;
-      const floorY = belt - 0.42;
-      k.box(bx1 - bx0, 0.05, t.wid - 0.12, INSIDE, (bx0 + bx1) / 2, floorY, 0);
-      for (const z of [hw - 0.04, -hw + 0.04]) k.box(bx1 - bx0, 0.08, 0.09, shade(c, 0.85), (bx0 + bx1) / 2, belt + 0.02, z);
-      k.box(0.08, 0.06, t.wid, shade(c, 0.85), bx0, belt + 0.01, 0);
-      k.box(0.1, 0.5, t.wid - 0.04, c, x0 - 0.02, belt + 0.18, 0); // headboard
-      const mid = (bx0 + bx1) / 2;
-      const by = floorY + 0.03;
-      if (s.cargo === 0) for (const dz2 of [-0.45, 0.05, 0.5]) k.cyl(0.17, 0.48, 0x4fc3f7, mid + dz2 * 0.6, by + 0.24, dz2, true, 10).cyl(0.06, 0.08, 0x1565c0, mid + dz2 * 0.6, by + 0.52, dz2, true, 6);
-      else if (s.cargo === 1) for (const [dx2, dz2, col] of [[-0.4, -0.35, 0x8bc34a], [0.35, 0.3, 0xff7043], [-0.3, 0.35, 0x8d6e63]] as const) k.box(0.55, 0.36, 0.5, 0xb48a5a, mid + dx2, by + 0.18, dz2).box(0.5, 0.08, 0.45, col, mid + dx2, by + 0.38, dz2);
-      else k.box(0.9, 0.4, 0.7, 0xeeeeee, mid, by + 0.2, 0).box(0.5, 0.02, 0.5, 0x43a047, mid, by + 0.41, 0);
-    }
+    const { bodyParts, lampParts } = kenneyCarGeo(s.type, c);
+    k.parts.push(...bodyParts);
+    L.parts.push(...lampParts);
+    tops = carTops(bodyParts, hl, hw);
+    solidH = Math.min(...tops.map((x) => x.y));
+    roofIn = Math.max(...tops.map((x) => x.y));
+    if (!elec) exhaust = new THREE.Vector3(-hl - 0.1, 0.25, -hw + 0.3);
   } else {
-    // ---------- motorbike (real size: ~1.9 m long, seat ~0.78) ----------
-    const hl = t.len / 2;
-    const scooter = t.id === 'matic' || t.id === 'ojol';
-    const sport = t.id === 'sport';
-    const wr = scooter ? 0.28 : 0.3;
-    const fx = hl - wr, bxW = -hl + wr; // axles
-    for (const x of [fx, bxW]) k.cyl(wr, 0.12, TYRE, x, wr, 0, false, 14).cyl(wr * 0.6, 0.14, RIM, x, wr, 0, false, 8).cyl(wr * 0.15, 0.16, DARK, x, wr, 0, false, 6);
-    // mudguards
-    k.box(0.5, 0.04, 0.16, scooter ? c : 0x212121, fx - 0.02, wr * 2 + 0.06, 0, 0, 0, -0.1);
-    const seatY = sport ? 0.82 : 0.78;
-    if (scooter) {
-      k.box(0.62, 0.1, 0.38, 0x3a3a44, 0.12, 0.36, 0); // footboard
-      k.box(0.2, 0.72, 0.5, c, fx - 0.2, 0.66, 0, 0, 0, -0.32); // leg shield
-      k.box(0.82, 0.36, 0.44, c, -0.42, seatY - 0.22, 0); // body under the seat
-      k.box(0.5, 0.2, 0.3, c, -0.68, seatY - 0.12, 0, 0, 0, 0.18); // tail
-      k.box(0.28, 0.2, 0.3, 0x9e9e9e, bxW + 0.1, 0.36, 0.0); // engine/cvt
-    } else if (t.id === 'bebek') {
-      k.box(0.9, 0.12, 0.18, c, 0.12, 0.62, 0, 0, 0, 0.32); // backbone
-      k.box(0.26, 0.5, 0.42, c, fx - 0.18, 0.7, 0, 0, 0, -0.3); // front cowl
-      k.box(0.78, 0.3, 0.36, c, -0.38, seatY - 0.2, 0);
-      k.box(0.42, 0.26, 0.26, 0x616161, -0.02, 0.4, 0); // engine
-      k.box(0.08, 0.05, 0.6, 0x3a3a44, -0.06, 0.32, 0); // foot pegs
-    } else {
-      k.box(0.62, 0.3, 0.42, c, 0.22, seatY + 0.02, 0); // tank
-      k.box(0.4, 0.5, 0.46, c, fx - 0.24, 0.76, 0, 0, 0, -0.5); // fairing
-      k.box(0.6, 0.18, 0.28, c, -0.6, seatY + 0.08, 0, 0, 0, 0.22); // raised tail
-      k.box(0.5, 0.32, 0.3, 0x616161, 0.02, 0.45, 0);
-      k.box(0.08, 0.05, 0.6, 0x3a3a44, -0.15, 0.4, 0);
-    }
-    k.box(0.68, 0.1, sport ? 0.3 : 0.36, 0x212121, -0.32, seatY - 0.02, 0); // seat
-    // fork + handlebar + mirrors
-    const barX = fx - 0.3, barY = 1.02;
-    k.box(0.05, 0.7, 0.05, 0x9e9e9e, fx - 0.12, 0.62, 0.1, 0, 0, -0.38).box(0.05, 0.7, 0.05, 0x9e9e9e, fx - 0.12, 0.62, -0.1, 0, 0, -0.38);
-    k.box(0.06, 0.05, 0.66, 0x212121, barX, barY, 0);
-    for (const z of [0.3, -0.3]) k.box(0.03, 0.22, 0.03, 0x9e9e9e, barX - 0.02, barY + 0.12, z).box(0.03, 0.08, 0.12, 0x212121, barX - 0.02, barY + 0.24, z * 1.1);
-    if (!elec) {
-      exhaust = new THREE.Vector3(-hl + 0.05, 0.34, -0.2);
-      k.box(0.62, 0.09, 0.09, 0x9e9e9e, -0.3, 0.34, -0.2, 0, 0, 0.12);
-    } else k.box(0.2, 0.08, 0.02, 0x00b0ff, -0.4, seatY - 0.15, 0.23);
-    // plate
-    k.box(0.02, 0.12, 0.24, 0x111111, -hl + 0.06, 0.62, 0);
-    // rider (always a full-size adult; feet on the board / pegs, hands on the bar)
-    const role = t.id === 'ojol' ? 'ojol' : 'rider';
-    const rOut = outfitOf(s.rider, role);
-    const rx = barX - 0.6; // hips: hands reach ~0.55 forward
-    heads.push(seat(k, people, rOut, sport ? 'sport' : 'motor', s.rider.helmet, rx, seatY, 0, Math.PI / 2));
-    const hw = t.wid / 2;
-    solidH = seatY;
-    tops.push({ x0: barX - 0.1, x1: hl, z0: -hw, z1: hw, y: barY + 0.05 }); // front + handlebar
+    // ---------- the mockup's motorbike + Blocky rider(s) ----------
+    const km = new Kit();
+    const kind = t.id === 'bebek' ? 'bebek' : 'matic';
+    const box = t.id === 'ojol' && !s.passenger ? 0x2e7d32 : undefined;
+    const Lm = new Kit();
+    mockMotor(km, Lm, c, kind, box);
+    // side foot step for a passenger sitting menyamping (mockup: bx(g, 0.1, 0.05, 0.3, 0x3a3a44, -0.38, 0.36, -0.5))
+    const pOut = s.passenger ? outfitOf(s.passenger, 'passenger') : null;
+    const side = !!pOut && !pOut.kid && (pOut.bottom === 'gamis' || pOut.bottom === 'daster' || pOut.bottom === 'kain' || pOut.bottom === 'sarung');
+    if (side) km.box(0.1, 0.05, 0.3, 0x3a3a44, -0.38, 0.36, -0.5);
+    const bike = km.mesh().geometry.applyMatrix4(MOCK2GAME);
+    k.parts.push(bike);
+    L.parts.push(Lm.mesh().geometry.applyMatrix4(MOCK2GAME));
+    // rider: mockup person at (0, 0.8 - 0.62/MS, -0.12) inside the MS group => seat surface 0.8*MS - 0.124
+    const rSeat = 0.8 * MS - 0.62 + SEAT_RAW * ADULT;
+    const rx = -0.12 * MS;
+    const rOut = outfitOf(s.rider, t.id === 'ojol' ? 'ojol' : 'rider');
+    heads.push(seat(k, people, rOut, 'mockMotor', s.rider.helmet, rx, rSeat, 0, Math.PI / 2));
+    const hl = t.len / 2, hw = t.wid / 2;
+    const barY = 1.05 * MS;
+    const seatTop = 0.8 * MS;
+    solidH = seatTop;
+    tops.push({ x0: 0.35, x1: hl, z0: -hw, z1: hw, y: barY }); // front + handlebar
     let backX = rx - 0.26;
-    // pick the passenger's way of sitting: gamis/daster/kain => menyamping (legs to the left side)
-    const box = t.id === 'ojol' && !s.passenger;
-    if (s.passenger) {
-      const pOut = outfitOf(s.passenger, 'passenger');
-      const side = pOut.bottom === 'gamis' || pOut.bottom === 'daster' || pOut.bottom === 'kain' || pOut.bottom === 'sarung';
-      const px = rx - (pOut.kid ? 0.36 : 0.48);
-      const ph = seat(k, people, pOut, side ? 'samping' : pOut.kid ? 'kidMotor' : 'motor', pOut.kid ? 0xffeb3b : s.passenger.helmet, side ? px - 0.06 : px, seatY + 0.02, side ? -0.06 : 0, side ? Math.PI : Math.PI / 2);
+    if (s.passenger && pOut) {
+      // mockup: passenger at (-0.02, 0.81 - 0.62/MS, -0.55), turned -PI/2 (menyamping) => game x -0.55*MS
+      const px = -0.55 * MS;
+      const pSeat = 0.81 * MS - 0.62 + SEAT_RAW * ADULT;
+      const ph = side
+        ? seat(k, people, pOut, 'mockSamping', s.passenger.helmet, px, pSeat, 0.02 * MS, 0)
+        : seat(k, people, pOut, pOut.kid ? 'kidMotor' : 'mockMotor', pOut.kid ? 0xffeb3b : s.passenger.helmet, px + (pOut.kid ? 0.1 : 0), pSeat, 0, Math.PI / 2);
       heads.push(ph);
-      if (side) k.box(0.3, 0.04, 0.14, 0x3a3a44, px - 0.1, 0.36, -0.36); // side foot step
       tops.push({ x0: px - 0.24, x1: backX, z0: -hw, z1: hw, y: ph });
       backX = px - 0.24;
     }
-    tops.push({ x0: backX, x1: barX - 0.1, z0: -hw, z1: hw, y: heads[0] }); // rider
-    if (box) {
-      k.box(0.46, 0.44, 0.46, 0x2e7d32, -hl + 0.28, seatY + 0.3, 0).box(0.47, 0.08, 0.47, 0xffffff, -hl + 0.28, seatY + 0.36, 0).box(0.3, 0.04, 0.4, 0x9e9e9e, -hl + 0.3, seatY + 0.06, 0);
-      tops.push({ x0: -hl, x1: backX, z0: -hw, z1: hw, y: seatY + 0.52 });
-    } else tops.push({ x0: -hl, x1: backX, z0: -hw, z1: hw, y: seatY + 0.04 }); // free back seat: a cat seat!
+    tops.push({ x0: backX, x1: 0.35, z0: -hw, z1: hw, y: heads[0] }); // rider
+    if (box !== undefined) tops.push({ x0: -hl, x1: backX, z0: -hw, z1: hw, y: 1.27 * MS });
+    else tops.push({ x0: -hl, x1: backX, z0: -hw, z1: hw, y: seatTop }); // free back seat: a cat seat!
+    if (!elec) exhaust = new THREE.Vector3(-hl + 0.1, 0.34, -0.2);
     // rain poncho over the rider(s) (shown on rainy days)
     const pk = new Kit();
     const pc = pick([0x1e88e5, 0xfdd835, 0xe53935, 0x7e57c2], () => (s.color % 97) / 97);
-    pk.box(0.46, 0.62, 0.62, pc, rx + 0.04, seatY + 0.42, 0).box(0.82, 0.08, 0.7, pc, rx + 0.12, seatY + 0.1, 0).box(0.3, 0.4, 0.66, pc, rx + 0.28, seatY + 0.3, 0, 0, 0, -0.5);
-    if (s.passenger) pk.box(0.44, 0.58, 0.6, pc, rx - (s.passenger.look === -1 ? 0.36 : 0.5), seatY + 0.4, 0);
+    pk.box(0.46, 0.62, 0.62, pc, rx + 0.04, rSeat + 0.42, 0).box(0.82, 0.08, 0.7, pc, rx + 0.12, rSeat + 0.1, 0).box(0.3, 0.4, 0.66, pc, rx + 0.28, rSeat + 0.3, 0, 0, 0, -0.5);
+    if (s.passenger) pk.box(0.44, 0.58, 0.6, pc, -0.55 * MS, rSeat + 0.4, 0);
     poncho = pk.mesh();
     poncho.visible = false;
-    // lamps: head lamp + tail lamp + indicators
-    L.box(0.06, 0.12, 0.18, HEAD, fx - 0.08, sport ? 0.9 : 0.94, 0);
-    L.box(0.05, 0.08, 0.16, TAIL, -hl + 0.04, seatY - 0.04, 0);
-    for (const z of [0.2, -0.2]) L.box(0.05, 0.04, 0.06, 0xffa000, fx - 0.12, 0.9, z);
   }
   const body = k.mesh(VMAT.body);
   const lamps = L.mesh(VMAT.lamp);
-  const glass = G.parts.length ? G.mesh(VMAT.glass) : null;
   body.add(people);
   root.add(body, lamps);
-  if (glass) body.add(glass);
   if (poncho) body.add(poncho);
-  return { root, body, lamps, glass, poncho, exhaust, tops, solidH, fit: { heads, roofIn } };
+  return { root, body, lamps, glass: null, poncho, exhaust, tops, solidH, fit: { heads, roofIn } };
 }
 
 // ---------------- road-works machines ----------------

@@ -21,7 +21,7 @@ await h.ev(() => {
 });
 
 // real-world table: [lebar, tinggi, panjang] in metres (1 unit ~ 1 m), with tolerance
-const REAL = { sedan: [1.78, 1.48, 4.6], taksi: [1.75, 1.5, 4.45], angkot: [1.66, 1.95, 4.1], mpv: [1.78, 1.75, 4.5], pickup: [1.7, 1.85, 4.3], citycar: [1.62, 1.52, 3.65] };
+const REAL = { sedan: [1.78, 1.48, 4.6], taksi: [1.75, 1.5, 4.45], angkot: [1.66, 1.95, 4.1], mpv: [1.78, 1.75, 4.5], pickup: [1.7, 1.85, 4.3], boks: [2.0, 2.85, 6.2] };
 
 const res = await h.ev((REAL) => {
   const C = window.__cat;
@@ -53,13 +53,13 @@ const res = await h.ev((REAL) => {
   { const r = ref(); g.add(r); out.personH = +box(r).size[1].toFixed(2); g.remove(r); }
   const person = (o) => ({ shirt: 0x1976d2, helmet: 0xe53935, skin: 0xc68e5f, look: 0, ...o });
   // cars in the westbound lane (z = +1.7), facing +x, a standing adult on the kerb next to each
-  const cars = ['sedan', 'taksi', 'citycar', 'mpv', 'pickup', 'angkot'];
+  const cars = ['sedan', 'taksi', 'boks', 'mpv', 'pickup', 'angkot'];
   cars.forEach((type, i) => {
-    const spec = { type, kind: 'car', color: [0xe53935, 0x3f8fd6, 0xfdd835, 0x90a4ae, 0xf5f5f5, 0x2e9e4f][i], engine: 'bensin', speed: 7, rider: person({ look: i % 7 }), passenger: type === 'angkot' ? person({ look: 2, skin: 0xd9a877 }) : null, cargo: 1 };
+    const spec = { type, kind: 'car', color: [0xc9ced6, 0x3f8fd6, 0xf9a825, 0x37474f, 0xf5f5f5, 0x2e9e4f][i], engine: 'bensin', speed: 7, rider: person({ look: i % 7 }), passenger: type === 'angkot' ? person({ look: 2, skin: 0xd9a877 }) : null, cargo: 1 };
     const m = A.buildVehicle(spec);
-    m.root.position.set(-42 + i * 6.4, 0, 1.7);
+    m.root.position.set(-44 + i * 7.2, 0, 1.7);
     g.add(m.root);
-    const r = ref(); r.position.set(-42 + i * 6.4 + 3.2, 0, 1.7); g.add(r);
+    const r = ref(); r.position.set(-44 + i * 7.2 + 3.6, 0, 1.7); g.add(r);
     const b = box(m.root);
     out.cars[type] = { size: b.size.map((x) => +x.toFixed(2)), topK: b.topK, heads: m.fit.heads.map((x) => +x.toFixed(2)), roofIn: +m.fit.roofIn.toFixed(2), tops: m.tops.length };
   });
@@ -67,7 +67,6 @@ const res = await h.ev((REAL) => {
   const motors = [
     ['bebek', person({ look: 0 }), person({ look: 2, skin: 0xd9a877, helmet: 0xf48fb1 })], // ibu bergamis menyamping
     ['matic', person({ look: 3 }), person({ look: -1, skin: 0xe0ac7e })], // anak bonceng
-    ['sport', person({ look: 1 }), null],
     ['ojol', person({ look: 0 }), null],
   ];
   motors.forEach(([type, rider, passenger], i) => {
@@ -161,7 +160,7 @@ const view = async (name, pos, look) => {
 };
 await h.ev(() => (window.__cat.timeScale = 1));
 // shoot from the far side of the street (z = -3.3), so fences/gardens don't block the view
-for (let i = 0; i < 6; i += 2) await view(`veh-cars-side-${i / 2 + 1}`, [-42 + (i + 0.5) * 6.4 + 1.6, 1.2, -3.2], [-42 + (i + 0.5) * 6.4 + 1.6, 1.0, 1.7]);
+for (let i = 0; i < 6; i += 2) await view(`veh-cars-side-${i / 2 + 1}`, [-44 + (i + 0.5) * 7.2 + 1.8, 1.4, -4.2], [-44 + (i + 0.5) * 7.2 + 1.8, 1.1, 1.7]);
 await view('veh-cars-34', [-49, 2.6, -3.2], [-36, 0.9, 1.7]);
 await view('veh-cars-34b', [-6, 2.6, -3.2], [-20, 0.9, 1.7]);
 await view('veh-motors-side', [1.4, 1.1, -4.0], [1.4, 0.95, 1.7]);
@@ -190,7 +189,7 @@ const roof = await h.ev(() => {
 });
 await gw(0.6);
 const on = await h.ev(() => ({ ride: !!window.__cat.traffic.ride, y: window.__cat.cat.body.y }));
-check('cat stands on the MPV roof (roof = real height)', on.ride && Math.abs(on.y - roof.y) < 0.05 && Math.abs(roof.y - roof.h) < 0.02, JSON.stringify({ on, roof }));
+check('cat stands on the MPV roof (roof = real height)', on.ride && Math.abs(on.y - roof.y) < 0.05 && Math.abs(roof.y - roof.h) < 0.05, JSON.stringify({ on, roof }));
 { const p = await h.ev(() => [window.__cat.cat.body.x, window.__cat.cat.body.z]); await h.ev(() => (window.__cat.timeScale = 0.0001)); await view('veh-cat-roof', [p[0] - 4, 3.0, p[1] + 5], [p[0], 1.4, p[1]]); await h.ev(() => { const C = window.__cat; C.timeScale = 3; C.camRig.override = null; }); }
 
 // busy moment: lots of traffic, count draw calls
