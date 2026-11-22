@@ -284,11 +284,13 @@ export class WeatherSystem {
     if (q === this.wetShown) return;
     this.wetShown = q;
     const m = ctx.cat.model;
-    const mats = [m.furMat, m.lightMat, m.pawMat, m.tailTipMat, m.tailMidMat];
+    // the Blocky cat is painted on one atlas texture: darken/tint its material (texture x colour)
+    const mats = [m.atlas.mat];
     if (q > 0 && !this.baseCol) this.baseCol = mats.map((x) => x.color.getHex());
     if (!this.baseCol) return;
     if (q === 0) {
       // dry again: restore the real look (also picks up any outfit change)
+      mats.forEach((x, i) => x.color.setHex(this.baseCol![i]));
       this.baseCol = null;
       m.setLook(m.look);
       return;
