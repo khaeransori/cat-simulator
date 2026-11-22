@@ -80,7 +80,7 @@ export class Human {
     this.home = home.clone();
     this.zone = zone;
     const kid = role === 'kid';
-    this.body = { x: home.x, y: home.y, z: home.z, vx: 0, vy: 0, vz: 0, r: kid ? 0.25 : 0.33, h: kid ? 1.4 : 2.2, onGround: true, stepH: 0.32, climbH: 0, g: 18 };
+    this.body = { x: home.x, y: home.y, z: home.z, vx: 0, vy: 0, vz: 0, r: kid ? 0.25 : 0.33, h: kid ? 1.4 : 1.75, onGround: true, stepH: 0.32, climbH: 0, g: 18 };
     ctx.scene.add(this.model.root);
     ctx.scene.add(this.shadow);
     if (kid) this.shadow.scale.set(0.7, 0.7, 0.7);

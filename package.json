@@ -21,7 +21,8 @@
     "test:album": "node test/album.mjs",
     "test:traffic": "node test/traffic.mjs",
     "test:animals": "node test/animals.mjs && node test/animals-game.mjs",
-    "test:vehicles": "node test/vehicles.mjs && node test/vehicles-mockup.mjs"
+    "test:vehicles": "node test/vehicles.mjs && node test/vehicles-mockup.mjs",
+    "test:people": "node test/people.mjs && node test/people-mockup.mjs"
   },
   "dependencies": {
     "@fontsource/baloo-2": "^5.3.0",

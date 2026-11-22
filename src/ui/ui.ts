@@ -19,7 +19,7 @@ export type Face = 'cat' | 'lisa' | 'mama' | 'belang' | 'mpus';
 
 export function faceSVG(kind: Face, fur?: number) {
   if (kind === 'mama') {
-    return `<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#ffe3ef"/><rect x="8" y="6" width="48" height="58" rx="6" fill="#f06292"/><rect x="16" y="16" width="32" height="34" rx="3" fill="#d9a877"/><rect x="22" y="26" width="5" height="7" fill="#1d1d24"/><rect x="37" y="26" width="5" height="7" fill="#1d1d24"/><rect x="18" y="35" width="6" height="3" fill="#f29b9b"/><rect x="40" y="35" width="6" height="3" fill="#f29b9b"/><rect x="26" y="40" width="12" height="3" fill="#7a2a2a"/><rect x="24" y="38" width="3" height="3" fill="#7a2a2a"/><rect x="37" y="38" width="3" height="3" fill="#7a2a2a"/><rect x="8" y="50" width="48" height="14" fill="#7e57c2"/></svg>`;
+    return `<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#ffe3ef"/><rect x="8" y="6" width="48" height="58" rx="6" fill="#d48aa6"/><rect x="16" y="16" width="32" height="34" rx="3" fill="#d9a877"/><rect x="22" y="26" width="5" height="7" fill="#1d1d24"/><rect x="37" y="26" width="5" height="7" fill="#1d1d24"/><rect x="18" y="35" width="6" height="3" fill="#f29b9b"/><rect x="40" y="35" width="6" height="3" fill="#f29b9b"/><rect x="26" y="40" width="12" height="3" fill="#7a2a2a"/><rect x="24" y="38" width="3" height="3" fill="#7a2a2a"/><rect x="37" y="38" width="3" height="3" fill="#7a2a2a"/><rect x="8" y="50" width="48" height="14" fill="#7e57c2"/></svg>`;
   }
   const f = hex(fur ?? (kind === 'lisa' ? 0xf6f3ec : kind === 'belang' ? 0x9aa3ad : kind === 'mpus' ? 0xeed7ab : 0xf2a044));
   const eye = kind === 'lisa' ? '#49a6f2' : kind === 'belang' ? '#f6cf3a' : '#6fcf5a';

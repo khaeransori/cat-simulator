@@ -37,7 +37,7 @@ export class Day {
   token = 0;
 
   constructor() {
-    this.mama = new Human('mama', { skin: 0xd9a877, shirt: 0x7e57c2, pants: 0x455a64, hair: 'hijab', hijabColor: 0xf06292, prop: 'tas', skirt: true, shoes: 0x5d4037 }, 'mama', ctx.world.pts.mamaStart, { x0: -30, z0: -30, x1: 30, z1: 10 }, 1.1);
+    this.mama = new Human('mama', { skin: 0xd9a877, top: 'blazer', topC: 0x5c6b7a, topC2: 0xf3e5f5, long: true, bottom: 'celana', botC: 0x37474f, head: 'pashmina', headC: 0xd48aa6, shoes: 0x3e2723, prop: 'tas' }, 'mama', ctx.world.pts.mamaStart, { x0: -30, z0: -30, x1: 30, z1: 10 }, 1.1);
     this.mama.state = 'script';
     this.mama.active = false;
     // guide arrow (chevron)
