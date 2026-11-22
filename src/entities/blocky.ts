@@ -240,12 +240,12 @@ function rigNode(name: string, mat: THREE.Material): THREE.Object3D {
   return o;
 }
 /** Build one dressed Blocky person. Raw model is 2.73 tall; scale the returned root yourself. */
-export function buildBlocky(o: Outfit, seated = false): BlockyNodes {
+export function buildBlocky(o: Outfit, seated = false, dressFn: typeof dress = dress): BlockyNodes {
   const skin = paintSkin(o);
   const mat = new THREE.MeshLambertMaterial({ map: skin });
   const body = rigNode('root', mat);
   const root = new THREE.Group(); root.add(body);
-  dress(body, o, seated);
+  dressFn(body, o, seated);
   const q = (k: string) => body.getObjectByName(k)!;
   return { root, body, legL: q('leg-left'), legR: q('leg-right'), torso: q('torso'), armL: q('arm-left'), armR: q('arm-right'), head: q('head'), skin };
 }

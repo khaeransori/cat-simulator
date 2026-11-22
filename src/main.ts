@@ -70,17 +70,17 @@ function boot() {
   const W = ctx.world;
   const pts = W.pts;
   const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
-  const siti = new Human('siti', { skin: 0xc68e5f, shirt: 0x26a69a, pants: 0x1f8a80, skirt: true, hair: 'hijab', hijabColor: 0xffb74d, prop: 'sapu', shoes: 0x795548 }, 'adult', pts.sitiHome, { x0: -1, z0: -14.5, x1: 19, z1: -3.3 }, 1.25);
+  const siti = new Human('siti', { skin: 0xc68e5f, top: 'daster', topC: 0x2a9d8f, topPat: 'batik', topC2: 0xf4d58d, long: true, bottom: 'daster', botC: 0x2a9d8f, botPat: 'batik', botC2: 0xf4d58d, head: 'bergo', headC: 0xf4a261, shoes: 0x8d6e63, prop: 'sapuLidi' }, 'adult', pts.sitiHome, { x0: -1, z0: -14.5, x1: 19, z1: -3.3 }, 1.25);
   siti.path = [V(3, 0, -9), V(11.5, 0, -9.6), V(8, 0, -6.6), V(11.8, 0, -12.9), V(4.2, 0, -12.9)];
   siti.idlePose = 'sweep';
   siti.idleLines = NPC_LINES.sweep;
   siti.owns = ['sandal'];
-  const ujang = new Human('ujang', { skin: 0xb87a4b, shirt: 0x1976d2, pants: 0x37474f, hair: 'short', apron: 0x0d47a1, towel: true, mustache: true, shoes: 0x212121 }, 'adult', pts.ujangA, { x0: 18, z0: 5.5, x1: 62, z1: 39 }, 0.8);
+  const ujang = new Human('ujang', { skin: 0xb87a4b, top: 'kaos', topC: 0x1976d2, long: false, bottom: 'celana', botC: 0x37474f, head: 'pendek', hair: 0x1b1410, shoes: 0x263238, boots: true, mustache: true, apron: 0x0d3b7a, towel: true }, 'adult', pts.ujangA, { x0: 18, z0: 5.5, x1: 62, z1: 39 }, 0.8);
   ujang.path = [pts.ujangA, pts.ujangB, pts.ujangC, pts.ujangD];
   ujang.idleLines = NPC_LINES.sell;
   ujang.owns = ['ikan_pasar'];
   ujang.chaseSpeed = 3.9;
-  const tini = new Human('tini', { skin: 0xd9a877, shirt: 0xef5350, pants: 0x6d4c41, skirt: true, hair: 'bun', hairColor: 0x2a1c14 }, 'adult', pts.tini, { x0: 38, z0: 9, x1: 54, z1: 24 }, 1.35);
+  const tini = new Human('tini', { skin: 0xd9a877, top: 'kebaya', topC: 0xe76f51, long: true, bottom: 'kain', botC: 0x6d4c41, botPat: 'batik', botC2: 0xe9c46a, head: 'sanggul', hair: 0x2a1c14, shoes: 0x5d4037, prop: 'keranjang' }, 'adult', pts.tini, { x0: 38, z0: 9, x1: 54, z1: 24 }, 1.35);
   tini.yaw = tini.homeYaw = Math.PI;
   tini.range = 7;
   tini.idleLines = [
@@ -88,14 +88,14 @@ function boot() {
     { id: 'Tomatnya merah-merah!', en: 'Nice red tomatoes!' },
   ];
   // new edge areas
-  const satpam = new Human('satpam', { skin: 0xb87a4b, shirt: 0x37474f, pants: 0x263238, hair: 'peci', mustache: true, shoes: 0x111111 }, 'adult', pts.satpamA, { x0: -86, z0: 4, x1: -58, z1: 18.4 }, 0.9);
+  const satpam = new Human('satpam', { skin: 0xb87a4b, top: 'seragam', topC: 0xcdb98f, long: true, bottom: 'celana', botC: 0x5d4632, head: 'topiPet', headC: 0x4e3b2a, shoes: 0x111111, boots: true, mustache: true, prop: 'peluit' }, 'adult', pts.satpamA, { x0: -86, z0: 4, x1: -58, z1: 18.4 }, 0.9);
   satpam.path = [pts.satpamA, pts.satpamB, pts.satpamC, pts.satpamD];
   satpam.idleLines = [
     { id: 'Aman... aman...', en: 'All clear... all clear...' },
     { id: 'Jangan main di sekolah, ya!', en: 'No playing at the school!' },
   ];
   satpam.owns = [];
-  const buWarung = new Human('buwarung', { skin: 0xd9a877, shirt: 0xffb300, pants: 0x5d4037, skirt: true, hair: 'hijab', hijabColor: 0x43a047, shoes: 0x6d4c41 }, 'adult', pts.warungCounter, { x0: -62, z0: -13.5, x1: -50, z1: -4.5 }, 1.3);
+  const buWarung = new Human('buwarung', { skin: 0xd9a877, top: 'gamis', topC: 0x2e7d32, long: true, bottom: 'gamis', botC: 0x2e7d32, head: 'bergo', headC: 0x1b5e20, shoes: 0x5d4037 }, 'adult', pts.warungCounter, { x0: -62, z0: -13.5, x1: -50, z1: -4.5 }, 1.3);
   buWarung.yaw = buWarung.homeYaw = -0.6; // watching the counter and the shop front
   buWarung.range = 7;
   buWarung.idleLines = [
@@ -104,7 +104,7 @@ function boot() {
   ];
   buWarung.owns = ['kerupuk'];
   // road works foreman (only out on road-works days, see game/roadworks.ts)
-  const mandor = new Human('mandor', { skin: 0xb87a4b, shirt: 0xff8f00, pants: 0x37474f, hair: 'cap', hijabColor: 0xfdd835, mustache: true, shoes: 0x4e342e }, 'adult', V(39.6, 0, -4.3), { x0: 34, z0: -5.2, x1: 62, z1: 0.6 }, 0.85);
+  const mandor = new Human('mandor', { skin: 0xb87a4b, top: 'rompi', topC: 0xff6f00, topC2: 0x546e7a, long: true, bottom: 'celana', botC: 0x37474f, head: 'helm', headC: 0xfdd835, shoes: 0x4e342e, boots: true, mustache: true }, 'adult', V(39.6, 0, -4.3), { x0: 34, z0: -5.2, x1: 62, z1: 0.6 }, 0.85);
   mandor.path = [V(39.6, 0, -4.3), V(47, 0, -4.3), V(57.8, 0, -4.3), V(57.8, 0, -1.2), V(51, 0, -4.3)];
   mandor.idleLines = [
     { id: 'Hati-hati, ada perbaikan jalan!', en: 'Careful, road works!' },
@@ -113,8 +113,8 @@ function boot() {
   mandor.owns = [];
   mandor.active = false;
   ctx.npcs = [siti, ujang, tini, satpam, buWarung, mandor];
-  const dimas = new Human('dimas', { skin: 0xc68e5f, shirt: 0xffca28, pants: 0x1e88e5, hair: 'cap', hijabColor: 0xe53935, kid: true }, 'kid', pts.kidA, { x0: -30, z0: 5, x1: 12, z1: 39 }, 1.8);
-  const putri = new Human('putri', { skin: 0xe0ac7e, shirt: 0xec407a, pants: 0x7e57c2, skirt: true, hair: 'long', hairColor: 0x3e2723, kid: true }, 'kid', pts.kidB, { x0: -30, z0: 5, x1: 12, z1: 39 }, 2.0);
+  const dimas = new Human('dimas', { kid: true, skin: 0xc68e5f, top: 'kaosBola', topC: 0xe63946, topC2: 0xffffff, long: false, bottom: 'pendek', botC: 0x1d3557, head: 'topi', headC: 0x1d3557, hair: 0x1b1410, shoes: 0xf1faee }, 'kid', pts.kidA, { x0: -30, z0: 5, x1: 12, z1: 39 }, 1.8);
+  const putri = new Human('putri', { kid: true, skin: 0xe0ac7e, top: 'tunik', topC: 0xf48fb1, topPat: 'bunga', topC2: 0xffffff, long: true, bottom: 'celana', botC: 0x7e57c2, head: 'kerudungAnak', headC: 0xffffff, shoes: 0xec407a }, 'kid', pts.kidB, { x0: -30, z0: 5, x1: 12, z1: 39 }, 2.0);
   ctx.kids = new Kids(dimas, putri);
   ctx.dog = new Dog();
   ctx.flocks = [new Flock(pts.pigeonPark, 6, 'merpati_taman'), new Flock(pts.pigeonRoof, 5, 'merpati_atap'), new Flock(pts.ducks, 5, 'bebek', () => new DuckModel(Math.random() < 0.4 ? 0xc8a165 : 0xfafafa))];
