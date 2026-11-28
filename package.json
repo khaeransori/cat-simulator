@@ -24,7 +24,8 @@
     "test:vehicles": "node test/vehicles.mjs && node test/vehicles-mockup.mjs",
     "test:people": "node test/people.mjs && node test/people-mockup.mjs",
     "test:houses": "node test/houses-mockup.mjs",
-    "test:balloons": "node test/balloons.mjs"
+    "test:balloons": "node test/balloons.mjs",
+    "test:courier": "node test/courier.mjs"
   },
   "dependencies": {
     "@fontsource/baloo-2": "^5.3.0",

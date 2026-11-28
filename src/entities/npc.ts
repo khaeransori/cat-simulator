@@ -20,6 +20,7 @@ const LINES = {
   sweep: [P('Nyapu dulu ah...', 'Time to sweep...'), P('Hmm hmm hmm~', 'Hmm hmm hmm~')],
   sell: [P('Ikan segar! Ikan segar!', 'Fresh fish! Fresh fish!'), P('Murah, murah!', 'Cheap, cheap!')],
   meow: [P('Eh, ada kucing.', 'Oh, a kitty.'), P('Meong juga!', 'Meow to you too!')],
+  lost: [P('Lho, ke mana kucingnya?', 'Huh, where did the cat go?'), P('Hilang... kok bisa?', 'Gone... how?'), P('Hmm, nggak ada kucing.', 'Hmm, no cat here.')],
 };
 
 export interface Owned {
@@ -63,6 +64,10 @@ export class Human {
   goalCb: (() => void) | null = null;
   /** hearing multiplier (weather: smaller at night, so sneaking is easier) */
   hearK = 1;
+  /** pose while walking the route (the courier carries his parcel) */
+  walkPose: HumanPose = 'walk';
+  /** >0 while giving up because the cat vanished into a box */
+  lostT = 0;
 
   walkTo(p: THREE.Vector3, speed = 1.8) {
     return new Promise<void>((res) => {
@@ -115,6 +120,8 @@ export class Human {
   }
 
   canSee(tx: number, ty: number, tz: number) {
+    // a cat napping inside a cardboard box is invisible (game/courier.ts)
+    if (ctx.catHidden?.() && Math.abs(tx - ctx.cat.body.x) < 0.01 && Math.abs(tz - ctx.cat.body.z) < 0.01) return false;
     const b = this.body;
     const dx = tx - b.x, dz = tz - b.z;
     const d = Math.hypot(dx, dz);
@@ -280,7 +287,7 @@ export class Human {
         }
         const t = this.path[this.pathI];
         const d = this.moveToward(t.x, t.z, this.speed, dt);
-        pose = 'walk';
+        pose = this.walkPose;
         if (d < 0.3 || this.stuckT > 2.5) {
           // arrived (or this waypoint can't be reached right now: go on to the next one)
           this.state = 'wait';
@@ -339,11 +346,16 @@ export class Human {
         spd = 1.4;
         const reachable = cb.y - b.y < 0.9;
         const inArea = this.inZone(cb.x, cb.z, 2.5);
-        if (!reachable || !inArea || this.stateT > 5 || this.stuckT > 1.8 || cat.state === 'hugged' || cat.state === 'cut') {
+        const hidden = !!ctx.catHidden?.();
+        if (!reachable || !inArea || hidden || this.stateT > 5 || this.stuckT > 1.8 || cat.state === 'hugged' || cat.state === 'cut') {
           this.resetNav();
           this.state = 'giveup';
           this.stateT = 0;
-          this.say(LINES.gone, 1.8, 'shout');
+          if (hidden) {
+            // lost the cat: scratches his head and looks around
+            this.say(LINES.lost, 2, 'speech');
+            this.lostT = 1;
+          } else this.say(LINES.gone, 1.8, 'shout');
           break;
         }
         const d = this.moveToward(cb.x, cb.z, this.chaseSpeed, dt);
@@ -365,8 +377,15 @@ export class Human {
       case 'giveup': {
         b.vx = damp(b.vx, 0, 8, dt);
         b.vz = damp(b.vz, 0, 8, dt);
-        pose = 'point';
-        this.yaw = angleLerp(this.yaw, Math.atan2(cb.x - b.x, cb.z - b.z), 1 - Math.exp(-6 * dt));
+        if (this.lostT > 0) {
+          // lost a hidden cat: looks left and right instead of pointing at it
+          pose = 'idle';
+          this.yaw += Math.sin(this.stateT * 3) * 1.6 * dt;
+          if (this.stateT > 1.6) this.lostT = 0;
+        } else {
+          pose = 'point';
+          this.yaw = angleLerp(this.yaw, Math.atan2(cb.x - b.x, cb.z - b.z), 1 - Math.exp(-6 * dt));
+        }
         if (this.stateT > 1.6) {
           this.model.setMouth('smile');
           this.state = 'return';

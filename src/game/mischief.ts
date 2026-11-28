@@ -25,6 +25,8 @@ export const MISCHIEF: MDef[] = [
   { id: 'laptop', area: 'rumah', icon: '💻', name: P('Tidur di laptop', 'Nap on the laptop'), noise: 0 },
   { id: 'ikan_dapur', area: 'rumah', icon: '🐟', name: P('Curi ikan goreng', 'Steal fried fish'), noise: 0 },
   { id: 'gorden', area: 'rumah', icon: '🪟', name: P('Cakar gorden', 'Shred the curtains'), noise: 3 },
+  // Mas Bayu's parcel on the teras (game/courier.ts): only after he delivered it, never at night => not for quests
+  { id: 'kardus_paket', area: 'rumah', icon: '📦', name: P('Bongkar kardus paket', 'Tear open the parcel'), noise: 3, rare: true },
   { id: 'pot_taman', area: 'taman', icon: '🌸', name: P('Jatuhin pot taman', 'Topple the park pot'), noise: 9 },
   { id: 'gali', area: 'taman', icon: '🌷', name: P('Gali taman bunga', 'Dig up the flower bed'), noise: 4 },
   { id: 'merpati_taman', area: 'taman', icon: '🕊️', name: P('Kagetin merpati', 'Spook the pigeons'), noise: 6 },

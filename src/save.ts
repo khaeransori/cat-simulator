@@ -59,6 +59,8 @@ export interface SaveData {
   works: { start: number; rolled: number; prints: number[][] };
   /** Mas Dodi the balloon seller: met him, got the back balloon, balloons returned */
   balon: { met: boolean; got: boolean; n: number };
+  /** Mas Bayu the courier: met him, days hidden in a cardboard box (sticker Raja Kardus at 3) */
+  kurir: { met: boolean; hid: number };
 }
 
 export interface GiverState {
@@ -101,6 +103,7 @@ export function defaultSave(): SaveData {
     decorOff: {},
     works: { start: 0, rolled: 0, prints: [] },
     balon: { met: false, got: false, n: 0 },
+    kurir: { met: false, hid: 0 },
   };
 }
 

@@ -319,6 +319,18 @@ export class CatModel {
         h.add(B(0.1, 0.03, 0.26, c, 0, 0.18, 0));
         break;
       }
+      case 'topiKardus': {
+        // a little cardboard box worn as a hat, flaps up, tape on top (sticker Raja Kardus)
+        const c = lam(0xc9955a), ct = lam(0xdcae72);
+        h.add(B(0.3, 0.2, 0.28, c, 0, 0.1, 0));
+        h.add(B(0.06, 0.005, 0.285, lam(0xe8d6a8), 0, 0.2, 0));
+        const f1 = B(0.15, 0.02, 0.28, ct, 0.2, 0.22, 0);
+        f1.rotation.z = -0.7;
+        const f2 = B(0.15, 0.02, 0.28, ct, -0.2, 0.22, 0);
+        f2.rotation.z = 0.7;
+        h.add(f1, f2, B(0.08, 0.06, 0.005, lam(0x5b3a1e), 0.06, 0.1, 0.142));
+        break;
+      }
       case 'topiPesta': {
         const g = new THREE.Group();
         g.rotation.z = 0.2;

@@ -51,6 +51,7 @@ export function buildBadges(): Badge[] {
     { id: 'allRare', icon: '💎', name: P('Pemburu Ikan Langka', 'Rare Fish Hunter'), desc: P('Dapat semua ikan langka', 'Catch every rare fish'), coins: 50, item: 'neck:mutiara', big: true, done: () => rares().every((f) => caught(f.id)), prog: () => [count(rares(), caught), rares().length] },
     { id: 'allFish', icon: '🧺', name: P('Album Ikan Lengkap', 'Fish Album Complete'), desc: P('Dapat semua isi album ikan', 'Fill the whole fish album'), coins: 80, item: 'head:topiNelayan', big: true, done: () => FISH.every((f) => caught(f.id)), prog: () => [count(FISH, caught), FISH.length] },
     { id: 'balloon3', icon: '🎈', name: P('Penolong Balon', 'Balloon Helper'), desc: P('Kembalikan 3 balon Mas Dodi', "Return 3 of Dodi's balloons"), coins: 20, done: () => (ctx.save.balon?.n || 0) >= 3, prog: () => [Math.min(3, ctx.save.balon?.n || 0), 3] },
+    { id: 'kardus3', icon: '📦', name: P('Raja Kardus', 'Box King'), desc: P('Ngumpet di kardus pada 3 hari berbeda', 'Hide in a box on 3 different days'), coins: 20, item: 'head:topiKardus', done: () => (ctx.save.kurir?.hid || 0) >= 3, prog: () => [Math.min(3, ctx.save.kurir?.hid || 0), 3] },
     { id: 'firstMischief', icon: '😼', name: P('Mulai Nakal', 'First Mischief'), desc: P('Lakukan kenakalan pertama', 'Do your first mischief'), coins: 5, done: () => MISCHIEF.some((m) => done(m.id)) },
   );
   for (const a of AREAS()) {

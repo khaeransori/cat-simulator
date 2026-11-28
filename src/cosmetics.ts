@@ -52,6 +52,7 @@ export const ITEMS: Item[] = [
   { id: 'topiBintang', slot: 'head', name: P('Topi penyihir bintang', 'Star wizard hat'), price: 0, quest: 'special' },
   { id: 'headset', slot: 'head', name: P('Headset DJ', 'DJ headphones'), price: 0, quest: 'special' },
   { id: 'topiNelayan', slot: 'head', name: P('Topi nelayan', 'Fisher hat'), price: 0, album: 'allFish' },
+  { id: 'topiKardus', slot: 'head', name: P('Topi kardus', 'Box hat'), price: 0, album: 'kardus3' },
   // Face
   { id: 'none', slot: 'face', name: P('Tanpa kacamata', 'No glasses'), price: 0 },
   { id: 'bulat', slot: 'face', name: P('Kacamata kotak', 'Square glasses'), price: 20 },

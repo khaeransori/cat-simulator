@@ -15,7 +15,7 @@ const qProgressUI = (d: any) => qProgress(d.q, d);
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const hex = (n: number) => '#' + n.toString(16).padStart(6, '0');
 
-export type Face = 'cat' | 'lisa' | 'mama' | 'belang' | 'mpus' | 'dodi';
+export type Face = 'cat' | 'lisa' | 'mama' | 'belang' | 'mpus' | 'dodi' | 'bayu';
 
 export function faceSVG(kind: Face, fur?: number) {
   if (kind === 'mama') {
@@ -23,6 +23,9 @@ export function faceSVG(kind: Face, fur?: number) {
   }
   if (kind === 'dodi') {
     return `<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#e3f6ff"/><circle cx="52" cy="12" r="8" fill="#ff4d6d"/><circle cx="10" cy="14" r="6" fill="#ffd23f"/><rect x="14" y="16" width="36" height="38" rx="3" fill="#c68e5f"/><rect x="12" y="10" width="40" height="10" fill="#1565c0"/><rect x="30" y="18" width="24" height="4" fill="#0d47a1"/><rect x="22" y="28" width="5" height="7" fill="#1d1d24"/><rect x="37" y="28" width="5" height="7" fill="#1d1d24"/><rect x="24" y="42" width="16" height="3" fill="#7a3b2e"/><rect x="22" y="40" width="3" height="3" fill="#7a3b2e"/><rect x="39" y="40" width="3" height="3" fill="#7a3b2e"/><rect x="8" y="54" width="48" height="10" fill="#ff8f00"/></svg>`;
+  }
+  if (kind === 'bayu') {
+    return `<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#fff3e0"/><rect x="40" y="40" width="20" height="18" fill="#c9955a"/><rect x="48" y="40" width="4" height="18" fill="#e8d6a8"/><rect x="14" y="16" width="36" height="38" rx="3" fill="#b87a4b"/><rect x="12" y="10" width="40" height="10" fill="#c62828"/><rect x="30" y="18" width="24" height="4" fill="#8e1b1b"/><rect x="22" y="28" width="5" height="7" fill="#1d1d24"/><rect x="37" y="28" width="5" height="7" fill="#1d1d24"/><rect x="24" y="42" width="16" height="3" fill="#6b2f22"/><rect x="22" y="40" width="3" height="3" fill="#6b2f22"/><rect x="39" y="40" width="3" height="3" fill="#6b2f22"/><rect x="8" y="54" width="48" height="10" fill="#d32f2f"/></svg>`;
   }
   const f = hex(fur ?? (kind === 'lisa' ? 0xf6f3ec : kind === 'belang' ? 0x9aa3ad : kind === 'mpus' ? 0xeed7ab : 0xf2a044));
   const eye = kind === 'lisa' ? '#49a6f2' : kind === 'belang' ? '#f6cf3a' : '#6fcf5a';
@@ -75,6 +78,7 @@ const ICON: Record<string, string> = {
   'neck:syalApi': '🔥',
   'back:kupu': '🦋',
   'back:balon': '🎈',
+  'head:topiKardus': '📦',
 };
 
 type Line = { who: string; text: string; face: Face };
@@ -479,7 +483,7 @@ export class UI {
       t.i = Math.min(t.full.length, n);
       $('dlgTxt').textContent = t.full.slice(0, t.i);
       const face = this.dialogQ[0]?.face;
-      sfx.voice(face === 'mama' ? 1.1 : face === 'lisa' ? 1.8 : face === 'belang' ? 1.2 : face === 'mpus' ? 1.6 : face === 'dodi' ? 1.05 : 1.5, 0.05);
+      sfx.voice(face === 'mama' ? 1.1 : face === 'lisa' ? 1.8 : face === 'belang' ? 1.2 : face === 'mpus' ? 1.6 : face === 'dodi' ? 1.05 : face === 'bayu' ? 0.95 : 1.5, 0.05);
     }
   }
 

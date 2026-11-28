@@ -30,6 +30,7 @@ import { RoadWorks } from './game/roadworks';
 import { randomSpec, VTYPES } from './entities/vehicles';
 import { DecorSystem } from './game/decor';
 import { BalloonMan } from './game/balloons';
+import { Courier } from './game/courier';
 import { PhotoMode } from './ui/photo';
 import { UI, HUD_HTML } from './ui/ui';
 import { input, setupInput } from './input';
@@ -116,6 +117,8 @@ function boot() {
   ctx.npcs = [siti, ujang, tini, satpam, buWarung, mandor];
   // Mas Dodi the balloon seller (park + street); adds himself to ctx.npcs
   ctx.balloons = new BalloonMan();
+  // Mas Bayu the parcel courier (street + home teras); adds himself to ctx.npcs
+  ctx.courier = new Courier();
   const dimas = new Human('dimas', { kid: true, skin: 0xc68e5f, top: 'kaosBola', topC: 0xe63946, topC2: 0xffffff, long: false, bottom: 'pendek', botC: 0x1d3557, head: 'topi', headC: 0x1d3557, hair: 0x1b1410, shoes: 0xf1faee }, 'kid', pts.kidA, { x0: -30, z0: 5, x1: 12, z1: 39 }, 1.8);
   const putri = new Human('putri', { kid: true, skin: 0xe0ac7e, top: 'tunik', topC: 0xf48fb1, topPat: 'bunga', topC2: 0xffffff, long: true, bottom: 'celana', botC: 0x7e57c2, head: 'kerudungAnak', headC: 0xffffff, shoes: 0xec407a }, 'kid', pts.kidB, { x0: -30, z0: 5, x1: 12, z1: 39 }, 2.0);
   ctx.kids = new Kids(dimas, putri);
@@ -321,6 +324,7 @@ function boot() {
       ctx.butterflies.update(gdt);
       ctx.lisa.update(gdt);
       ctx.balloons.update(gdt);
+      ctx.courier.update(gdt);
       ctx.progress.update(gdt);
       ctx.props.update(gdt);
       ctx.works.update(gdt);

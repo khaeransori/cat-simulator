@@ -9,7 +9,8 @@ import type { Pair } from '../i18n';
 import { tr, L } from '../i18n';
 import { sfx } from '../audio';
 import { writeSave } from '../save';
-import { StaticBuilder, mbox, type AABB } from '../world/builder';
+import { StaticBuilder, mbox, lam, type AABB } from '../world/builder';
+import { balloonMesh, BALLOON_COLORS } from './balloons';
 
 const P = (id: string, en: string): Pair => ({ id, en });
 const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
@@ -37,6 +38,10 @@ export const DECOR: DecorDef[] = [
   { id: 'kasur', icon: '🛏️', name: P('Kasur kucing', 'Cat bed'), desc: P('Bobo siang. Mama juga senang!', 'Nap time. Mom likes it too!'), price: 45, pos: V(-8.3, 0, -14.35) },
   { id: 'rak', icon: '📚', name: P('Rak dinding', 'Wall shelf'), desc: P('Lompat ke atas dari tiang cakar.', 'Jump up from the scratching post.'), price: 45, pos: V(-6.5, 1.6, -15.5) },
   { id: 'akuarium', icon: '🐠', name: P('Akuarium kecil', 'Little aquarium'), desc: P('Ikannya berenang lucu.', 'Cute swimming fish.'), price: 60, pos: V(-8.0, 0.6, -18.45) },
+  // tema Pesta (weekly drop "Pesta & Paket")
+  { id: 'bendera', icon: '🎉', name: P('Bendera pesta', 'Party bunting'), desc: P('Hiasan segitiga warna-warni.', 'Colourful pennants on the wall.'), price: 30, pos: V(-13.0, 2.5, -18.8), cam: V(-13.0, 1.7, -14.6) },
+  { id: 'balonRumah', icon: '🎈', name: P('Balon pesta', 'Party balloons'), desc: P('Tepuk, balonnya goyang!', 'Bat them and they bob!'), price: 35, pos: V(-17.0, 0.9, -18.25), cam: V(-15.2, 1.6, -15.3) },
+  { id: 'kue', icon: '🎂', name: P('Kue ulang tahun', 'Birthday cake'), desc: P('Tiup lilinnya, hore!', 'Blow out the candles, hooray!'), price: 50, pos: V(-10.4, 0.45, -13.75), cam: V(-11.8, 1.5, -16.0) },
 ];
 export const DECOR_BY: Record<string, DecorDef> = Object.fromEntries(DECOR.map((d) => [d.id, d]));
 
@@ -68,6 +73,12 @@ export class DecorSystem {
   // aquarium fish
   fish: THREE.Object3D[] = [];
   fishFast = 0;
+  // party balloons (bob when batted)
+  balls: THREE.Group[] = [];
+  ballBob = 0;
+  // birthday cake candles (blown out, then lit again)
+  flames: THREE.Object3D[] = [];
+  candleOutT = 0;
 
   constructor() {
     const scene = ctx.scene;
@@ -102,7 +113,7 @@ export class DecorSystem {
       const on = this.isShown(d.id);
       // a previewed (not yet bought) item is only for looking: no colliders
       for (const c of p.cols) c.off = !decorPlaced(d.id);
-      for (const o of p.objs) o.visible = on;
+      for (const o of p.objs) o.visible = on && !(this.candleOutT > 0 && this.flames.includes(o));
       if (!on) continue;
       const base = pos.length / 3;
       pos.push(...p.S.pos);
@@ -163,6 +174,9 @@ export class DecorSystem {
     this.mouse.position.set(-11.4, 0.03, -15.75);
     this.mouse.rotation.set(0, 0.6, 0);
     this.mouseHop = 0;
+    this.ballBob = 0;
+    this.candleOutT = 0;
+    for (const f of this.flames) f.visible = this.isShown('kue');
   }
 
   // ---------------- geometry ----------------
@@ -351,6 +365,94 @@ export class DecorSystem {
         S.box(x1 - 0.18, y + 0.34, z1 - 0.52, 0.03, 0.04, 0.03, 0xf3c33c, { collide: false });
         break;
       }
+      case 'bendera': {
+        // two strings of triangle pennants across the living-room back wall, above the poster/photos
+        const z = -18.8, cols = [0xff4d6d, 0xffd23f, 0x4cc9f0, 0x80ed99, 0xc77dff, 0xff9f45];
+        const pos: number[] = [], col: number[] = [];
+        const c = new THREE.Color();
+        const string = (x0: number, x1: number, y: number, sag: number, n: number, k0: number) => {
+          const yAt = (x: number) => y - sag * (1 - ((2 * (x - x0)) / (x1 - x0) - 1) ** 2);
+          for (let i = 0; i < n; i++) {
+            const xa = x0 + ((x1 - x0) * (i + 0.15)) / n, xb = x0 + ((x1 - x0) * (i + 0.85)) / n, xm = (xa + xb) / 2;
+            const ya = yAt(xa), yb = yAt(xb);
+            c.setHex(cols[(i + k0) % cols.length]);
+            pos.push(xa, ya, z, xm, (ya + yb) / 2 - 0.3, z, xb, yb, z);
+            for (let k = 0; k < 3; k++) col.push(c.r, c.g, c.b);
+          }
+          // the string itself
+          for (let i = 0; i < 12; i++) {
+            const a = x0 + ((x1 - x0) * i) / 12, b = x0 + ((x1 - x0) * (i + 1)) / 12;
+            S.mm(a, yAt(a) - 0.012, z - 0.01, b, yAt(a) + 0.012, z + 0.01, 0xf5f5f5, { collide: false, jitter: 0 });
+          }
+        };
+        // (stays west of the kitchen doorway at x -11..-9.5)
+        string(-17.3, -11.3, 2.95, 0.3, 9, 0);
+        string(-16.7, -11.9, 2.62, 0.18, 7, 3);
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+        g.computeVertexNormals();
+        const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+        m.position.z = 0.02;
+        objs.push(m);
+        // little paper fan medallions at the ends
+        for (const [x, cc] of [[-17.55, 0xff4d6d], [-11.05, 0x4cc9f0]] as [number, number][]) {
+          for (let k = 0; k < 4; k++) S.rot(x, 2.95, z + 0.02, 0.42, 0.08, 0.02, 0, cc, 0, (k * Math.PI) / 4);
+          S.box(x, 2.92, z + 0.03, 0.1, 0.1, 0.02, 0xffffff, { collide: false });
+        }
+        break;
+      }
+      case 'balonRumah': {
+        // a bunch of party balloons tied to a little weight on the floor
+        const x = -17.0, z = -18.25;
+        S.box(x, 0, z, 0.2, 0.12, 0.2, 0xffd23f, { collide: false });
+        S.box(x, 0.12, z, 0.06, 0.04, 0.06, 0xff4d6d, { collide: false });
+        const offs = [[0, 0, 1.55], [0.28, 0.1, 1.35], [-0.26, -0.06, 1.42], [0.1, -0.26, 1.25], [-0.12, 0.24, 1.7]];
+        BALLOON_COLORS.forEach((cc, i) => {
+          const [ox, oz, len] = offs[i];
+          const b = balloonMesh(cc, len);
+          b.position.set(x, 0.15, z);
+          b.rotation.set(oz * 0.5, 0, -ox * 0.5);
+          b.userData.base = b.rotation.clone();
+          b.userData.k = i;
+          this.balls.push(b);
+          objs.push(b);
+        });
+        break;
+      }
+      case 'kue': {
+        // small round party table + a two-layer birthday cake with three candles
+        const x = -10.4, z = -13.75;
+        S.box(x, 0, z, 0.1, 0.42, 0.1, 0xffffff, { collide: false });
+        S.box(x, 0, z, 0.36, 0.04, 0.36, 0xeeeeee, { collide: false });
+        S.box(x, 0.42, z, 0.7, 0.04, 0.6, 0xffffff, { top: 0xfff1f6 }); // table top (cat can hop on)
+        S.mm(x - 0.36, 0, z - 0.31, x + 0.36, 0.42, z + 0.31, 0, { visible: false, cam: false });
+        S.box(x, 0.461, z, 0.74, 0.01, 0.64, 0xff8fb0, { collide: false, jitter: 0 }); // table cloth
+        S.box(x, 0.46, z, 0.44, 0.03, 0.44, 0xf5f5f5, { collide: false }); // plate
+        S.box(x, 0.49, z, 0.38, 0.16, 0.38, 0xf8d9a0, { collide: false, top: 0xfff4f8 });
+        S.box(x, 0.65, z, 0.26, 0.12, 0.26, 0xff8fb0, { collide: false, top: 0xfff4f8 });
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2;
+          S.box(x + Math.cos(a) * 0.17, 0.62, z + Math.sin(a) * 0.17, 0.05, 0.04, 0.05, [0xff4d6d, 0x4cc9f0, 0xffd23f][i % 3], { collide: false, jitter: 0 });
+        }
+        S.box(x + 0.02, 0.765, z + 0.02, 0.05, 0.03, 0.05, 0xe53935, { collide: false }); // cherry
+        const flameMat = new THREE.MeshBasicMaterial({ color: 0xffc94a });
+        [[-0.07, -0.05, 0x4cc9f0], [0.07, -0.05, 0xff4d6d], [0, 0.08, 0x80ed99]].forEach(([dx, dz, cc]) => {
+          S.box(x + dx, 0.77, z + dz, 0.025, 0.12, 0.025, cc, { collide: false, jitter: 0 });
+          const f = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.06, 0.035), flameMat);
+          f.position.set(x + dx, 0.925, z + dz);
+          f.userData.home = f.position.clone();
+          this.flames.push(f);
+          objs.push(f);
+        });
+        // party hats next to the cake
+        for (const [dx, cc] of [[0.26, 0xc77dff], [-0.27, 0xffd23f]] as [number, number][]) {
+          const hat = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.16, 6), lam(cc));
+          hat.position.set(x + dx, 0.55, z + 0.18);
+          objs.push(hat);
+        }
+        break;
+      }
       case 'akuarium': {
         const x = -8.0, z = -18.45;
         S.box(x, 0, z, 0.8, 0.6, 0.6, 0x5d4037, { top: 0x795548 });
@@ -491,6 +593,53 @@ export class DecorSystem {
         ctx.ui.toast('📦 ' + L({ id: 'Ssst... ngumpet di kardus!', en: 'Shh... hiding in the box!' }));
       },
     });
+    const bb = V(-17.0, 0, -17.95);
+    I.add({
+      id: 'decor_balon',
+      label: 'a_bat',
+      icon: '🎈',
+      pos: bb,
+      r: 0.85,
+      enabled: on('balonRumah'),
+      act: () => {
+        face(V(-17.0, 0, -18.25));
+        const b = ctx.cat.body;
+        b.vy = 5.2; // a little hop up at the strings
+        b.onGround = false;
+        ctx.cat.doAction('paw', 0.45);
+        this.ballBob = 2.2;
+        sfx.swish();
+        ctx.after(0.2, () => sfx.tone(520, 0.12, 'sine', 0.12, 0, 760));
+        happy(1);
+      },
+    });
+    const cake = DECOR_BY.kue.pos;
+    I.add({
+      id: 'decor_kue',
+      label: () => (this.candleOutT > 0 ? 'a_watch' : 'a_blow'),
+      icon: '🎂',
+      pos: V(-10.4, 0, -14.3),
+      r: 0.8,
+      enabled: () => on('kue')() && this.candleOutT <= 0,
+      act: () => {
+        face(cake);
+        ctx.cat.doAction('watch', 0.9, () => {
+          this.candleOutT = 6;
+          for (const f of this.flames) f.visible = false;
+          for (const f of this.flames) ctx.fx.burst(f.position.x, f.position.y + 0.03, f.position.z, 0xdddddd, 4, { speed: 0.5, up: 1.2, size: 0.04, life: 1.1 });
+          sfx.noise(0.35, 0.18, 'bandpass', 1400, 0.8);
+          ctx.after(0.4, () => {
+            sfx.fanfare();
+            ctx.fx.burst(cake.x, 1.2, cake.z, 0xff4d6d, 10, { speed: 2.5, up: 3, size: 0.06, life: 1.2 });
+            ctx.fx.burst(cake.x, 1.2, cake.z, 0x4cc9f0, 10, { speed: 2.5, up: 3, size: 0.06, life: 1.2 });
+            ctx.fx.burst(cake.x, 1.2, cake.z, 0xffd23f, 10, { speed: 2.5, up: 3, size: 0.06, life: 1.2 });
+            ctx.fx.hearts(ctx.cat.body.x, ctx.cat.body.y + 0.7, ctx.cat.body.z, 3);
+            ctx.ui.toast('🎂 ' + L({ id: 'Hore! Selamat ulang tahun, kucing!', en: 'Hooray! Happy birthday, kitty!' }), 2.6);
+          });
+          happy(1.5);
+        });
+      },
+    });
     const tank = DECOR_BY.akuarium.pos;
     I.add({
       id: 'decor_akuarium',
@@ -550,6 +699,28 @@ export class DecorSystem {
       const k = this.mouseHop / 0.6;
       this.mouse.position.y = 0.03 + Math.sin(k * Math.PI) * 0.25;
       this.mouse.rotation.y += dt * 12;
+    }
+    // party balloons bob and sway (more after a pat)
+    if (this.balls.length && this.isShown('balonRumah')) {
+      this.ballBob = Math.max(0, this.ballBob - dt);
+      const a = 0.05 + this.ballBob * 0.16;
+      for (const b of this.balls) {
+        const k = b.userData.k as number, base = b.userData.base as THREE.Euler;
+        b.rotation.set(base.x + Math.sin(t * (1.3 + k * 0.17) + k) * a, 0, base.z + Math.cos(t * (1.1 + k * 0.13) + k * 2) * a);
+      }
+    }
+    // cake candles flicker; blown out they light again after a while
+    if (this.flames.length && this.isShown('kue')) {
+      if (this.candleOutT > 0) {
+        this.candleOutT -= dt;
+        if (this.candleOutT <= 0) for (const f of this.flames) f.visible = true;
+      }
+      for (let i = 0; i < this.flames.length; i++) {
+        const f = this.flames[i], h = f.userData.home as THREE.Vector3;
+        const s = 0.85 + 0.25 * Math.sin(t * 13 + i * 2.1);
+        f.scale.set(1, s, 1);
+        f.position.y = h.y + (s - 1) * 0.03;
+      }
     }
     // aquarium fish
     if (this.fish.length && decorPlaced('akuarium')) {
