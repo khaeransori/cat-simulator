@@ -12,7 +12,7 @@ const info = await h.ev(() => {
   return all.map((p) => ({ name: p.name, blocky: !!p.model.n, h: p.model.height, kid: p.model.kid, hasSkin: !!p.model.n?.skin }));
 });
 console.log(info.map((i) => `${i.name}:${i.h.toFixed(2)}`).join(' '));
-check('9 people built', info.length === 9, String(info.length));
+check('10 people built (incl. Mas Dodi)', info.length === 10 && info.some((i) => i.name === 'dodi'), String(info.length));
 check('every person uses the Blocky rig', info.every((i) => i.blocky && i.hasSkin));
 check('adults ~1.7 m, kids ~1.37 m', info.every((i) => Math.abs(i.h - (i.kid ? 1.365 : 1.693)) < 0.01));
 

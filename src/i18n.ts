@@ -129,6 +129,12 @@ const T: Record<string, Pair> = {
   a_sofa: { id: 'Pura-pura tidur', en: 'Fake sleep' },
   a_chase: { id: 'Kejar', en: 'Chase' },
   a_splash: { id: 'Cebur', en: 'Splash' },
+  a_pop: { id: 'Pecahin', en: 'Pop' },
+  a_take: { id: 'Ambil', en: 'Take' },
+  balloonGot: { id: 'Dapat balon! Bawa ke Mas Dodi', en: 'Got the balloon! Bring it to Dodi' },
+  balloonBack: { id: 'Balonnya terbang balik ke tempat tadi', en: 'The balloon floated back where it was' },
+  balloonItem: { id: 'Balon di punggung', en: 'Back balloon' },
+  dodiLock: { id: 'Hadiah dari Mas Dodi', en: "Dodi's reward" },
 
   // Sofa confirm
   sofaConfirm: { id: 'Pura-pura tidur sekarang? Hari ini akan selesai.', en: 'Fake-sleep now? The day will end.' },

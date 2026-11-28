@@ -29,6 +29,8 @@ export const MISCHIEF: MDef[] = [
   { id: 'gali', area: 'taman', icon: '🌷', name: P('Gali taman bunga', 'Dig up the flower bed'), noise: 4 },
   { id: 'merpati_taman', area: 'taman', icon: '🕊️', name: P('Kagetin merpati', 'Spook the pigeons'), noise: 6 },
   { id: 'bola', area: 'taman', icon: '⚽', name: P('Curi bola anak-anak', "Steal the kids' ball"), noise: 0 },
+  // Mas Dodi's balloon bunch (game/balloons.ts); he is not out at night, so quests never ask for it
+  { id: 'balon_pecah', area: 'taman', icon: '🎈', name: P('Pecahin balon Mas Dodi', "Pop Dodi's balloon"), noise: 8, rare: true },
   { id: 'anjing', area: 'jalan', icon: '🐕', name: P('Bikin Bleki menggonggong', 'Make Bleki bark'), noise: 0 },
   { id: 'koran', area: 'jalan', icon: '📰', name: P('Sobek koran Bu Siti', "Shred Mrs. Siti's paper"), noise: 4 },
   { id: 'sandal', area: 'jalan', icon: '🩴', name: P('Curi sandal', 'Steal a sandal'), noise: 0 },
@@ -313,6 +315,12 @@ export function dropCarried(silent = false) {
   const p = new THREE.Vector3(b.x + f.x * 0.4, g, b.z + f.z * 0.4);
   if (c.id === 'bola') {
     ctx.kids.droppedBall(p);
+    return;
+  }
+  if (c.id === 'balon') {
+    // Mas Dodi's runaway balloon floats back to where it was stuck
+    if (silent) ctx.balloons?.home();
+    else ctx.balloons?.dropped();
     return;
   }
   if (c.id === 'ikan_pasar') {

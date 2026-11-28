@@ -17,9 +17,9 @@ Alternatif tanpa hosting: unduh [cat-simulator.html](https://khaeransori.github.
 
 - **Satu hari = 3, 5, atau 8 menit** (atur di Pengaturan). Matahari turun terus; 45 detik terakhir musik makin cepat dan panah menunjuk ke sofa.
 - **Pulang tepat waktu:** pura-pura tidur di sofa sebelum Mama pulang dapat bonus. Kalau telat, Mama memergoki kucing di luar (lucu, bukan kalah).
-- **33 kenakalan di 8 area:**
+- **35 kenakalan di 8 area** (+2 khusus hari proyek jalan, +1 balon Mas Dodi):
   - Rumah: jatuhin gelas, jatuhin pot, tarik tisu, tidur di laptop, curi ikan goreng, cakar gorden.
-  - Taman: jatuhin pot taman, gali taman bunga, kagetin merpati, curi bola anak-anak.
+  - Taman: jatuhin pot taman, gali taman bunga, kagetin merpati, curi bola anak-anak, pecahin balon Mas Dodi (setelah ngobrol dengannya hari itu).
   - Jalan kompleks: bikin Bleki menggonggong, sobek koran Bu Siti, curi sandal, tidur di jok motor (alarm!), jatuhin pot tetangga.
   - Pasar Ikan: curi ikan, tumpahin ember, dorong keranjang tomat.
   - Atap tetangga: jatuhin jemuran, curi ikan asin, kagetin merpati atap.
@@ -27,7 +27,7 @@ Alternatif tanpa hosting: unduh [cat-simulator.html](https://khaeransori.github.
   - Warung (ujung barat jalan, dijaga Bu Warung): curi kerupuk, jatuhin toples permen, dorong galon sampai menggelinding, tidur di atas kulkas es krim.
   - Sungai (lewat jalan setapak antara taman dan pasar): dorong perahu kertas, kejar kupu-kupu, ganggu bebek, cebur-ceburan di batu loncatan. Ada jembatan bambu dan dermaga kecil.
 - **Satu tombol aksi kontekstual:** ikon dan tulisannya berubah sesuai barang terdekat (Dorong, Curi, Tidur, Cakar, Gali, Tarik, Kagetin, Mancing, Ngobrol). Barang yang belum dinakali hari ini berkilau ✦.
-- **Warga kompleks:** Bu Siti (nyapu, mengusir pakai sapu), Pak Ujang penjual ikan, Bu Tini penjual sayur, Dimas dan Putri yang main bola dan suka meluk kucing, Bleki si anjing di balik pagar. Orang yang melihat kenakalan akan kaget lalu mengusir, tapi tidak pernah menyakiti.
+- **Warga kompleks:** Bu Siti (nyapu, mengusir pakai sapu), Pak Ujang penjual ikan, Bu Tini penjual sayur, Dimas dan Putri yang main bola dan suka meluk kucing, Bleki si anjing di balik pagar, dan **Mas Dodi** tukang balon keliling (lihat di bawah). Orang yang melihat kenakalan akan kaget lalu mengusir, tapi tidak pernah menyakiti.
 - **Lisa, kucing pemberi quest:** 6 quest berantai, termasuk mancing di kolam taman, lalu quest mancing harian.
   1. Mancing 3 ikan → pola belang + Pasar Ikan terbuka
   2. 3 kekacauan di taman → topi pesta
@@ -50,6 +50,7 @@ Alternatif tanpa hosting: unduh [cat-simulator.html](https://khaeransori.github.
 - **Peringkat Kucing:** Kucing Kampung → Kucing Gang → Preman Gang → Jagoan Kompleks → Raja Kompleks → Legenda Kompleks (5, 10, 18, 28, 40 tantangan bonus/harian/teman yang beres). Tampil di HUD di sebelah koin, dengan banner + fanfare saat naik.
 - **Mode Foto 📸:** tombol 📸 di HUD (atau di menu jeda) membekukan permainan dan menyembunyikan HUD. Geser untuk memutar kamera mengelilingi kucing, cubit atau roda mouse untuk zoom, pilih gaya (berdiri, duduk, tidur, meong, lompat), bingkai (polaroid, kayu, hati, film), dan tempel stiker emoji yang bisa digeser, diketuk untuk ganti ukuran, atau dibuang ke 🗑️. Tombol jepret menyimpan PNG (unduh, atau Bagikan di HP). 6 foto terakhir tersimpan kecil di Album 🖼️.
 - **Rumah Kucing 🏠:** toko hiasan di tab 🏠 Rumah pada Gaya Kucing, tombol 🏠 di HUD saat di dalam rumah, atau menu jeda. 12 hiasan (20–60 koin) dengan tempat tetap di ruang tamu: bola benang (bisa ditendang), tikus mainan, mangkuk makan (ngemil), tanaman, karpet bulat, poster ikan, rumah kardus (ngumpet), lampu tidur, tiang cakar (cakar sepuasnya, bisa dipanjat ke rak dinding), kasur kucing (bobo; kalau Mama pulang saat kucing tidur di kasur, tetap dihitung tidur di rumah), rak dinding, akuarium kecil. Hiasan bisa disimpan/dipasang lagi.
+- **Tukang Balon Keliling 🎈** (`src/game/balloons.ts`): Mas Dodi (kaos oranye, topi biru, membawa 5 balon warna-warni) berjalan keliling taman dan trotoar depan taman pada siang hari (malam dia pulang, hujan pakai payung). Tiap hari satu balonnya terbang dan nyangkut di salah satu tempat di taman: di atas perosotan, di bangku taman, atau di dermaga kolam. Ngobrol dengannya untuk tahu tempatnya, **Ambil** balonnya, lalu **Kasih** ke Mas Dodi. Pertama kali: hadiah **Balon di punggung** (aksesori punggung) + 15 koin, berikutnya 5 koin. Kalau balonnya ditaruh, dia terbang balik ke tempat tadi. Kenakalan baru **Pecahin balon Mas Dodi** (DOR! dia kaget lalu mengusir). Stiker baru **Penolong Balon** (kembalikan 3 balon).
 - **Cuaca & waktu:** tiap hari baru diacak jadi ☀️ Hari Cerah (paling sering), 🌧️ Hari Hujan, atau 🌙 Malam Hari (3 hari pertama selalu cerah). Hujan: rintik hujan, genangan air yang bisa dicipratin, warga pakai payung dan jalan lebih pelan, Dimas & Putri main di dalam, merpati sembunyi, ikan lebih cepat makan umpan dan lele lebih sering muncul, bulu kucing basah lalu kering lagi di rumah. Malam: langit biru tua berbintang dan bulan, lampu jalan dan jendela menyala, kunang-kunang di taman, warga lebih sedikit dan kurang peka (lebih gampang jadi ninja), Mama pulang malam dari shift. Bisa diatur di Pengaturan: **Cuaca: Acak / Selalu cerah**. Kode: `src/game/weather.ts` (`ctx.weather`, `weatherNow()`).
 - **Peta** kompleks.
 - **Bahasa Indonesia / English** bisa dipilih di Pengaturan.
@@ -89,6 +90,7 @@ npm run test:areas      # Sekolah, Warung, Sungai: 12 kenakalan, warga baru, jal
 npm run test:progress   # tantangan harian + streak, peringkat, tantangan spesial, Si Belang & Mpus
 npm run test:photohome  # mode foto (jeda, HUD, jepret PNG) + toko Rumah Kucing, hiasan interaktif, jalan ke sofa/pintu
 npm run test:album      # 4 tempat mancing, ikan langka, album, stiker, hadiah sekali, layar album
+npm run test:balloons   # Mas Dodi: rute, ngobrol, ambil & kasih balon, hadiah, pecahin balon, malam, hari baru, save lama
 ```
 
 ### Struktur kode

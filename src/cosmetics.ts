@@ -9,7 +9,7 @@ export interface Item {
   slot: Slot;
   name: Pair;
   price: number; // 0 = free
-  quest?: string; // unlocked by this Lisa quest id, or 'special' (⭐ challenge) / 'streak' (7-day 🔥 streak)
+  quest?: string; // unlocked by this Lisa quest id, or 'special' (⭐ challenge) / 'streak' (7-day 🔥 streak) / 'dodi' (Mas Dodi's balloon)
   album?: string; // unlocked by this album badge id
   color?: number;
   color2?: number;
@@ -74,6 +74,7 @@ export const ITEMS: Item[] = [
   { id: 'sayap', slot: 'back', name: P('Sayap malaikat', 'Angel wings'), price: 60 },
   { id: 'jubah', slot: 'back', name: P('Jubah pahlawan', 'Hero cape'), price: 0, quest: 'q6' },
   { id: 'kupu', slot: 'back', name: P('Sayap kupu-kupu', 'Butterfly wings'), price: 0, quest: 'special' },
+  { id: 'balon', slot: 'back', name: P('Balon di punggung', 'Back balloon'), price: 0, quest: 'dodi' },
 ];
 
 export const key = (it: Item) => it.slot + ':' + it.id;

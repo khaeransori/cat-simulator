@@ -15,11 +15,14 @@ const qProgressUI = (d: any) => qProgress(d.q, d);
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const hex = (n: number) => '#' + n.toString(16).padStart(6, '0');
 
-export type Face = 'cat' | 'lisa' | 'mama' | 'belang' | 'mpus';
+export type Face = 'cat' | 'lisa' | 'mama' | 'belang' | 'mpus' | 'dodi';
 
 export function faceSVG(kind: Face, fur?: number) {
   if (kind === 'mama') {
     return `<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#ffe3ef"/><rect x="8" y="6" width="48" height="58" rx="6" fill="#d48aa6"/><rect x="16" y="16" width="32" height="34" rx="3" fill="#d9a877"/><rect x="22" y="26" width="5" height="7" fill="#1d1d24"/><rect x="37" y="26" width="5" height="7" fill="#1d1d24"/><rect x="18" y="35" width="6" height="3" fill="#f29b9b"/><rect x="40" y="35" width="6" height="3" fill="#f29b9b"/><rect x="26" y="40" width="12" height="3" fill="#7a2a2a"/><rect x="24" y="38" width="3" height="3" fill="#7a2a2a"/><rect x="37" y="38" width="3" height="3" fill="#7a2a2a"/><rect x="8" y="50" width="48" height="14" fill="#7e57c2"/></svg>`;
+  }
+  if (kind === 'dodi') {
+    return `<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#e3f6ff"/><circle cx="52" cy="12" r="8" fill="#ff4d6d"/><circle cx="10" cy="14" r="6" fill="#ffd23f"/><rect x="14" y="16" width="36" height="38" rx="3" fill="#c68e5f"/><rect x="12" y="10" width="40" height="10" fill="#1565c0"/><rect x="30" y="18" width="24" height="4" fill="#0d47a1"/><rect x="22" y="28" width="5" height="7" fill="#1d1d24"/><rect x="37" y="28" width="5" height="7" fill="#1d1d24"/><rect x="24" y="42" width="16" height="3" fill="#7a3b2e"/><rect x="22" y="40" width="3" height="3" fill="#7a3b2e"/><rect x="39" y="40" width="3" height="3" fill="#7a3b2e"/><rect x="8" y="54" width="48" height="10" fill="#ff8f00"/></svg>`;
   }
   const f = hex(fur ?? (kind === 'lisa' ? 0xf6f3ec : kind === 'belang' ? 0x9aa3ad : kind === 'mpus' ? 0xeed7ab : 0xf2a044));
   const eye = kind === 'lisa' ? '#49a6f2' : kind === 'belang' ? '#f6cf3a' : '#6fcf5a';
@@ -71,6 +74,7 @@ const ICON: Record<string, string> = {
   'neck:pelangi': '🌈',
   'neck:syalApi': '🔥',
   'back:kupu': '🦋',
+  'back:balon': '🎈',
 };
 
 type Line = { who: string; text: string; face: Face };
@@ -475,7 +479,7 @@ export class UI {
       t.i = Math.min(t.full.length, n);
       $('dlgTxt').textContent = t.full.slice(0, t.i);
       const face = this.dialogQ[0]?.face;
-      sfx.voice(face === 'mama' ? 1.1 : face === 'lisa' ? 1.8 : face === 'belang' ? 1.2 : face === 'mpus' ? 1.6 : 1.5, 0.05);
+      sfx.voice(face === 'mama' ? 1.1 : face === 'lisa' ? 1.8 : face === 'belang' ? 1.2 : face === 'mpus' ? 1.6 : face === 'dodi' ? 1.05 : 1.5, 0.05);
     }
   }
 
@@ -589,7 +593,7 @@ export class UI {
           if (slot === 'fur') sw = `<div class="sw" style="background:${hex(it.color!)}"></div>`;
           else if (slot === 'eyes') sw = `<div class="sw" style="background:linear-gradient(90deg, ${hex(it.color!)} 50%, ${hex(it.color2 ?? it.color!)} 50%)"></div>`;
           else sw = `<div class="sw">${ICON[key(it)] ?? '•'}</div>`;
-          const st = worn ? `<span class="st own">✓ ${esc(tr('wearing'))}</span>` : owned ? `<span class="st own">${esc(tr('wear'))}</span>` : it.quest ? `<span class="st">🔒 ${it.quest === 'special' ? '⭐' : it.quest === 'streak' ? '🔥 7' : 'Lisa'}</span>` : it.album ? `<span class="st">🔒 📖</span>` : `<span class="st">🐟 ${it.price}</span>`;
+          const st = worn ? `<span class="st own">✓ ${esc(tr('wearing'))}</span>` : owned ? `<span class="st own">${esc(tr('wear'))}</span>` : it.quest ? `<span class="st">🔒 ${it.quest === 'special' ? '⭐' : it.quest === 'streak' ? '🔥 7' : it.quest === 'dodi' ? '🎈' : 'Lisa'}</span>` : it.album ? `<span class="st">🔒 📖</span>` : `<span class="st">🐟 ${it.price}</span>`;
           return `<button class="tile ${sel ? 'sel' : ''} ${owned ? '' : 'locked'}" data-k="${key(it)}">${sw}<span>${esc(L(it.name))}</span>${st}</button>`;
         })
         .join('');
@@ -601,7 +605,7 @@ export class UI {
         let btn: string;
         if (worn) btn = `<button class="btn small" disabled>✓ ${esc(tr('wearing'))}</button>`;
         else if (owned) btn = `<button class="btn small green" id="selAct">${esc(tr('wear'))}</button>`;
-        else if (sel.quest) btn = `<button class="btn small" disabled>🔒 ${esc(tr(sel.quest === 'special' ? 'specialLock' : sel.quest === 'streak' ? 'streakLock' : 'questLock'))}</button>`;
+        else if (sel.quest) btn = `<button class="btn small" disabled>🔒 ${esc(tr(sel.quest === 'special' ? 'specialLock' : sel.quest === 'streak' ? 'streakLock' : sel.quest === 'dodi' ? 'dodiLock' : 'questLock'))}</button>`;
         else if (sel.album) btn = `<button class="btn small" disabled>🔒 ${esc(tr('albumLock'))}</button>`;
         else btn = `<button class="btn small primary" id="selAct" ${s.coins < sel.price ? 'data-poor="1"' : ''}>${esc(tr('buy'))} 🐟 ${sel.price}</button>`;
         bar = `<div class="sel-bar"><span class="nm">${esc(L(sel.name))}</span>${btn}</div>`;

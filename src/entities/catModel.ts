@@ -85,6 +85,7 @@ export class CatModel {
   height = 1.4 * CAT_SCALE;
   wings: THREE.Group[] = [];
   cape: THREE.Group | null = null;
+  balloon: THREE.Group | null = null;
   phase = 0;
   t = rand(0, 10);
   blinkT = rand(2, 5);
@@ -282,6 +283,7 @@ export class CatModel {
     this.backAcc.clear();
     this.wings = [];
     this.cape = null;
+    this.balloon = null;
     const h = this.headAcc;
     switch (look.head) {
       case 'pita': {
@@ -561,6 +563,20 @@ export class CatModel {
         }
         break;
       }
+      case 'balon': {
+        // a little red balloon tied to the back with a string (Mas Dodi's reward)
+        const g = new THREE.Group();
+        g.position.set(0, 0.56, -0.12);
+        g.add(B(0.02, 0.62, 0.02, lam(0xf5f5f5), 0, 0.31, 0));
+        const red = new THREE.MeshLambertMaterial({ color: 0xff4d6d, flatShading: true, emissive: 0xff4d6d, emissiveIntensity: 0.12 });
+        const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.12, 1), red);
+        ball.scale.set(1, 1.2, 1);
+        ball.position.y = 0.76;
+        g.add(ball, B(0.04, 0.04, 0.04, red, 0, 0.62, 0), B(0.03, 0.05, 0.015, lam(0xffffff), -0.05, 0.81, 0.1));
+        bk.add(g);
+        this.balloon = g;
+        break;
+      }
       case 'jubah': {
         const g = new THREE.Group();
         g.position.set(0, 0.54, 0.2);
@@ -690,6 +706,7 @@ export class CatModel {
       const sx = i === 0 ? 1 : -1;
       this.wings[i].rotation.y = (-0.4 + Math.sin(t * (s.air ? 18 : 3)) * (s.air ? 0.5 : 0.12)) * sx;
     }
+    if (this.balloon) this.balloon.rotation.set(-0.2 - sp * 0.35 + Math.sin(t * 1.6) * 0.08, 0, Math.sin(t * 1.2) * 0.12);
     if (this.cape) this.cape.rotation.x = -0.15 - sp * 0.35 - (s.air ? 0.5 : 0) + Math.sin(t * 9) * 0.05 * sp;
   }
 }

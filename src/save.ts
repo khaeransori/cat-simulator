@@ -57,6 +57,8 @@ export interface SaveData {
   decorOff: Record<string, boolean>;
   /** Proyek jalan: start day of the current/last project (0 = none yet), last day rolled, paw prints in the new asphalt */
   works: { start: number; rolled: number; prints: number[][] };
+  /** Mas Dodi the balloon seller: met him, got the back balloon, balloons returned */
+  balon: { met: boolean; got: boolean; n: number };
 }
 
 export interface GiverState {
@@ -98,6 +100,7 @@ export function defaultSave(): SaveData {
     decor: {},
     decorOff: {},
     works: { start: 0, rolled: 0, prints: [] },
+    balon: { met: false, got: false, n: 0 },
   };
 }
 
